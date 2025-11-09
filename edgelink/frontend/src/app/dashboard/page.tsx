@@ -137,7 +137,7 @@ export default function DashboardPage() {
           {/* Create Link Button */}
           <div className="mb-6 flex justify-between items-center">
             <h2 className="text-2xl font-bold text-white">Your Links</h2>
-            <Link href="/" className="btn-primary">
+            <Link href="/create" className="btn-primary">
               + Create New Link
             </Link>
           </div>
@@ -157,7 +157,7 @@ export default function DashboardPage() {
           ) : links.length === 0 ? (
             <div className="card p-8 text-center">
               <div className="text-gray-400 mb-4">You haven't created any links yet</div>
-              <Link href="/" className="btn-primary">
+              <Link href="/create" className="btn-primary">
                 Create Your First Link
               </Link>
             </div>

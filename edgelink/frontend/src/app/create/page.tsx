@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { API_URL, getAuthHeaders } from '@/lib/api';
+import { API_URL, getAuthHeaders, getUser } from '@/lib/api';
 
 interface LinkPreview {
   url: string;
@@ -46,6 +46,15 @@ export default function CreateLinkPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [shortUrl, setShortUrl] = useState('');
+
+  // Check authentication on mount
+  useEffect(() => {
+    const currentUser = getUser();
+    if (!currentUser) {
+      router.push('/login');
+      return;
+    }
+  }, [router]);
 
   // Fetch slug suggestions when URL changes
   useEffect(() => {
