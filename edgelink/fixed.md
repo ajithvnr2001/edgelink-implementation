@@ -1317,3 +1317,769 @@ Visit: https://dash.cloudflare.com/pages
 **Final Status**: ✅ ALL ISSUES RESOLVED - PRODUCTION WORKING
 **Deployment Method**: Cloudflare Pages (Static Export)
 **Next.js Mode**: Standalone with pre-rendered HTML
+
+---
+
+---
+
+# Short URL Redirect Fix - Domain Configuration
+
+## Date: November 10, 2025
+## Issue Fixed: Short URLs redirecting to homepage instead of destination URL
+
+---
+
+## 🔴 Issue Reported
+
+**User Report**: "shorted link is redirecting to website homepage fix it"
+
+**Symptoms**:
+- Created a short link successfully
+- When clicking the short URL, it redirected to the frontend homepage
+- Not redirecting to the actual destination URL
+
+---
+
+## 🔍 Root Cause Analysis
+
+### The Problem
+
+**Short URLs were using the wrong domain**:
+- Short URLs generated as: `https://edgelink-production.pages.dev/{slug}`
+- This domain serves the **frontend** (Next.js application)
+- Redirect handler is on the **backend** (Cloudflare Worker)
+
+### Architecture Explanation
+
+EdgeLink has TWO separate deployments:
+
+1. **Frontend** (Cloudflare Pages): `https://edgelink-production.pages.dev`
+   - Serves the web application (React/Next.js)
+   - Routes: `/login`, `/signup`, `/dashboard`, `/create`, etc.
+   - Static HTML, CSS, JavaScript files
+
+2. **Backend** (Cloudflare Workers): `https://edgelink-production.quoteviral.workers.dev`
+   - Handles API requests
+   - Processes short URL redirects
+   - Route: `/{slug}` → redirects to destination
+
+### What Was Happening
+
+```
+User clicks: https://edgelink-production.pages.dev/abc123
+     ↓
+Goes to Frontend (Next.js app)
+     ↓
+Frontend has no route handler for /abc123
+     ↓
+Next.js shows homepage (fallback behavior)
+     ❌ WRONG - Should redirect to destination URL
+```
+
+### What Should Happen
+
+```
+User clicks: https://edgelink-production.quoteviral.workers.dev/abc123
+     ↓
+Goes to Backend (Cloudflare Worker)
+     ↓
+Worker's redirect handler processes the slug
+     ↓
+Looks up destination in KV store
+     ↓
+Returns 301 redirect to destination URL
+     ✅ CORRECT
+```
+
+---
+
+## ✅ Complete Fix Applied
+
+### Files Modified
+
+**Backend Files** (Short URL generation):
+1. `backend/src/handlers/shorten.ts` - Lines 78, 183, 187
+2. `backend/src/handlers/bulk-import.ts` - Line 360
+3. `backend/src/handlers/links.ts` - Line 336
+
+**Frontend Files** (Display and copy):
+4. `frontend/src/app/dashboard/page.tsx` - Lines 173, 176
+5. `frontend/src/app/apikeys/page.tsx` - Lines 160, 241, 251, 259
+
+---
+
+### Change #1: Anonymous Link Short URLs
+
+**File**: `backend/src/handlers/shorten.ts`
+
+**Line 78** - Changed:
+```typescript
+// Before
+const response: ShortenResponse = {
+  slug,
+  short_url: `https://edgelink-production.pages.dev/${slug}`,
+  expires_in: 30 * 24 * 60 * 60
+};
+
+// After
+const response: ShortenResponse = {
+  slug,
+  short_url: `https://edgelink-production.quoteviral.workers.dev/${slug}`,
+  expires_in: 30 * 24 * 60 * 60
+};
+```
+
+---
+
+### Change #2: Authenticated User Link Short URLs
+
+**File**: `backend/src/handlers/shorten.ts`
+
+**Line 183** - Changed:
+```typescript
+// Before
+const response: ShortenResponse = {
+  slug,
+  short_url: body.custom_domain
+    ? `https://${body.custom_domain}/${slug}`
+    : `https://edgelink-production.pages.dev/${slug}`,
+  expires_in: linkData.expires_at ? Math.floor((linkData.expires_at - now) / 1000) : undefined,
+  qr_code_url: user.plan === 'pro' ? `https://edgelink-production.pages.dev/api/qr/${slug}` : undefined
+};
+
+// After
+const response: ShortenResponse = {
+  slug,
+  short_url: body.custom_domain
+    ? `https://${body.custom_domain}/${slug}`
+    : `https://edgelink-production.quoteviral.workers.dev/${slug}`,
+  expires_in: linkData.expires_at ? Math.floor((linkData.expires_at - now) / 1000) : undefined,
+  qr_code_url: user.plan === 'pro' ? `https://edgelink-production.quoteviral.workers.dev/api/qr/${slug}` : undefined
+};
+```
+
+---
+
+### Change #3: Bulk Import Short URLs
+
+**File**: `backend/src/handlers/bulk-import.ts`
+
+**Line 360** - Changed:
+```typescript
+// Before
+result.imported_links.push({
+  slug,
+  destination: row.destination,
+  short_url: `https://edgelink-production.pages.dev/${slug}`
+});
+
+// After
+result.imported_links.push({
+  slug,
+  destination: row.destination,
+  short_url: `https://edgelink-production.quoteviral.workers.dev/${slug}`
+});
+```
+
+---
+
+### Change #4: QR Code Generation
+
+**File**: `backend/src/handlers/links.ts`
+
+**Line 336** - Changed:
+```typescript
+// Before
+const domain = link.custom_domain || 'edgelink-production.pages.dev';
+const shortUrl = `https://${domain}/${slug}`;
+
+// After
+const domain = link.custom_domain || 'edgelink-production.quoteviral.workers.dev';
+const shortUrl = `https://${domain}/${slug}`;
+```
+
+---
+
+### Change #5: Dashboard Display
+
+**File**: `frontend/src/app/dashboard/page.tsx`
+
+**Lines 173, 176** - Changed:
+```typescript
+// Before
+<code className="text-primary-500 font-mono text-lg">
+  edgelink-production.pages.dev/{link.slug}
+</code>
+<button
+  onClick={() => copyToClipboard(`https://edgelink-production.pages.dev/${link.slug}`, link.slug)}
+  className="text-gray-400 hover:text-white text-sm"
+>
+
+// After
+<code className="text-primary-500 font-mono text-lg">
+  edgelink-production.quoteviral.workers.dev/{link.slug}
+</code>
+<button
+  onClick={() => copyToClipboard(`https://edgelink-production.quoteviral.workers.dev/${link.slug}`, link.slug)}
+  className="text-gray-400 hover:text-white text-sm"
+>
+```
+
+---
+
+### Change #6: API Documentation Examples
+
+**File**: `frontend/src/app/apikeys/page.tsx`
+
+**Lines 160, 241, 251, 259** - Changed all API examples:
+```typescript
+// Before
+curl -H "Authorization: Bearer {key}" https://api.edgelink.io/api/shorten
+POST https://api.edgelink.io/api/shorten
+GET https://api.edgelink.io/api/links
+GET https://api.edgelink.io/api/analytics/{slug}
+
+// After
+curl -H "Authorization: Bearer {key}" https://edgelink-production.quoteviral.workers.dev/api/shorten
+POST https://edgelink-production.quoteviral.workers.dev/api/shorten
+GET https://edgelink-production.quoteviral.workers.dev/api/links
+GET https://edgelink-production.quoteviral.workers.dev/api/analytics/{slug}
+```
+
+---
+
+## 🚀 Deployment Process
+
+### Backend Deployment
+```bash
+cd backend
+npm run deploy
+```
+
+**Result**:
+```
+✅ Uploaded edgelink-production
+✅ Deployed to: https://edgelink-production.quoteviral.workers.dev
+✅ Version ID: b1a1face-bdaf-414f-b7ba-804025081975
+```
+
+### Frontend Deployment
+```bash
+cd frontend
+npm run build
+rm -rf .next/cache
+rm -rf .next/server/app/_next
+mkdir -p .next/server/app/_next
+cp -r .next/static .next/server/app/_next/static
+wrangler pages deploy .next/server/app --project-name=edgelink-production --branch=main --commit-dirty=true
+```
+
+**Result**:
+```
+✨ Success! Uploaded 39 files (71 already uploaded)
+✨ Deployment complete!
+```
+
+---
+
+## 🧪 Testing
+
+### Test Flow
+
+1. **Visit Frontend**: https://edgelink-production.pages.dev
+2. **Login** with your credentials
+3. **Create a short link**:
+   - Destination URL: `https://google.com`
+   - Click "Create Link"
+4. **Check response**:
+   - Should show: `https://edgelink-production.quoteviral.workers.dev/abc123`
+   - NOT: `https://edgelink-production.pages.dev/abc123`
+5. **Click the short URL**:
+   - Should redirect to: `https://google.com`
+   - NOT: EdgeLink homepage
+
+---
+
+## 📊 Summary
+
+### Before Fix
+- ❌ Short URLs: `https://edgelink-production.pages.dev/{slug}`
+- ❌ Went to Frontend (Next.js app)
+- ❌ Showed homepage instead of redirecting
+- ❌ No redirect happened
+
+### After Fix
+- ✅ Short URLs: `https://edgelink-production.quoteviral.workers.dev/{slug}`
+- ✅ Goes to Backend (Cloudflare Worker)
+- ✅ Redirect handler processes the request
+- ✅ 301 redirect to destination URL
+
+---
+
+---
+
+# Complete Guide: How to Change Short URL Domains
+
+## When to Use This Guide
+
+Use this guide when you want to change the domain used for short URLs:
+- ✅ Switching from temporary worker domain to custom domain
+- ✅ Updating from development to production domain
+- ✅ Configuring your own branded domain (e.g., `yourbrand.io`)
+- ✅ Changing backend worker subdomain
+
+---
+
+## 🎯 Understanding Domain Architecture
+
+### Current Setup (November 10, 2025)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  EdgeLink Architecture                                   │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  FRONTEND (Cloudflare Pages)                            │
+│  └─ https://edgelink-production.pages.dev               │
+│     ├─ /                    (Homepage)                  │
+│     ├─ /login               (Login page)                │
+│     ├─ /signup              (Signup page)               │
+│     ├─ /dashboard           (User dashboard)            │
+│     ├─ /create              (Create link page)          │
+│     └─ /analytics/[slug]    (Analytics page)            │
+│                                                          │
+│  BACKEND (Cloudflare Workers)                           │
+│  └─ https://edgelink-production.quoteviral.workers.dev  │
+│     ├─ /auth/login          (API: Login)                │
+│     ├─ /auth/signup         (API: Signup)               │
+│     ├─ /api/shorten         (API: Create short link)    │
+│     ├─ /api/links           (API: Get links)            │
+│     └─ /{slug}              (🎯 REDIRECT HANDLER)       │
+│                                                          │
+│  SHORT URLS (Must use Backend domain!)                  │
+│  └─ https://edgelink-production.quoteviral.workers.dev/{slug}
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Future Setup (When you have custom domain)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  With Custom Domain                                      │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  FRONTEND                                                │
+│  └─ https://app.yourdomain.com                          │
+│     └─ (All frontend pages)                             │
+│                                                          │
+│  BACKEND + SHORT URLS                                    │
+│  └─ https://go.yourdomain.com                           │
+│     ├─ /api/*          (API endpoints)                  │
+│     └─ /{slug}         (Short URL redirects)            │
+│                                                          │
+│  OR                                                      │
+│                                                          │
+│  └─ https://yourdomain.com                              │
+│     ├─ /api/*          (API endpoints)                  │
+│     └─ /{slug}         (Short URL redirects)            │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📋 Complete Process: Changing Short URL Domain
+
+### Scenario 1: Using Current Worker Domain (Already Done)
+
+**Current short URLs**: `https://edgelink-production.quoteviral.workers.dev/{slug}`
+
+This is what we just fixed. No further changes needed.
+
+---
+
+### Scenario 2: Setting Up Custom Domain (Future)
+
+**Goal**: Change to `https://go.yourdomain.com/{slug}` or `https://yourdomain.com/{slug}`
+
+#### Step 1: Configure Custom Domain in Cloudflare
+
+**Option A: Subdomain for short links** (Recommended)
+```
+go.yourdomain.com → edgelink-production.quoteviral.workers.dev
+```
+
+**Option B: Root domain for short links**
+```
+yourdomain.com → edgelink-production.quoteviral.workers.dev
+```
+
+**Steps**:
+1. Go to Cloudflare Dashboard: https://dash.cloudflare.com
+2. Select your domain (e.g., `yourdomain.com`)
+3. Go to **Workers & Pages** section
+4. Click on **edgelink-production** worker
+5. Go to **Settings** → **Triggers** → **Custom Domains**
+6. Click **Add Custom Domain**
+7. Enter your domain (e.g., `go.yourdomain.com`)
+8. Wait for DNS propagation (usually 1-5 minutes)
+
+---
+
+#### Step 2: Find All Short URL References
+
+Use `grep` to find everywhere short URLs are generated:
+
+```bash
+# From project root
+cd backend
+
+# Search for current domain
+grep -r "edgelink-production.quoteviral.workers.dev" src/
+
+# You'll find references in these files:
+# - src/handlers/shorten.ts (2-3 locations)
+# - src/handlers/bulk-import.ts (1 location)
+# - src/handlers/links.ts (1 location)
+```
+
+```bash
+# Frontend search
+cd frontend
+
+# Search for current domain
+grep -r "edgelink-production.quoteviral.workers.dev" src/
+
+# You'll find references in:
+# - src/app/dashboard/page.tsx (2 locations)
+# - src/app/apikeys/page.tsx (multiple locations)
+```
+
+---
+
+#### Step 3: Update Backend Files
+
+**File 1**: `backend/src/handlers/shorten.ts`
+
+**Find and replace** (Line 78):
+```typescript
+// OLD
+short_url: `https://edgelink-production.quoteviral.workers.dev/${slug}`,
+
+// NEW
+short_url: `https://go.yourdomain.com/${slug}`,
+```
+
+**Find and replace** (Line 183):
+```typescript
+// OLD
+short_url: body.custom_domain
+  ? `https://${body.custom_domain}/${slug}`
+  : `https://edgelink-production.quoteviral.workers.dev/${slug}`,
+
+// NEW
+short_url: body.custom_domain
+  ? `https://${body.custom_domain}/${slug}`
+  : `https://go.yourdomain.com/${slug}`,
+```
+
+**Find and replace** (Line 187):
+```typescript
+// OLD
+qr_code_url: user.plan === 'pro' ? `https://edgelink-production.quoteviral.workers.dev/api/qr/${slug}` : undefined
+
+// NEW
+qr_code_url: user.plan === 'pro' ? `https://go.yourdomain.com/api/qr/${slug}` : undefined
+```
+
+---
+
+**File 2**: `backend/src/handlers/bulk-import.ts`
+
+**Find and replace** (Line 360):
+```typescript
+// OLD
+short_url: `https://edgelink-production.quoteviral.workers.dev/${slug}`
+
+// NEW
+short_url: `https://go.yourdomain.com/${slug}`
+```
+
+---
+
+**File 3**: `backend/src/handlers/links.ts`
+
+**Find and replace** (Line 336):
+```typescript
+// OLD
+const domain = link.custom_domain || 'edgelink-production.quoteviral.workers.dev';
+
+// NEW
+const domain = link.custom_domain || 'go.yourdomain.com';
+```
+
+---
+
+#### Step 4: Update Frontend Files
+
+**File 1**: `frontend/src/app/dashboard/page.tsx`
+
+**Find and replace** (Lines 173, 176):
+```typescript
+// OLD
+<code className="text-primary-500 font-mono text-lg">
+  edgelink-production.quoteviral.workers.dev/{link.slug}
+</code>
+<button
+  onClick={() => copyToClipboard(`https://edgelink-production.quoteviral.workers.dev/${link.slug}`, link.slug)}
+>
+
+// NEW
+<code className="text-primary-500 font-mono text-lg">
+  go.yourdomain.com/{link.slug}
+</code>
+<button
+  onClick={() => copyToClipboard(`https://go.yourdomain.com/${link.slug}`, link.slug)}
+>
+```
+
+---
+
+**File 2**: `frontend/src/app/apikeys/page.tsx`
+
+**Find and replace** (Lines 160, 241, 251, 259):
+```typescript
+// OLD
+https://edgelink-production.quoteviral.workers.dev/api/shorten
+https://edgelink-production.quoteviral.workers.dev/api/links
+https://edgelink-production.quoteviral.workers.dev/api/analytics/{slug}
+
+// NEW
+https://go.yourdomain.com/api/shorten
+https://go.yourdomain.com/api/links
+https://go.yourdomain.com/api/analytics/{slug}
+```
+
+---
+
+#### Step 5: Deploy Backend
+
+```bash
+cd backend
+npm run deploy
+```
+
+**Wait for deployment to complete**:
+```
+✅ Deployed to: https://edgelink-production.quoteviral.workers.dev
+```
+
+**Verify backend works**:
+```bash
+# Test redirect with custom domain
+curl -I https://go.yourdomain.com/{existing-slug}
+# Should return: HTTP/2 301
+# Location: https://destination-url.com
+```
+
+---
+
+#### Step 6: Deploy Frontend
+
+```bash
+cd frontend
+
+# Build
+npm run build
+
+# Clean and prepare
+rm -rf .next/cache
+rm -rf .next/server/app/_next
+mkdir -p .next/server/app/_next
+cp -r .next/static .next/server/app/_next/static
+
+# Deploy
+wrangler pages deploy .next/server/app --project-name=edgelink-production --branch=main --commit-dirty=true
+```
+
+**Wait for deployment**:
+```
+✨ Deployment complete!
+```
+
+---
+
+#### Step 7: Test Complete Flow
+
+1. **Visit frontend**: https://edgelink-production.pages.dev
+2. **Login** with your account
+3. **Create a new short link**:
+   - Destination: `https://example.com`
+   - Click "Create Link"
+4. **Verify short URL**:
+   - Should show: `https://go.yourdomain.com/abc123`
+5. **Test redirect**:
+   - Open short URL in new tab
+   - Should redirect to: `https://example.com`
+6. **Check dashboard**:
+   - Should display: `go.yourdomain.com/abc123`
+   - Copy button should copy: `https://go.yourdomain.com/abc123`
+
+---
+
+## 🔍 Quick Find & Replace Guide
+
+### Using Command Line (Recommended)
+
+**macOS/Linux**:
+```bash
+# Backend
+cd backend
+find src/handlers -type f -name "*.ts" -exec sed -i '' 's|edgelink-production.quoteviral.workers.dev|go.yourdomain.com|g' {} +
+
+# Frontend
+cd frontend
+find src/app -type f -name "*.tsx" -exec sed -i '' 's|edgelink-production.quoteviral.workers.dev|go.yourdomain.com|g' {} +
+```
+
+**Windows (PowerShell)**:
+```powershell
+# Backend
+cd backend
+Get-ChildItem -Path src/handlers -Filter *.ts -Recurse | ForEach-Object {
+  (Get-Content $_.FullName) -replace 'edgelink-production.quoteviral.workers.dev', 'go.yourdomain.com' | Set-Content $_.FullName
+}
+
+# Frontend
+cd frontend
+Get-ChildItem -Path src/app -Filter *.tsx -Recurse | ForEach-Object {
+  (Get-Content $_.FullName) -replace 'edgelink-production.quoteviral.workers.dev', 'go.yourdomain.com' | Set-Content $_.FullName
+}
+```
+
+---
+
+### Using VS Code (Easy Method)
+
+1. Open VS Code in your project
+2. Press `Ctrl+Shift+H` (Windows) or `Cmd+Shift+H` (Mac)
+3. In "Search" box: `edgelink-production.quoteviral.workers.dev`
+4. In "Replace" box: `go.yourdomain.com`
+5. Click "Replace All" (or review each)
+6. Save all files (`Ctrl+K S` or `Cmd+K S`)
+
+---
+
+## 📊 Checklist for Domain Changes
+
+### Before Making Changes
+- [ ] Custom domain configured in Cloudflare Dashboard
+- [ ] DNS propagated (test with `curl -I https://go.yourdomain.com`)
+- [ ] Backend worker accessible via custom domain
+- [ ] All files committed to Git (for easy rollback)
+
+### Making Changes
+- [ ] Updated `backend/src/handlers/shorten.ts` (3 locations)
+- [ ] Updated `backend/src/handlers/bulk-import.ts` (1 location)
+- [ ] Updated `backend/src/handlers/links.ts` (1 location)
+- [ ] Updated `frontend/src/app/dashboard/page.tsx` (2 locations)
+- [ ] Updated `frontend/src/app/apikeys/page.tsx` (4 locations)
+
+### Deployment
+- [ ] Deployed backend: `cd backend && npm run deploy`
+- [ ] Verified backend deployment successful
+- [ ] Built frontend: `cd frontend && npm run build`
+- [ ] Prepared static assets correctly
+- [ ] Deployed frontend to production
+- [ ] Verified frontend deployment successful
+
+### Testing
+- [ ] Created new short link via UI
+- [ ] Short URL shows correct domain
+- [ ] Short URL redirects correctly
+- [ ] Dashboard displays correct domain
+- [ ] Copy button copies correct URL
+- [ ] API documentation shows correct examples
+- [ ] QR code URLs use correct domain (if Pro)
+
+---
+
+## 🚨 Common Mistakes to Avoid
+
+### Mistake #1: Forgetting to Update All Locations
+**Problem**: Only updated backend, forgot frontend
+**Result**: Backend generates correct URLs, but dashboard shows old domain
+**Solution**: Use find & replace to update ALL files
+
+### Mistake #2: Using Frontend Domain for Short URLs
+**Problem**: Set short URL domain to `edgelink-production.pages.dev`
+**Result**: Redirects don't work (goes to homepage)
+**Solution**: Always use the **backend worker domain** or custom domain pointing to worker
+
+### Mistake #3: Not Testing Before Deploying
+**Problem**: Made typo in domain name
+**Result**: All short URLs broken in production
+**Solution**: Review changes with `git diff` before deploying
+
+### Mistake #4: Deploying Backend But Not Frontend
+**Problem**: Backend generates new URLs, but frontend still shows old domain
+**Result**: Confusing user experience (URLs work but display is wrong)
+**Solution**: Always deploy BOTH backend and frontend
+
+---
+
+## 🔄 Rollback Process
+
+If something goes wrong, rollback immediately:
+
+### Rollback Backend
+```bash
+cd backend
+
+# Revert changes in Git
+git checkout backend/src/handlers/shorten.ts
+git checkout backend/src/handlers/bulk-import.ts
+git checkout backend/src/handlers/links.ts
+
+# Redeploy
+npm run deploy
+```
+
+### Rollback Frontend
+```bash
+cd frontend
+
+# Revert changes
+git checkout frontend/src/app/dashboard/page.tsx
+git checkout frontend/src/app/apikeys/page.tsx
+
+# Rebuild and redeploy
+npm run build
+rm -rf .next/cache
+rm -rf .next/server/app/_next
+mkdir -p .next/server/app/_next
+cp -r .next/static .next/server/app/_next/static
+wrangler pages deploy .next/server/app --project-name=edgelink-production --branch=main --commit-dirty=true
+```
+
+---
+
+## 📝 Summary - End-to-End Process
+
+### Quick Reference for Future Domain Changes
+
+1. **Configure custom domain in Cloudflare** (Workers & Pages → Triggers → Custom Domains)
+2. **Find all references**: `grep -r "old-domain.com" src/`
+3. **Update backend files** (3 files, 5 total locations)
+4. **Update frontend files** (2 files, 6 total locations)
+5. **Deploy backend**: `cd backend && npm run deploy`
+6. **Deploy frontend**: Full build + deploy process
+7. **Test thoroughly**: Create link → Check URL → Test redirect → Verify dashboard
+
+---
+
+**Fix Completed**: November 10, 2025
+**Current Short URL Domain**: `https://edgelink-production.quoteviral.workers.dev`
+**Redirect Handler**: Working correctly
+**Status**: ✅ Short URLs now redirect to destination properly

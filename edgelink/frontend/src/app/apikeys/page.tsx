@@ -157,7 +157,7 @@ export default function APIKeysPage() {
             <div className="space-y-2 text-sm text-gray-300">
               <p><strong>Usage Example:</strong></p>
               <code className="block bg-gray-900 p-3 rounded border border-gray-700 overflow-x-auto">
-                curl -H "Authorization: Bearer {generatedKey.api_key}" https://api.edgelink.io/api/shorten
+                curl -H "Authorization: Bearer {generatedKey.api_key}" https://edgelink-production.quoteviral.workers.dev/api/shorten
               </code>
             </div>
 
@@ -238,7 +238,7 @@ export default function APIKeysPage() {
             <div>
               <p className="font-semibold text-white mb-2">Create Short Link:</p>
               <code className="block bg-gray-900 p-3 rounded border border-gray-700 overflow-x-auto">
-                POST https://api.edgelink.io/api/shorten
+                POST https://edgelink-production.quoteviral.workers.dev/api/shorten
                 <br />
                 Headers: Authorization: Bearer YOUR_API_KEY
                 <br />
@@ -248,7 +248,7 @@ export default function APIKeysPage() {
             <div>
               <p className="font-semibold text-white mb-2">Get Your Links:</p>
               <code className="block bg-gray-900 p-3 rounded border border-gray-700 overflow-x-auto">
-                GET https://api.edgelink.io/api/links
+                GET https://edgelink-production.quoteviral.workers.dev/api/links
                 <br />
                 Headers: Authorization: Bearer YOUR_API_KEY
               </code>
@@ -256,7 +256,7 @@ export default function APIKeysPage() {
             <div>
               <p className="font-semibold text-white mb-2">Get Link Analytics:</p>
               <code className="block bg-gray-900 p-3 rounded border border-gray-700 overflow-x-auto">
-                GET https://api.edgelink.io/api/analytics/{'{'} slug{'}'}?range=7d
+                GET https://edgelink-production.quoteviral.workers.dev/api/analytics/{'{'} slug{'}'}?range=7d
                 <br />
                 Headers: Authorization: Bearer YOUR_API_KEY
               </code>

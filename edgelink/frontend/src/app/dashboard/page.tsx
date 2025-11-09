@@ -170,10 +170,10 @@ export default function DashboardPage() {
                       {/* Short URL */}
                       <div className="flex items-center space-x-3 mb-2">
                         <code className="text-primary-500 font-mono text-lg">
-                          edgelink.io/{link.slug}
+                          edgelink-production.quoteviral.workers.dev/{link.slug}
                         </code>
                         <button
-                          onClick={() => copyToClipboard(`https://edgelink.io/${link.slug}`, link.slug)}
+                          onClick={() => copyToClipboard(`https://edgelink-production.quoteviral.workers.dev/${link.slug}`, link.slug)}
                           className="text-gray-400 hover:text-white text-sm"
                         >
                           {copied === link.slug ? '✓ Copied' : '📋 Copy'}

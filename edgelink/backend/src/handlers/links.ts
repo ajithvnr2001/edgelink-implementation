@@ -333,7 +333,7 @@ export async function handleGenerateQR(
     }
 
     // Construct short URL
-    const domain = link.custom_domain || 'edgelink.io';
+    const domain = link.custom_domain || 'edgelink-production.quoteviral.workers.dev';
     const shortUrl = `https://${domain}/${slug}`;
 
     // Generate QR code SVG (simple implementation)
