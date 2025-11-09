@@ -27,6 +27,7 @@ database_id = "d5f676e0-b43f-4ac9-ab2c-acd1ddcda86b"
 # Environment variables
 [vars]
 ENVIRONMENT = "development"
+# FALLBACK_URL = "https://example.com" # Optional: Proxy to this URL when slug not found (for root domain usage)
 
 # Secrets (set via: wrangler secret put <NAME>)
 # JWT_SECRET - Secret key for JWT signing/verification
