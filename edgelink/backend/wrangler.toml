@@ -1,4 +1,4 @@
-name = "edgelink-backend"
+name = "edgelink-production"
 main = "src/index.ts"
 compatibility_date = "2024-11-07"
 workers_dev = true
@@ -6,23 +6,23 @@ workers_dev = true
 # KV Namespace for link storage (fast redirects)
 [[kv_namespaces]]
 binding = "LINKS_KV"
-id = "your_kv_namespace_id"
-preview_id = "your_preview_kv_namespace_id"
+id = "d343d816e5904857b49d35938c7f39cf"
+preview_id = "46db878aed4b40b6b1dce78fab668170"
 
 # D1 Database for user data and metadata
 [[d1_databases]]
 binding = "DB"
-database_name = "edgelink"
-database_id = "your_d1_database_id"
+database_name = "edgelink-production"
+database_id = "d5f676e0-b43f-4ac9-ab2c-acd1ddcda86b"
 
-# Analytics Engine for click tracking
-[[analytics_engine_datasets]]
-binding = "ANALYTICS_ENGINE"
+# Analytics Engine for click tracking (temporarily disabled - needs to be enabled in dashboard)
+# [[analytics_engine_datasets]]
+# binding = "ANALYTICS_ENGINE"
 
-# R2 Bucket for file storage (exports, imports)
-[[r2_buckets]]
-binding = "R2_BUCKET"
-bucket_name = "edgelink-storage"
+# R2 Bucket for file storage (exports, imports) (temporarily disabled - needs to be created)
+# [[r2_buckets]]
+# binding = "R2_BUCKET"
+# bucket_name = "edgelink-storage"
 
 # Environment variables
 [vars]

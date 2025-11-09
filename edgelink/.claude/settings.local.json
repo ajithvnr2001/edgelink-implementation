@@ -18,7 +18,11 @@
       "Bash(wrangler pages project:*)",
       "Bash(wrangler pages deploy:*)",
       "Bash(done)",
-      "Bash(npx wrangler:*)"
+      "Bash(npx wrangler:*)",
+      "Bash(wrangler d1 list:*)",
+      "Bash(wrangler kv:*)",
+      "Bash(wrangler secret list:*)",
+      "Bash(npm run deploy:*)"
     ],
     "deny": [],
     "ask": []
