@@ -287,7 +287,7 @@ export async function handleGetDomains(
 ): Promise<Response> {
   try {
     const result = await env.DB.prepare(`
-      SELECT domain_id, domain_name, verified, verified_at, created_at
+      SELECT domain_id, domain_name, verified, verification_token, verified_at, created_at
       FROM custom_domains
       WHERE user_id = ?
       ORDER BY created_at DESC
