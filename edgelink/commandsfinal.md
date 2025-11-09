@@ -169,18 +169,21 @@ ls -la .next/
 
 ### Step 5: Deploy to Cloudflare Pages
 
+**IMPORTANT**: Use `--branch=main` to deploy to production environment!
+
 ```bash
-# Deploy complete .next directory
-wrangler pages deploy .next --project-name=edgelink-production --commit-dirty=true
+# Deploy complete .next directory to PRODUCTION
+wrangler pages deploy .next --project-name=edgelink-production --branch=main --commit-dirty=true
 ```
 
 **Expected Output:**
 ```
 ✨ Success! Uploaded 272 files (4.22 sec)
 🌎 Deploying...
-✨ Deployment complete! Take a peek over at https://11dda019.edgelink-production.pages.dev
-✨ Deployment alias URL: https://master.edgelink-production.pages.dev
+✨ Deployment complete! Take a peek over at https://b94c258e.edgelink-production.pages.dev
 ```
+
+**Note**: Without `--branch=main`, deployments go to Preview environment and won't update the production URL.
 
 ### Step 6: Verify Frontend Deployment
 
@@ -236,7 +239,7 @@ npm run deploy
 cd frontend
 npm run build
 rm -rf .next/cache
-wrangler pages deploy .next --project-name=edgelink-production --commit-dirty=true
+wrangler pages deploy .next --project-name=edgelink-production --branch=main --commit-dirty=true
 ```
 
 ### Both Backend + Frontend
@@ -246,7 +249,7 @@ wrangler pages deploy .next --project-name=edgelink-production --commit-dirty=tr
 cd backend && npm run deploy && cd ..
 
 # Frontend
-cd frontend && npm run build && rm -rf .next/cache && wrangler pages deploy .next --project-name=edgelink-production --commit-dirty=true && cd ..
+cd frontend && npm run build && rm -rf .next/cache && wrangler pages deploy .next --project-name=edgelink-production --branch=main --commit-dirty=true && cd ..
 ```
 
 ---
@@ -404,14 +407,15 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 echo "GENERATED_SECRET" | wrangler secret put JWT_SECRET
 ```
 
-### Issue: "/create page not found"
+### Issue: "/create page not found" or "Changes not showing in production"
 **Solution:**
 ```bash
 cd frontend
 npm run build
 rm -rf .next/cache
-wrangler pages deploy .next --project-name=edgelink-production --commit-dirty=true
+wrangler pages deploy .next --project-name=edgelink-production --branch=main --commit-dirty=true
 ```
+**Note**: Always use `--branch=main` to deploy to production, not preview!
 
 ### Issue: "Module not found" or build errors
 **Solution:**
