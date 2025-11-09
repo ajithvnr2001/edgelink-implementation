@@ -170,8 +170,10 @@ ls -la .next/
 ### Step 5: Prepare Deployment Files
 
 ```bash
-# Copy static assets to the correct location
-cp -r .next/static .next/server/app/_next
+# Copy static assets to the correct location (must include /static/ subdirectory)
+rm -rf .next/server/app/_next
+mkdir -p .next/server/app/_next
+cp -r .next/static .next/server/app/_next/static
 ```
 
 ### Step 6: Deploy to Cloudflare Pages
@@ -249,7 +251,9 @@ npm run deploy
 cd frontend
 npm run build
 rm -rf .next/cache
-cp -r .next/static .next/server/app/_next
+rm -rf .next/server/app/_next
+mkdir -p .next/server/app/_next
+cp -r .next/static .next/server/app/_next/static
 wrangler pages deploy .next/server/app --project-name=edgelink-production --branch=main --commit-dirty=true
 ```
 
@@ -260,7 +264,7 @@ wrangler pages deploy .next/server/app --project-name=edgelink-production --bran
 cd backend && npm run deploy && cd ..
 
 # Frontend
-cd frontend && npm run build && rm -rf .next/cache && cp -r .next/static .next/server/app/_next && wrangler pages deploy .next/server/app --project-name=edgelink-production --branch=main --commit-dirty=true && cd ..
+cd frontend && npm run build && rm -rf .next/cache && rm -rf .next/server/app/_next && mkdir -p .next/server/app/_next && cp -r .next/static .next/server/app/_next/static && wrangler pages deploy .next/server/app --project-name=edgelink-production --branch=main --commit-dirty=true && cd ..
 ```
 
 ---
@@ -424,12 +428,25 @@ echo "GENERATED_SECRET" | wrangler secret put JWT_SECRET
 cd frontend
 npm run build
 rm -rf .next/cache
-cp -r .next/static .next/server/app/_next
+rm -rf .next/server/app/_next
+mkdir -p .next/server/app/_next
+cp -r .next/static .next/server/app/_next/static
 wrangler pages deploy .next/server/app --project-name=edgelink-production --branch=main --commit-dirty=true
 ```
 **Notes**:
 - Deploy `.next/server/app` not `.next` (contains pre-rendered HTML)
+- Copy static to `_next/static/` not just `_next/` (matches HTML references)
 - Always use `--branch=main` to deploy to production, not preview!
+
+### Issue: "MIME type text/html not executable" errors
+**Solution:** Make sure static files are copied to `_next/static/` subdirectory:
+```bash
+cd frontend
+rm -rf .next/server/app/_next
+mkdir -p .next/server/app/_next
+cp -r .next/static .next/server/app/_next/static
+wrangler pages deploy .next/server/app --project-name=edgelink-production --branch=main --commit-dirty=true
+```
 
 ### Issue: "Module not found" or build errors
 **Solution:**

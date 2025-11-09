@@ -50,8 +50,13 @@ See fixed.md and commandsfinal.md for complete details.
 cd frontend
 npm run build
 rm -rf .next/cache
-cp -r .next/static .next/server/app/_next
+rm -rf .next/server/app/_next
+mkdir -p .next/server/app/_next
+cp -r .next/static .next/server/app/_next/static
 wrangler pages deploy .next/server/app --project-name=edgelink-production --branch=main --commit-dirty=true
+
+Note: Static files MUST be copied to _next/static/ (with /static/ subdirectory)
+to match the paths referenced in HTML files!
 
 === TEST IT NOW ===
 1. Visit: https://edgelink-production.pages.dev
