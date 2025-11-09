@@ -59,6 +59,15 @@ export default function DashboardPage() {
     setTimeout(() => setCopied(null), 2000)
   }
 
+  const getShortUrl = (link: LinkType) => {
+    const domain = link.custom_domain || 'edgelink-production.quoteviral.workers.dev'
+    return `https://${domain}/${link.slug}`
+  }
+
+  const getDisplayDomain = (link: LinkType) => {
+    return link.custom_domain || 'edgelink-production.quoteviral.workers.dev'
+  }
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
       month: 'short',
@@ -169,11 +178,18 @@ export default function DashboardPage() {
                     <div className="flex-1 min-w-0">
                       {/* Short URL */}
                       <div className="flex items-center space-x-3 mb-2">
-                        <code className="text-primary-500 font-mono text-lg">
-                          edgelink-production.quoteviral.workers.dev/{link.slug}
-                        </code>
+                        <div className="flex items-center gap-2">
+                          <code className="text-primary-500 font-mono text-lg">
+                            {getDisplayDomain(link)}/{link.slug}
+                          </code>
+                          {link.custom_domain && (
+                            <span className="px-2 py-1 bg-blue-900/50 text-blue-300 text-xs font-medium rounded border border-blue-700">
+                              Custom Domain
+                            </span>
+                          )}
+                        </div>
                         <button
-                          onClick={() => copyToClipboard(`https://edgelink-production.quoteviral.workers.dev/${link.slug}`, link.slug)}
+                          onClick={() => copyToClipboard(getShortUrl(link), link.slug)}
                           className="text-gray-400 hover:text-white text-sm"
                         >
                           {copied === link.slug ? '✓ Copied' : '📋 Copy'}
