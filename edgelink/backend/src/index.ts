@@ -1,0 +1,832 @@
+/**
+ * EdgeLink Backend - Main Worker Entry Point
+ * Developer-first URL shortener on Cloudflare Edge
+ *
+ * Based on PRD v4.1 - Week 1 Implementation
+ */
+
+import type { Env } from './types';
+import { authenticate, requireAuth } from './middleware/auth';
+import { checkRateLimit, addRateLimitHeaders } from './middleware/ratelimit';
+import { handleShorten } from './handlers/shorten';
+import { handleRedirect } from './handlers/redirect';
+import { handleSignup, handleLogin, handleRefresh, handleLogout } from './handlers/auth';
+import { handleGetProfile, handleUpdateProfile, handleDeleteAccount, handleRequestAccountDeletion, handleCancelAccountDeletion, handleExportUserData } from './handlers/user';
+import { handleGetAnalytics, handleGetAnalyticsSummary } from './handlers/analytics';
+import { handleAddDomain, handleVerifyDomain, handleGetDomains, handleDeleteDomain } from './handlers/domains';
+import { handleGenerateAPIKey, handleGetAPIKeys, handleRevokeAPIKey } from './handlers/apikeys';
+import { handleGetLinks, handleUpdateLink, handleDeleteLink, handleGenerateQR } from './handlers/links';
+import { handleCreateWebhook, handleGetWebhooks, handleDeleteWebhook } from './handlers/webhooks';
+import { handleSuggestSlug } from './handlers/slug-suggestions';
+import { handleLinkPreview } from './handlers/link-preview';
+import { handleExportAnalytics, handleExportLinks } from './handlers/export';
+import { handleBulkImport } from './handlers/bulk-import';
+import { handleCreateABTest, handleGetABTestResults, handleDeleteABTest } from './handlers/ab-testing';
+import { handleSetDeviceRouting, handleSetGeoRouting, handleSetTimeRouting, handleGetRouting, handleDeleteRouting } from './handlers/routing';
+
+/**
+ * Main worker fetch handler
+ */
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    // Add CORS headers
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Link-Password',
+      'Access-Control-Max-Age': '86400'
+    };
+
+    // Handle preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: corsHeaders
+      });
+    }
+
+    try {
+      const url = new URL(request.url);
+      const path = url.pathname;
+      const method = request.method;
+
+      // Route matching
+      // Health check
+      if (path === '/health' && method === 'GET') {
+        return new Response(
+          JSON.stringify({
+            status: 'healthy',
+            timestamp: Date.now(),
+            version: '1.0.0'
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      // Authentication endpoints (no auth required)
+      if (path === '/auth/signup' && method === 'POST') {
+        const response = await handleSignup(request, env);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      if (path === '/auth/login' && method === 'POST') {
+        const response = await handleLogin(request, env);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      if (path === '/auth/refresh' && method === 'POST') {
+        const response = await handleRefresh(request, env);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      if (path === '/auth/logout' && method === 'POST') {
+        const response = await handleLogout(request, env);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // URL shortening endpoint (anonymous or authenticated)
+      if (path === '/api/shorten' && method === 'POST') {
+        // Authenticate (optional for this endpoint)
+        const { user, error: authError } = await authenticate(request, env);
+        if (authError) {
+          return addCorsHeaders(authError, corsHeaders);
+        }
+
+        // Check rate limit
+        const { success, info, error: rateLimitError } = await checkRateLimit(
+          request,
+          env,
+          user
+        );
+
+        if (!success && rateLimitError) {
+          return addCorsHeaders(rateLimitError, corsHeaders);
+        }
+
+        // Handle shortening
+        const response = await handleShorten(request, env, user);
+        const finalResponse = addRateLimitHeaders(response, info);
+        return addCorsHeaders(finalResponse, corsHeaders);
+      }
+
+      // Get user's links (authenticated)
+      if (path === '/api/links' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        // Check rate limit
+        const { success, info, error: rateLimitError } = await checkRateLimit(
+          request,
+          env,
+          user
+        );
+
+        if (!success && rateLimitError) {
+          return addCorsHeaders(rateLimitError, corsHeaders);
+        }
+
+        const response = await handleGetLinks(env, user.sub);
+        const finalResponse = addRateLimitHeaders(response, info);
+        return addCorsHeaders(finalResponse, corsHeaders);
+      }
+
+      // Update link (authenticated) - Week 4 Enhanced
+      if (path.startsWith('/api/links/') && !path.includes('/qr') && method === 'PUT') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const slug = path.split('/')[3];
+        const response = await handleUpdateLink(request, env, user.sub, slug, user.plan);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Delete link (authenticated)
+      if (path.startsWith('/api/links/') && !path.includes('/qr') && method === 'DELETE') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const slug = path.split('/')[3];
+        const response = await handleDeleteLink(env, user.sub, slug);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Generate QR code (authenticated, Pro only) - Week 4
+      if (path.startsWith('/api/links/') && path.endsWith('/qr') && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const slug = path.split('/')[3];
+        const format = (url.searchParams.get('format') as 'svg' | 'png') || 'svg';
+        const response = await handleGenerateQR(env, user.sub, slug, user.plan, format);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Get link stats (authenticated) - Legacy endpoint
+      if (path.startsWith('/api/stats/') && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const slug = path.split('/')[3];
+        const response = await handleGetStats(env, user.sub, slug);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Get detailed analytics for a link (authenticated)
+      if (path.startsWith('/api/analytics/') && path.split('/').length === 4 && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const slug = path.split('/')[3];
+        const url = new URL(request.url);
+        const timeRange = (url.searchParams.get('range') as '7d' | '30d') || '7d';
+        const response = await handleGetAnalytics(env, user.sub, slug, timeRange);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Get analytics summary (authenticated)
+      if (path === '/api/analytics/summary' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGetAnalyticsSummary(env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Custom Domains endpoints (Week 3)
+      // POST /api/domains - Add a new custom domain
+      if (path === '/api/domains' && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleAddDomain(request, env, user.sub, user.plan);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/domains - Get user's domains
+      if (path === '/api/domains' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGetDomains(env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // POST /api/domains/:domainId/verify - Verify domain ownership
+      if (path.startsWith('/api/domains/') && path.endsWith('/verify') && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const domainId = path.split('/')[3];
+        const response = await handleVerifyDomain(env, user.sub, domainId);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // DELETE /api/domains/:domainId - Delete domain
+      if (path.startsWith('/api/domains/') && path.split('/').length === 4 && method === 'DELETE') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const domainId = path.split('/')[3];
+        const response = await handleDeleteDomain(env, user.sub, domainId);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // API Keys endpoints (Week 3)
+      // POST /api/keys - Generate new API key
+      if (path === '/api/keys' && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGenerateAPIKey(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/keys - Get user's API keys
+      if (path === '/api/keys' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGetAPIKeys(env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // DELETE /api/keys/:keyId - Revoke API key
+      if (path.startsWith('/api/keys/') && method === 'DELETE') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const keyId = path.split('/')[3];
+        const response = await handleRevokeAPIKey(env, user.sub, keyId);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Webhooks endpoints (Week 4)
+      // POST /api/webhooks - Create new webhook
+      if (path === '/api/webhooks' && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleCreateWebhook(request, env, user.sub, user.plan);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/webhooks - Get user's webhooks
+      if (path === '/api/webhooks' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGetWebhooks(env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // DELETE /api/webhooks/:webhookId - Delete webhook
+      if (path.startsWith('/api/webhooks/') && method === 'DELETE') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const webhookId = path.split('/')[3];
+        const response = await handleDeleteWebhook(env, user.sub, webhookId);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Week 5 Features
+
+      // POST /api/suggest-slug - AI slug suggestions (authenticated optional)
+      if (path === '/api/suggest-slug' && method === 'POST') {
+        const response = await handleSuggestSlug(request, env);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // POST /api/preview - Link preview with Open Graph
+      if (path === '/api/preview' && method === 'POST') {
+        const response = await handleLinkPreview(request, env);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/export/analytics/:slug - Export analytics
+      if (path.startsWith('/api/export/analytics/') && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const slug = path.split('/')[4];
+        const format = (url.searchParams.get('format') as 'csv' | 'json') || 'json';
+        const timeRange = (url.searchParams.get('range') as '7d' | '30d' | '90d' | 'all') || '30d';
+        const response = await handleExportAnalytics(env, user.sub, slug, format, timeRange);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/export/links - Export all user links
+      if (path === '/api/export/links' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const format = (url.searchParams.get('format') as 'csv' | 'json') || 'json';
+        const response = await handleExportLinks(env, user.sub, format);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // POST /api/import/links - Bulk import links from CSV
+      if (path === '/api/import/links' && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleBulkImport(request, env, user.sub, user.plan);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // User Profile endpoints
+      // GET /api/user/profile - Get user profile
+      if (path === '/api/user/profile' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGetProfile(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // PUT /api/user/profile - Update user profile
+      if (path === '/api/user/profile' && method === 'PUT') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleUpdateProfile(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // POST /api/user/delete - Delete account (immediate)
+      if (path === '/api/user/delete' && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleDeleteAccount(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // POST /api/user/request-deletion - Request account deletion (30-day grace period)
+      if (path === '/api/user/request-deletion' && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleRequestAccountDeletion(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // POST /api/user/cancel-deletion - Cancel account deletion request
+      if (path === '/api/user/cancel-deletion' && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleCancelAccountDeletion(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/user/export - Export user data (GDPR)
+      if (path === '/api/user/export' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleExportUserData(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // A/B Testing endpoints
+      // POST /api/links/:slug/ab-test - Create A/B test
+      if (path.startsWith('/api/links/') && path.endsWith('/ab-test') && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleCreateABTest(request, env, user.sub, user.plan || 'free');
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/links/:slug/ab-test - Get A/B test results
+      if (path.startsWith('/api/links/') && path.endsWith('/ab-test') && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGetABTestResults(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // DELETE /api/links/:slug/ab-test - Stop A/B test
+      if (path.startsWith('/api/links/') && path.endsWith('/ab-test') && method === 'DELETE') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleDeleteABTest(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Smart Routing endpoints
+      // POST /api/links/:slug/routing/device - Set device routing
+      if (path.startsWith('/api/links/') && path.includes('/routing/device') && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleSetDeviceRouting(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // POST /api/links/:slug/routing/geo - Set geographic routing
+      if (path.startsWith('/api/links/') && path.includes('/routing/geo') && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleSetGeoRouting(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // POST /api/links/:slug/routing/time - Set time-based routing
+      if (path.startsWith('/api/links/') && path.includes('/routing/time') && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleSetTimeRouting(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/links/:slug/routing - Get all routing config
+      if (path.startsWith('/api/links/') && path.endsWith('/routing') && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGetRouting(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // DELETE /api/links/:slug/routing - Delete all routing
+      if (path.startsWith('/api/links/') && path.endsWith('/routing') && method === 'DELETE') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleDeleteRouting(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Redirect endpoint (public, no auth)
+      // This should be the last route to avoid conflicts
+      if (path.length > 1 && method === 'GET') {
+        const slug = path.slice(1); // Remove leading slash
+
+        // Skip if it looks like an API path
+        if (slug.startsWith('api/') || slug.startsWith('auth/')) {
+          return new Response('Not found', {
+            status: 404,
+            headers: corsHeaders
+          });
+        }
+
+        const response = await handleRedirect(request, env, slug);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // 404 Not Found
+      return new Response(
+        JSON.stringify({
+          error: 'Not found',
+          code: 'NOT_FOUND'
+        }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    } catch (error) {
+      console.error('Worker error:', error);
+      return new Response(
+        JSON.stringify({
+          error: 'Internal server error',
+          code: 'INTERNAL_ERROR'
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+  }
+};
+
+/**
+ * Add CORS headers to response
+ */
+function addCorsHeaders(response: Response, corsHeaders: Record<string, string>): Response {
+  const newResponse = new Response(response.body, response);
+  Object.entries(corsHeaders).forEach(([key, value]) => {
+    newResponse.headers.set(key, value);
+  });
+  return newResponse;
+}
+
+/**
+ * Handle GET /api/links - Get user's links
+ */
+async function handleGetLinks(env: Env, userId: string): Promise<Response> {
+  try {
+    const result = await env.DB.prepare(`
+      SELECT slug, destination, custom_domain, created_at, expires_at, click_count
+      FROM links
+      WHERE user_id = ?
+      ORDER BY created_at DESC
+      LIMIT 50
+    `).bind(userId).all();
+
+    return new Response(
+      JSON.stringify({
+        links: result.results,
+        total: result.results.length
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to fetch links',
+        code: 'FETCH_FAILED'
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+}
+
+/**
+ * Handle PUT /api/links/:slug - Update link
+ */
+async function handleUpdateLink(
+  request: Request,
+  env: Env,
+  userId: string,
+  slug: string
+): Promise<Response> {
+  try {
+    const body = await request.json() as { destination?: string; expires_at?: string };
+
+    if (!body.destination) {
+      return new Response(
+        JSON.stringify({
+          error: 'Destination URL required',
+          code: 'INVALID_INPUT'
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Verify ownership
+    const link = await env.DB.prepare(`
+      SELECT user_id FROM links WHERE slug = ?
+    `).bind(slug).first();
+
+    if (!link || link.user_id !== userId) {
+      return new Response(
+        JSON.stringify({
+          error: 'Link not found or access denied',
+          code: 'NOT_FOUND'
+        }),
+        {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Update link
+    await env.DB.prepare(`
+      UPDATE links
+      SET destination = ?, expires_at = ?, updated_at = datetime('now')
+      WHERE slug = ? AND user_id = ?
+    `).bind(
+      body.destination,
+      body.expires_at || null,
+      slug,
+      userId
+    ).run();
+
+    // Update KV
+    const linkDataStr = await env.LINKS_KV.get(`slug:${slug}`);
+    if (linkDataStr) {
+      const linkData = JSON.parse(linkDataStr);
+      linkData.destination = body.destination;
+      if (body.expires_at) {
+        linkData.expires_at = new Date(body.expires_at).getTime();
+      }
+      await env.LINKS_KV.put(`slug:${slug}`, JSON.stringify(linkData));
+    }
+
+    return new Response(
+      JSON.stringify({
+        message: 'Link updated successfully',
+        slug
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to update link',
+        code: 'UPDATE_FAILED'
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+}
+
+/**
+ * Handle DELETE /api/links/:slug - Delete link
+ */
+async function handleDeleteLink(
+  env: Env,
+  userId: string,
+  slug: string
+): Promise<Response> {
+  try {
+    // Verify ownership
+    const link = await env.DB.prepare(`
+      SELECT user_id FROM links WHERE slug = ?
+    `).bind(slug).first();
+
+    if (!link || link.user_id !== userId) {
+      return new Response(
+        JSON.stringify({
+          error: 'Link not found or access denied',
+          code: 'NOT_FOUND'
+        }),
+        {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Delete from D1
+    await env.DB.prepare(`
+      DELETE FROM links WHERE slug = ? AND user_id = ?
+    `).bind(slug, userId).run();
+
+    // Delete from KV
+    await env.LINKS_KV.delete(`slug:${slug}`);
+
+    return new Response(
+      JSON.stringify({
+        message: 'Link deleted successfully'
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to delete link',
+        code: 'DELETE_FAILED'
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+}
+
+/**
+ * Handle GET /api/stats/:slug - Get link analytics
+ */
+async function handleGetStats(
+  env: Env,
+  userId: string,
+  slug: string
+): Promise<Response> {
+  try {
+    // Verify ownership
+    const link = await env.DB.prepare(`
+      SELECT user_id, click_count, created_at FROM links WHERE slug = ?
+    `).bind(slug).first();
+
+    if (!link || link.user_id !== userId) {
+      return new Response(
+        JSON.stringify({
+          error: 'Link not found or access denied',
+          code: 'NOT_FOUND'
+        }),
+        {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // TODO: Query Analytics Engine for detailed stats
+    // For now, return basic stats from D1
+    return new Response(
+      JSON.stringify({
+        slug,
+        total_clicks: link.click_count,
+        created_at: link.created_at,
+        analytics: {
+          message: 'Detailed analytics coming soon'
+        }
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to fetch stats',
+        code: 'STATS_FAILED'
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+}

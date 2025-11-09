@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EdgeLink - URL Shortener</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <!-- Auth View -->
+  <div id="auth-view" class="view">
+    <div class="header">
+      <img src="../icons/icon-48.png" alt="EdgeLink" class="logo">
+      <h1>EdgeLink</h1>
+      <p class="subtitle">Fast URL Shortener</p>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="tab-btn active" data-tab="login">Login</button>
+      <button class="tab-btn" data-tab="signup">Sign Up</button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="login-form" class="auth-form active">
+      <input type="email" id="login-email" placeholder="Email" required>
+      <input type="password" id="login-password" placeholder="Password" required>
+      <button id="login-btn" class="primary-btn">Login</button>
+      <button id="use-anonymous-btn" class="secondary-btn">Continue as Guest</button>
+    </div>
+
+    <!-- Signup Form -->
+    <div id="signup-form" class="auth-form">
+      <input type="text" id="signup-name" placeholder="Name (optional)">
+      <input type="email" id="signup-email" placeholder="Email" required>
+      <input type="password" id="signup-password" placeholder="Password" required>
+      <button id="signup-btn" class="primary-btn">Sign Up</button>
+    </div>
+
+    <div id="auth-error" class="error-message"></div>
+  </div>
+
+  <!-- Main View -->
+  <div id="main-view" class="view hidden">
+    <div class="header">
+      <img src="../icons/icon-48.png" alt="EdgeLink" class="logo-small">
+      <h2>EdgeLink</h2>
+      <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+    </div>
+
+    <!-- User Info -->
+    <div id="user-info" class="user-info hidden">
+      <span id="user-email"></span>
+      <span id="user-plan" class="badge">Free</span>
+      <button id="logout-btn" class="text-btn">Logout</button>
+    </div>
+
+    <!-- Shorten URL Form -->
+    <div class="shorten-section">
+      <div class="form-group">
+        <label for="url-input">URL to shorten</label>
+        <div class="input-with-btn">
+          <input type="url" id="url-input" placeholder="https://example.com/very/long/url" required>
+          <button id="get-current-btn" class="icon-btn" title="Get current tab URL">📋</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="custom-slug">Custom slug (optional)</label>
+        <div class="slug-suggestions" id="slug-suggestions"></div>
+        <input type="text" id="custom-slug" placeholder="my-custom-slug" maxlength="20">
+      </div>
+
+      <!-- Advanced Options -->
+      <details class="advanced-options">
+        <summary>Advanced Options</summary>
+        <div class="form-group">
+          <label for="utm-template">UTM Parameters</label>
+          <input type="text" id="utm-template" placeholder="utm_source=extension&utm_medium=browser">
+        </div>
+        <div class="form-group">
+          <label for="password">Password Protection</label>
+          <input type="password" id="password" placeholder="Optional password">
+        </div>
+        <div class="form-group">
+          <label for="expires-at">Expires At</label>
+          <input type="datetime-local" id="expires-at">
+        </div>
+      </details>
+
+      <button id="shorten-btn" class="primary-btn">Shorten URL</button>
+    </div>
+
+    <!-- Result Section -->
+    <div id="result-section" class="result-section hidden">
+      <div class="success-message">
+        <span class="icon">✓</span>
+        <span>Link created successfully!</span>
+      </div>
+      <div class="short-url-container">
+        <input type="text" id="short-url" readonly>
+        <button id="copy-btn" class="icon-btn" title="Copy to clipboard">📋</button>
+      </div>
+      <div class="actions">
+        <button id="open-link-btn" class="secondary-btn">Open Link</button>
+        <button id="view-analytics-btn" class="secondary-btn">View Analytics</button>
+        <button id="create-another-btn" class="text-btn">Create Another</button>
+      </div>
+    </div>
+
+    <!-- Recent Links -->
+    <div class="recent-links-section">
+      <div class="section-header">
+        <h3>Recent Links</h3>
+        <button id="refresh-links-btn" class="icon-btn" title="Refresh">🔄</button>
+      </div>
+      <div id="recent-links" class="recent-links">
+        <div class="loading">Loading...</div>
+      </div>
+      <button id="view-all-links-btn" class="text-btn">View All Links</button>
+    </div>
+
+    <div id="main-error" class="error-message"></div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="spinner"></div>
+  </div>
+
+  <script src="../lib/api.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

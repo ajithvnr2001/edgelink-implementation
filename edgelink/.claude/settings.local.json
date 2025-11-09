@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wrangler whoami:*)",
+      "Bash(wrangler d1 create:*)",
+      "Bash(wrangler d1 execute:*)",
+      "Bash(wrangler kv namespace create:*)",
+      "Bash(wrangler r2 bucket:*)",
+      "Bash(node -e:*)",
+      "Bash(wrangler secret put:*)",
+      "Bash(npm install)",
+      "Bash(wrangler deploy:*)",
+      "Bash(wrangler deployments:*)",
+      "Bash(curl:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(find:*)",
+      "Bash(wrangler pages project:*)",
+      "Bash(wrangler pages deploy:*)",
+      "Bash(done)",
+      "Bash(npx wrangler:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

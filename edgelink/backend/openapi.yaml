@@ -1,0 +1,674 @@
+openapi: 3.0.3
+info:
+  title: EdgeLink API
+  description: |
+    Developer-first URL shortener API built on Cloudflare's edge network.
+
+    ## Features
+    - JWT-based authentication
+    - Advanced routing (device, geographic, referrer-based)
+    - A/B testing
+    - Password-protected links
+    - QR code generation (Pro)
+    - Webhooks (Pro)
+    - Real-time analytics
+
+    ## Authentication
+    Use Bearer token authentication with either:
+    1. JWT token from `/auth/login`
+    2. API key from `/api/keys` (format: `elk_xxxxx...`)
+
+    ## Rate Limits
+    - Free tier: 1,000 requests/day
+    - Pro tier: 10,000 requests/day
+
+  version: 1.0.0
+  contact:
+    name: EdgeLink Support
+    url: https://edgelink.io/support
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.edgelink.io
+    description: Production server
+  - url: http://localhost:8787
+    description: Development server
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Links
+    description: URL shortening and link management
+  - name: Analytics
+    description: Link analytics and statistics
+  - name: Domains
+    description: Custom domain management
+  - name: API Keys
+    description: API key management
+  - name: Webhooks
+    description: Webhook management (Pro feature)
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token or API key
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Invalid input"
+        code:
+          type: string
+          example: "INVALID_INPUT"
+      required:
+        - error
+
+    Link:
+      type: object
+      properties:
+        slug:
+          type: string
+          example: "abc123"
+        destination:
+          type: string
+          format: uri
+          example: "https://example.com/very/long/url"
+        custom_domain:
+          type: string
+          nullable: true
+          example: "links.example.com"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        max_clicks:
+          type: integer
+          nullable: true
+          example: 1000
+        click_count:
+          type: integer
+          example: 42
+        password_protected:
+          type: boolean
+          example: false
+        device_routing:
+          type: object
+          nullable: true
+          properties:
+            mobile:
+              type: string
+              format: uri
+            desktop:
+              type: string
+              format: uri
+            tablet:
+              type: string
+              format: uri
+        geo_routing:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+            format: uri
+        referrer_routing:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+            format: uri
+        ab_testing:
+          type: object
+          nullable: true
+          properties:
+            variant_a:
+              type: string
+              format: uri
+            variant_b:
+              type: string
+              format: uri
+        utm_params:
+          type: string
+          nullable: true
+          example: "utm_source=twitter&utm_medium=social"
+
+paths:
+  /auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: Create new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: "SecurePass123"
+                name:
+                  type: string
+                  example: "John Doe"
+              required:
+                - email
+                - password
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  expires_in:
+                    type: integer
+                    example: 86400
+                  user:
+                    type: object
+                    properties:
+                      user_id:
+                        type: string
+                      email:
+                        type: string
+                      plan:
+                        type: string
+                        enum: [free, pro]
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login to existing account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  expires_in:
+                    type: integer
+                  user:
+                    type: object
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/shorten:
+    post:
+      tags:
+        - Links
+      summary: Create short link
+      description: |
+        Create a shortened URL. Can be used anonymously or with authentication.
+
+        **Pro features:**
+        - Password protection
+        - Device routing
+        - Geographic routing
+        - Referrer routing
+        - A/B testing
+      security:
+        - BearerAuth: []
+        - {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: Destination URL to shorten
+                  example: "https://example.com/very/long/url"
+                custom_slug:
+                  type: string
+                  pattern: '^[a-zA-Z0-9_-]{5,20}$'
+                  description: Custom slug (5-20 characters)
+                  example: "my-link"
+                custom_domain:
+                  type: string
+                  description: Custom domain (must be verified)
+                  example: "links.example.com"
+                expires_at:
+                  type: string
+                  format: date-time
+                  description: Link expiration date
+                max_clicks:
+                  type: integer
+                  description: Maximum number of clicks before expiration
+                  example: 1000
+                password:
+                  type: string
+                  description: Password protection (Pro only)
+                  example: "secret123"
+                device_routing:
+                  type: object
+                  description: Device-based routing (Pro only)
+                  properties:
+                    mobile:
+                      type: string
+                      format: uri
+                    desktop:
+                      type: string
+                      format: uri
+                    tablet:
+                      type: string
+                      format: uri
+                geo_routing:
+                  type: object
+                  description: Geographic routing (Pro only)
+                  additionalProperties:
+                    type: string
+                    format: uri
+                  example:
+                    US: "https://example.com/us"
+                    IN: "https://example.com/in"
+                    default: "https://example.com"
+                referrer_routing:
+                  type: object
+                  description: Referrer-based routing (Pro only)
+                  additionalProperties:
+                    type: string
+                    format: uri
+                ab_testing:
+                  type: object
+                  description: A/B testing (Pro only)
+                  properties:
+                    variant_a:
+                      type: string
+                      format: uri
+                    variant_b:
+                      type: string
+                      format: uri
+                utm_params:
+                  type: string
+                  description: UTM parameters to auto-append
+                  example: "utm_source=twitter&utm_medium=social"
+              required:
+                - url
+      responses:
+        '201':
+          description: Link created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slug:
+                    type: string
+                  short_url:
+                    type: string
+                    format: uri
+                  expires_in:
+                    type: integer
+                    nullable: true
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Pro feature required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/links:
+    get:
+      tags:
+        - Links
+      summary: Get user's links
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Links retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  links:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Link'
+                  total:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/links/{slug}:
+    put:
+      tags:
+        - Links
+      summary: Update link
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                destination:
+                  type: string
+                  format: uri
+                expires_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+                max_clicks:
+                  type: integer
+                  nullable: true
+                password:
+                  type: string
+                  nullable: true
+              required:
+                - destination
+      responses:
+        '200':
+          description: Link updated successfully
+        '403':
+          description: Pro feature required
+        '404':
+          description: Link not found
+
+    delete:
+      tags:
+        - Links
+      summary: Delete link
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Link deleted successfully
+        '404':
+          description: Link not found
+
+  /api/links/{slug}/qr:
+    get:
+      tags:
+        - Links
+      summary: Generate QR code (Pro only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [svg, png]
+            default: svg
+      responses:
+        '200':
+          description: QR code generated
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+        '403':
+          description: Pro feature required
+        '404':
+          description: Link not found
+
+  /api/webhooks:
+    post:
+      tags:
+        - Webhooks
+      summary: Create webhook (Pro only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: Webhook endpoint URL
+                name:
+                  type: string
+                  description: Webhook name
+                events:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - link.created
+                      - link.clicked
+                      - link.milestone
+                      - link.expired
+                  description: Events to trigger webhook
+                slug:
+                  type: string
+                  description: Specific link slug (optional, null = all links)
+                  nullable: true
+              required:
+                - url
+                - name
+                - events
+      responses:
+        '201':
+          description: Webhook created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  webhook_id:
+                    type: string
+                  url:
+                    type: string
+                  name:
+                    type: string
+                  events:
+                    type: array
+                    items:
+                      type: string
+                  secret:
+                    type: string
+                    description: HMAC secret for signature verification
+                  message:
+                    type: string
+        '403':
+          description: Pro feature required
+        '400':
+          description: Invalid input or webhook limit exceeded
+
+    get:
+      tags:
+        - Webhooks
+      summary: Get user's webhooks
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Webhooks retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  webhooks:
+                    type: array
+                    items:
+                      type: object
+                  total:
+                    type: integer
+
+  /api/webhooks/{webhookId}:
+    delete:
+      tags:
+        - Webhooks
+      summary: Delete webhook
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Webhook deleted
+        '404':
+          description: Webhook not found
+
+  /{slug}:
+    get:
+      tags:
+        - Links
+      summary: Redirect to destination
+      description: |
+        Redirect short link to destination URL.
+
+        **Features:**
+        - Device-based routing
+        - Geographic routing
+        - Referrer-based routing
+        - A/B testing
+        - Password protection check
+        - Link expiration check
+        - Analytics tracking
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-Link-Password
+          in: header
+          description: Password for protected links
+          schema:
+            type: string
+      responses:
+        '301':
+          description: Permanent redirect to destination
+        '401':
+          description: Password required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Link not found
+        '410':
+          description: Link expired
+
+x-rate-limits:
+  free:
+    requests_per_day: 1000
+    links_per_month: 500
+    clicks_per_month: 50000
+  pro:
+    requests_per_day: 10000
+    links_per_month: 5000
+    clicks_per_month: 500000
+
+x-features:
+  free:
+    - URL shortening
+    - Custom slugs
+    - 1 custom domain
+    - Basic analytics (30 days)
+    - Link editing
+    - Link expiration (5 rules/month)
+  pro:
+    - All free features
+    - 5 custom domains
+    - Advanced analytics (1 year)
+    - Device routing
+    - Geographic routing
+    - Referrer routing
+    - A/B testing
+    - Password-protected links
+    - QR code generation
+    - Webhooks
+    - Advanced export
+    - Priority support

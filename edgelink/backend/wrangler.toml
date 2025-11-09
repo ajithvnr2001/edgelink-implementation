@@ -1,0 +1,40 @@
+name = "edgelink-backend"
+main = "src/index.ts"
+compatibility_date = "2024-11-07"
+workers_dev = true
+
+# KV Namespace for link storage (fast redirects)
+[[kv_namespaces]]
+binding = "LINKS_KV"
+id = "your_kv_namespace_id"
+preview_id = "your_preview_kv_namespace_id"
+
+# D1 Database for user data and metadata
+[[d1_databases]]
+binding = "DB"
+database_name = "edgelink"
+database_id = "your_d1_database_id"
+
+# Analytics Engine for click tracking
+[[analytics_engine_datasets]]
+binding = "ANALYTICS_ENGINE"
+
+# R2 Bucket for file storage (exports, imports)
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "edgelink-storage"
+
+# Environment variables
+[vars]
+ENVIRONMENT = "development"
+
+# Secrets (set via: wrangler secret put <NAME>)
+# JWT_SECRET - Secret key for JWT signing/verification
+# Run: wrangler secret put JWT_SECRET
+
+# Rate Limiting
+[[unsafe.bindings]]
+name = "RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 1000, period = 86400 }

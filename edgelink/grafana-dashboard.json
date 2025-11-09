@@ -1,0 +1,520 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "edgelink-main",
+    "title": "EdgeLink Performance Dashboard",
+    "tags": ["edgelink", "url-shortener", "cloudflare"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 0,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "type": "graph",
+        "title": "Redirect Latency (ms)",
+        "targets": [
+          {
+            "expr": "SELECT \n  toStartOfInterval(timestamp, INTERVAL '5' MINUTE) as time,\n  quantile(0.50)(doubles[0]) as p50,\n  quantile(0.95)(doubles[0]) as p95,\n  quantile(0.99)(doubles[0]) as p99\nFROM analytics_events\nWHERE timestamp > now() - INTERVAL '24' HOUR\n  AND blobs[0] = 'redirect'\nGROUP BY time\nORDER BY time",
+            "format": "time_series"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Latency (ms)",
+            "format": "ms",
+            "logBase": 1,
+            "min": 0
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "legend": {
+          "show": true,
+          "values": true,
+          "current": true,
+          "avg": true
+        },
+        "tooltip": {
+          "shared": true,
+          "sort": 0,
+          "value_type": "individual"
+        }
+      },
+      {
+        "id": 2,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "type": "stat",
+        "title": "Error Rate (%)",
+        "targets": [
+          {
+            "expr": "SELECT \n  (countIf(indexes[1] = 'error') / count(*)) * 100 as error_rate\nFROM analytics_events\nWHERE timestamp > now() - INTERVAL '1' HOUR",
+            "format": "single"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["last"]
+          },
+          "orientation": "auto",
+          "textMode": "value_and_name",
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 0.5,
+                  "color": "yellow"
+                },
+                {
+                  "value": 1.0,
+                  "color": "red"
+                }
+              ]
+            },
+            "unit": "percent",
+            "decimals": 2
+          }
+        }
+      },
+      {
+        "id": 3,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
+        "type": "graph",
+        "title": "Request Volume",
+        "targets": [
+          {
+            "expr": "SELECT \n  toStartOfInterval(timestamp, INTERVAL '5' MINUTE) as time,\n  count(*) as requests\nFROM analytics_events\nWHERE timestamp > now() - INTERVAL '24' HOUR\nGROUP BY time\nORDER BY time",
+            "format": "time_series"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Requests",
+            "format": "short",
+            "logBase": 1,
+            "min": 0
+          }
+        ],
+        "bars": true,
+        "lines": false,
+        "fill": 5,
+        "linewidth": 0
+      },
+      {
+        "id": 4,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        },
+        "type": "piechart",
+        "title": "Traffic by Country (Top 10)",
+        "targets": [
+          {
+            "expr": "SELECT \n  indexes[2] as country,\n  count(*) as requests\nFROM analytics_events\nWHERE timestamp > now() - INTERVAL '24' HOUR\nGROUP BY country\nORDER BY requests DESC\nLIMIT 10",
+            "format": "table"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "pieType": "pie",
+          "displayLabels": ["name", "percent"],
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": ["value", "percent"]
+          }
+        }
+      },
+      {
+        "id": 5,
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 0,
+          "y": 16
+        },
+        "type": "stat",
+        "title": "Total Links",
+        "targets": [
+          {
+            "expr": "SELECT count(*) FROM links",
+            "format": "single"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "blue"
+                }
+              ]
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 6,
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 8,
+          "y": 16
+        },
+        "type": "stat",
+        "title": "Active Users",
+        "targets": [
+          {
+            "expr": "SELECT count(DISTINCT user_id) FROM users WHERE last_login > now() - INTERVAL '7' DAY",
+            "format": "single"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 16,
+          "y": 16
+        },
+        "type": "stat",
+        "title": "Pro Users",
+        "targets": [
+          {
+            "expr": "SELECT count(*) FROM users WHERE plan = 'pro'",
+            "format": "single"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "purple"
+                }
+              ]
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        },
+        "type": "graph",
+        "title": "API Usage by Plan",
+        "targets": [
+          {
+            "expr": "SELECT \n  toStartOfInterval(timestamp, INTERVAL '1' HOUR) as time,\n  blobs[1] as plan,\n  count(*) as requests\nFROM analytics_events\nWHERE timestamp > now() - INTERVAL '24' HOUR\n  AND indexes[0] = 'prod'\nGROUP BY time, plan\nORDER BY time",
+            "format": "time_series"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Requests",
+            "format": "short",
+            "logBase": 1,
+            "min": 0
+          }
+        ],
+        "stack": true,
+        "lines": true,
+        "fill": 3,
+        "legend": {
+          "show": true,
+          "values": true,
+          "current": true
+        }
+      },
+      {
+        "id": 9,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        },
+        "type": "table",
+        "title": "Top Performing Links (24h)",
+        "targets": [
+          {
+            "expr": "SELECT \n  slug,\n  count(*) as clicks,\n  count(DISTINCT visitor_hash) as unique_visitors,\n  round(avg(latency_ms), 2) as avg_latency\nFROM analytics_events\nWHERE timestamp > now() - INTERVAL '24' HOUR\nGROUP BY slug\nORDER BY clicks DESC\nLIMIT 10",
+            "format": "table"
+          }
+        ],
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "displayName": "clicks",
+              "desc": true
+            }
+          ]
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "displayMode": "auto"
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "clicks"
+              },
+              "properties": [
+                {
+                  "id": "custom.displayMode",
+                  "value": "color-background"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 10,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 32
+        },
+        "type": "graph",
+        "title": "Database Query Performance",
+        "targets": [
+          {
+            "expr": "SELECT \n  toStartOfInterval(timestamp, INTERVAL '5' MINUTE) as time,\n  avg(doubles[0]) as avg_query_time\nFROM analytics_events\nWHERE timestamp > now() - INTERVAL '24' HOUR\n  AND blobs[0] = 'database'\nGROUP BY time\nORDER BY time",
+            "format": "time_series"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Query Time (ms)",
+            "format": "ms",
+            "logBase": 1,
+            "min": 0
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [100],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "60s",
+          "handler": 1,
+          "name": "Database Query Time Alert",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 11,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 32
+        },
+        "type": "graph",
+        "title": "A/B Test Performance",
+        "targets": [
+          {
+            "expr": "SELECT \n  test_name,\n  variant,\n  count(*) as clicks\nFROM ab_test_events\nWHERE timestamp > now() - INTERVAL '7' DAY\nGROUP BY test_name, variant\nORDER BY test_name",
+            "format": "time_series"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Clicks",
+            "format": "short",
+            "logBase": 1,
+            "min": 0
+          }
+        ],
+        "bars": true,
+        "lines": false,
+        "stack": false
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "environment",
+          "type": "constant",
+          "current": {
+            "value": "prod",
+            "text": "prod"
+          },
+          "options": [
+            {
+              "value": "prod",
+              "text": "Production"
+            },
+            {
+              "value": "staging",
+              "text": "Staging"
+            }
+          ]
+        },
+        {
+          "name": "time_range",
+          "type": "interval",
+          "current": {
+            "value": "24h",
+            "text": "24 hours"
+          },
+          "options": [
+            {
+              "value": "1h",
+              "text": "1 hour"
+            },
+            {
+              "value": "24h",
+              "text": "24 hours"
+            },
+            {
+              "value": "7d",
+              "text": "7 days"
+            },
+            {
+              "value": "30d",
+              "text": "30 days"
+            }
+          ]
+        }
+      ]
+    },
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h"],
+      "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
+    }
+  },
+  "overwrite": false
+}

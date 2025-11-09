@@ -1,0 +1,8 @@
+# EdgeLink Backend - Development Environment Variables
+# Copy this file to .dev.vars and fill in your values
+
+# JWT Secret - Generate with: openssl rand -base64 32
+JWT_SECRET=your_super_secret_jwt_key_here_at_least_32_characters
+
+# Environment
+ENVIRONMENT=development

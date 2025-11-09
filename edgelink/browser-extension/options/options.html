@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EdgeLink - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-section">
+        <img src="../icons/icon-48.png" alt="EdgeLink" class="logo">
+        <div>
+          <h1>EdgeLink Settings</h1>
+          <p class="subtitle">Configure your URL shortener extension</p>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- API Configuration -->
+      <section class="section">
+        <h2>API Configuration</h2>
+        <div class="form-group">
+          <label for="api-url">API Base URL</label>
+          <input type="url" id="api-url" placeholder="https://edgelink.io">
+          <p class="help-text">The EdgeLink API endpoint. Default: https://edgelink.io</p>
+        </div>
+      </section>
+
+      <!-- Authentication -->
+      <section class="section">
+        <h2>Authentication</h2>
+        <div id="auth-status" class="auth-status">
+          <div class="status-indicator"></div>
+          <div class="status-text">
+            <strong id="auth-status-title">Not Authenticated</strong>
+            <p id="auth-status-desc">Click the extension icon to login or signup</p>
+          </div>
+          <button id="logout-btn" class="secondary-btn hidden">Logout</button>
+        </div>
+
+        <div class="auth-info">
+          <p id="user-email" class="user-email hidden"></p>
+          <p id="user-plan" class="user-plan hidden"></p>
+        </div>
+      </section>
+
+      <!-- Behavior Settings -->
+      <section class="section">
+        <h2>Behavior</h2>
+
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="auto-shorten">
+            <span>Auto-shorten URLs on copy</span>
+          </label>
+          <p class="help-text">Automatically shorten URLs when you copy them (experimental)</p>
+        </div>
+
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="show-inline-notification">
+            <span>Show inline notifications</span>
+          </label>
+          <p class="help-text">Display a notification on the page when a link is shortened</p>
+        </div>
+
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="auto-copy">
+            <span>Auto-copy shortened links</span>
+          </label>
+          <p class="help-text">Automatically copy shortened links to clipboard</p>
+        </div>
+      </section>
+
+      <!-- Keyboard Shortcuts -->
+      <section class="section">
+        <h2>Keyboard Shortcuts</h2>
+        <div class="shortcuts-list">
+          <div class="shortcut-item">
+            <div class="shortcut-key">
+              <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd>
+              <span class="mac-only">(<kbd>⌘</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> on Mac)</span>
+            </div>
+            <div class="shortcut-desc">Shorten current page URL</div>
+          </div>
+        </div>
+        <p class="help-text">
+          To customize keyboard shortcuts, go to
+          <a href="chrome://extensions/shortcuts" target="_blank">chrome://extensions/shortcuts</a>
+        </p>
+      </section>
+
+      <!-- Default Options -->
+      <section class="section">
+        <h2>Default Link Options</h2>
+
+        <div class="form-group">
+          <label for="default-utm">Default UTM Parameters</label>
+          <input type="text" id="default-utm" placeholder="utm_source=extension&utm_medium=browser">
+          <p class="help-text">These UTM parameters will be pre-filled when creating links</p>
+        </div>
+
+        <div class="form-group">
+          <label for="default-domain">Default Custom Domain</label>
+          <input type="text" id="default-domain" placeholder="go.yourdomain.com">
+          <p class="help-text">Use this custom domain by default (requires Pro plan)</p>
+        </div>
+      </section>
+
+      <!-- Advanced -->
+      <section class="section">
+        <h2>Advanced</h2>
+
+        <div class="form-group">
+          <label for="link-limit">Recent Links Limit</label>
+          <input type="number" id="link-limit" min="5" max="50" value="10">
+          <p class="help-text">Number of recent links to show in popup (5-50)</p>
+        </div>
+
+        <div class="button-group">
+          <button id="clear-cache-btn" class="secondary-btn">Clear Cache</button>
+          <button id="export-settings-btn" class="secondary-btn">Export Settings</button>
+          <button id="import-settings-btn" class="secondary-btn">Import Settings</button>
+        </div>
+      </section>
+
+      <!-- Account Management -->
+      <section class="section">
+        <h2>Account Management</h2>
+
+        <div class="button-group">
+          <button id="export-data-btn" class="secondary-btn">Export My Data</button>
+        </div>
+
+        <div class="danger-zone">
+          <h3>Danger Zone</h3>
+          <p class="help-text">These actions are permanent and cannot be undone.</p>
+
+          <div class="button-group">
+            <button id="schedule-delete-btn" class="danger-btn">Schedule Account Deletion (30 days)</button>
+            <button id="delete-account-btn" class="danger-btn">Delete Account Immediately</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- About -->
+      <section class="section">
+        <h2>About</h2>
+        <div class="about-info">
+          <p><strong>Version:</strong> 1.0.0</p>
+          <p><strong>Author:</strong> EdgeLink Team</p>
+          <p><strong>Website:</strong> <a href="https://edgelink.io" target="_blank">edgelink.io</a></p>
+          <p><strong>Support:</strong> <a href="https://edgelink.io/support" target="_blank">Contact Support</a></p>
+        </div>
+      </section>
+
+      <!-- Save Button -->
+      <div class="save-section">
+        <button id="save-btn" class="primary-btn">Save Settings</button>
+        <button id="reset-btn" class="text-btn">Reset to Defaults</button>
+        <div id="save-status" class="save-status"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../lib/api.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

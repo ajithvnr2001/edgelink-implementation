@@ -1,0 +1,52 @@
+name = "edgelink-backend"
+main = "src/index.ts"
+compatibility_date = "2024-11-07"
+workers_dev = false
+
+# Production environment configuration
+[env.production]
+name = "edgelink-production"
+# Set to true to get workers.dev URL (can add custom domain later)
+workers_dev = true
+
+# KV Namespace for link storage (fast redirects)
+[[env.production.kv_namespaces]]
+binding = "LINKS_KV"
+id = "d343d816e5904857b49d35938c7f39cf"
+
+# D1 Database for user data and metadata
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "edgelink-production"
+database_id = "d5f676e0-b43f-4ac9-ab2c-acd1ddcda86b"
+
+# Analytics Engine for click tracking (optional - enable in Cloudflare Dashboard first)
+# [[env.production.analytics_engine_datasets]]
+# binding = "ANALYTICS_ENGINE"
+
+# R2 Bucket for file storage (exports, imports)
+[[env.production.r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "edgelink-production-storage"
+
+# Production environment variables
+[env.production.vars]
+ENVIRONMENT = "production"
+LOG_LEVEL = "error"
+# Set your production frontend URL
+FRONTEND_URL = "https://your-domain.com"
+ALLOW_REGISTRATION = "true"
+NODE_ENV = "production"
+
+# Production rate limiting
+[[env.production.unsafe.bindings]]
+name = "RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "1001"
+# 100 requests per minute per IP
+simple = { limit = 100, period = 60 }
+
+# Secrets (set via: wrangler secret put <NAME> --env production)
+# Required secrets:
+# - JWT_SECRET: Strong random secret for JWT signing (64+ chars)
+# - REFRESH_TOKEN_SECRET: Strong random secret for refresh tokens (64+ chars)
