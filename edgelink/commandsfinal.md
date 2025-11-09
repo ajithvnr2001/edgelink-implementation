@@ -167,23 +167,33 @@ rm -rf .next/cache
 ls -la .next/
 ```
 
-### Step 5: Deploy to Cloudflare Pages
-
-**IMPORTANT**: Use `--branch=main` to deploy to production environment!
+### Step 5: Prepare Deployment Files
 
 ```bash
-# Deploy complete .next directory to PRODUCTION
-wrangler pages deploy .next --project-name=edgelink-production --branch=main --commit-dirty=true
+# Copy static assets to the correct location
+cp -r .next/static .next/server/app/_next
+```
+
+### Step 6: Deploy to Cloudflare Pages
+
+**IMPORTANT**: Deploy `.next/server/app` directory with `--branch=main` for production!
+
+```bash
+# Deploy server/app directory to PRODUCTION
+wrangler pages deploy .next/server/app --project-name=edgelink-production --branch=main --commit-dirty=true
 ```
 
 **Expected Output:**
 ```
-✨ Success! Uploaded 272 files (4.22 sec)
+✨ Success! Uploaded 110 files (4.22 sec)
 🌎 Deploying...
-✨ Deployment complete! Take a peek over at https://b94c258e.edgelink-production.pages.dev
+✨ Deployment complete! Take a peek over at https://75201e4f.edgelink-production.pages.dev
 ```
 
-**Note**: Without `--branch=main`, deployments go to Preview environment and won't update the production URL.
+**Notes**:
+- We deploy `.next/server/app` which contains the pre-rendered HTML files
+- Static assets are copied to `_next/` subdirectory for proper loading
+- `--branch=main` ensures deployment goes to production, not preview
 
 ### Step 6: Verify Frontend Deployment
 
@@ -239,7 +249,8 @@ npm run deploy
 cd frontend
 npm run build
 rm -rf .next/cache
-wrangler pages deploy .next --project-name=edgelink-production --branch=main --commit-dirty=true
+cp -r .next/static .next/server/app/_next
+wrangler pages deploy .next/server/app --project-name=edgelink-production --branch=main --commit-dirty=true
 ```
 
 ### Both Backend + Frontend
@@ -249,7 +260,7 @@ wrangler pages deploy .next --project-name=edgelink-production --branch=main --c
 cd backend && npm run deploy && cd ..
 
 # Frontend
-cd frontend && npm run build && rm -rf .next/cache && wrangler pages deploy .next --project-name=edgelink-production --branch=main --commit-dirty=true && cd ..
+cd frontend && npm run build && rm -rf .next/cache && cp -r .next/static .next/server/app/_next && wrangler pages deploy .next/server/app --project-name=edgelink-production --branch=main --commit-dirty=true && cd ..
 ```
 
 ---
@@ -413,9 +424,12 @@ echo "GENERATED_SECRET" | wrangler secret put JWT_SECRET
 cd frontend
 npm run build
 rm -rf .next/cache
-wrangler pages deploy .next --project-name=edgelink-production --branch=main --commit-dirty=true
+cp -r .next/static .next/server/app/_next
+wrangler pages deploy .next/server/app --project-name=edgelink-production --branch=main --commit-dirty=true
 ```
-**Note**: Always use `--branch=main` to deploy to production, not preview!
+**Notes**:
+- Deploy `.next/server/app` not `.next` (contains pre-rendered HTML)
+- Always use `--branch=main` to deploy to production, not preview!
 
 ### Issue: "Module not found" or build errors
 **Solution:**
