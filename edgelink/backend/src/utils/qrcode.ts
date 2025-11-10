@@ -33,22 +33,24 @@ export function generateQRCodeSVG(text: string, options: {
   const moduleCount = qr.getModuleCount();
   const size = moduleCount + margin * 2;
 
-  // Use viewBox for scalability - the actual pixel dimensions can be set by CSS
-  let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" style="max-width: 100%; height: auto; display: block;">`;
-  svg += `<rect width="${size}" height="${size}" fill="#ffffff"/>`;
-  svg += `<g fill="#000000">`;
+  // Use viewBox for scalability with proper rendering attributes
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">`;
+  svg += `<rect x="0" y="0" width="${size}" height="${size}" fill="#ffffff"/>`;
+  svg += `<path fill="#000000" d="`;
 
+  // Generate path data for all dark modules
   for (let row = 0; row < moduleCount; row++) {
     for (let col = 0; col < moduleCount; col++) {
       if (qr.isDark(row, col)) {
         const x = col + margin;
         const y = row + margin;
-        svg += `<rect x="${x}" y="${y}" width="1" height="1"/>`;
+        svg += `M${x},${y}h1v1h-1z`;
       }
     }
   }
 
-  svg += `</g></svg>`;
+  svg += `"/>`;
+  svg += `</svg>`;
   return svg;
 }
 
