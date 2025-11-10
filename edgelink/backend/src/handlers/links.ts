@@ -5,6 +5,7 @@
 
 import type { Env } from '../types';
 import { checkPasswordHash } from '../utils/password';
+import QRCode from 'qrcode';
 
 /**
  * Handle GET /api/links - Get user's links with full details
@@ -566,10 +567,19 @@ export async function handleGenerateQR(
     const domain = link.custom_domain || 'edgelink-production.quoteviral.workers.dev';
     const shortUrl = `https://${domain}/${slug}`;
 
-    // Generate QR code SVG (simple implementation)
-    const qrSvg = generateQRCodeSVG(shortUrl);
-
+    // Generate QR code based on format
     if (format === 'svg') {
+      const qrSvg = await QRCode.toString(shortUrl, {
+        type: 'svg',
+        width: 512,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        },
+        errorCorrectionLevel: 'H'
+      });
+
       return new Response(qrSvg, {
         status: 200,
         headers: {
@@ -577,21 +587,30 @@ export async function handleGenerateQR(
           'Content-Disposition': `attachment; filename="${slug}-qr.svg"`
         }
       });
-    }
+    } else {
+      // Generate PNG as data URL
+      const qrDataUrl = await QRCode.toDataURL(shortUrl, {
+        width: 512,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        },
+        errorCorrectionLevel: 'H'
+      });
 
-    // For PNG, return SVG with instructions to convert
-    return new Response(
-      JSON.stringify({
-        qr_code: qrSvg,
-        format: 'svg',
-        message: 'PNG conversion available in production with image service',
-        download_url: `/api/links/${slug}/qr?format=svg`
-      }),
-      {
+      // Extract base64 data from data URL
+      const base64Data = qrDataUrl.split(',')[1];
+      const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+
+      return new Response(binaryData, {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+        headers: {
+          'Content-Type': 'image/png',
+          'Content-Disposition': `attachment; filename="${slug}-qr.png"`
+        }
+      });
+    }
   } catch (error) {
     console.error('Failed to generate QR code:', error);
     return new Response(
@@ -607,20 +626,3 @@ export async function handleGenerateQR(
   }
 }
 
-/**
- * Simple QR code SVG generator
- * In production, use a proper QR code library
- */
-function generateQRCodeSVG(data: string): string {
-  // This is a simplified placeholder
-  // In production, integrate with a QR code generation library
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-    <rect width="256" height="256" fill="#ffffff"/>
-    <text x="128" y="128" text-anchor="middle" font-size="12" fill="#000000">
-      QR Code: ${data.substring(0, 20)}...
-    </text>
-    <text x="128" y="150" text-anchor="middle" font-size="10" fill="#666666">
-      Use QR library in production
-    </text>
-  </svg>`;
-}
