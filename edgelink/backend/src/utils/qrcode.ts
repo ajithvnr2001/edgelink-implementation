@@ -721,29 +721,36 @@ class QRPolynomial {
 class QRMath {
   private static EXP_TABLE: number[] = [];
   private static LOG_TABLE: number[] = [];
+  private static initialized = false;
 
-  static {
+  private static initTables(): void {
+    if (this.initialized) return;
+
     for (let i = 0; i < 256; i++) {
-      QRMath.EXP_TABLE[i] = i < 8 ? 1 << i : QRMath.EXP_TABLE[i - 4] ^ QRMath.EXP_TABLE[i - 5] ^ QRMath.EXP_TABLE[i - 6] ^ QRMath.EXP_TABLE[i - 8];
-      QRMath.LOG_TABLE[QRMath.EXP_TABLE[i]] = i;
+      this.EXP_TABLE[i] = i < 8 ? 1 << i : this.EXP_TABLE[i - 4] ^ this.EXP_TABLE[i - 5] ^ this.EXP_TABLE[i - 6] ^ this.EXP_TABLE[i - 8];
+      this.LOG_TABLE[this.EXP_TABLE[i]] = i;
     }
+
+    this.initialized = true;
   }
 
   static glog(n: number): number {
+    this.initTables();
     if (n < 1) {
       throw new Error('glog(' + n + ')');
     }
-    return QRMath.LOG_TABLE[n];
+    return this.LOG_TABLE[n];
   }
 
   static gexp(n: number): number {
+    this.initTables();
     while (n < 0) {
       n += 255;
     }
     while (n >= 256) {
       n -= 255;
     }
-    return QRMath.EXP_TABLE[n];
+    return this.EXP_TABLE[n];
   }
 }
 
