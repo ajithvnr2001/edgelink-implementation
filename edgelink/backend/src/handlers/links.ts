@@ -238,21 +238,47 @@ export async function handleUpdateLink(
       userId
     ).run();
 
-    // Update KV
-    const linkDataStr = await env.LINKS_KV.get(`slug:${slug}`);
-    if (linkDataStr) {
-      const linkData = JSON.parse(linkDataStr);
-      linkData.destination = body.destination;
-      linkData.expires_at = body.expires_at ? new Date(body.expires_at).getTime() : null;
-      linkData.max_clicks = body.max_clicks || null;
-      linkData.password_hash = passwordHash;
-      linkData.device_routing = body.device_routing || null;
-      linkData.geo_routing = body.geo_routing || null;
-      linkData.referrer_routing = body.referrer_routing || null;
-      linkData.ab_testing = body.ab_testing || null;
-      linkData.utm_params = body.utm_params || null;
+    // Update KV - Always create/update the KV entry to ensure redirects work
+    // Fetch current link data from D1 to get complete information
+    const updatedLink = await env.DB.prepare(`
+      SELECT
+        slug, user_id, destination, custom_domain, click_count,
+        expires_at, max_clicks, password_hash,
+        device_routing, geo_routing, referrer_routing, ab_testing, utm_params
+      FROM links
+      WHERE slug = ? AND user_id = ?
+    `).bind(slug, userId).first();
 
-      await env.LINKS_KV.put(`slug:${slug}`, JSON.stringify(linkData));
+    if (updatedLink) {
+      // Build complete KV data structure
+      const linkData: any = {
+        slug: updatedLink.slug,
+        user_id: updatedLink.user_id,
+        destination: updatedLink.destination,
+        custom_domain: updatedLink.custom_domain || null,
+        click_count: updatedLink.click_count || 0,
+        expires_at: updatedLink.expires_at ? new Date(updatedLink.expires_at as string).getTime() : null,
+        max_clicks: updatedLink.max_clicks || null,
+        password_hash: updatedLink.password_hash || null,
+        device_routing: updatedLink.device_routing ? JSON.parse(updatedLink.device_routing as string) : null,
+        geo_routing: updatedLink.geo_routing ? JSON.parse(updatedLink.geo_routing as string) : null,
+        referrer_routing: updatedLink.referrer_routing ? JSON.parse(updatedLink.referrer_routing as string) : null,
+        ab_testing: updatedLink.ab_testing ? JSON.parse(updatedLink.ab_testing as string) : null,
+        utm_params: updatedLink.utm_params || null,
+        utm_template: updatedLink.utm_params || null
+      };
+
+      // Calculate TTL if there's an expiration
+      const kvOptions: any = {};
+      if (linkData.expires_at) {
+        const expirationTtl = Math.floor((linkData.expires_at - Date.now()) / 1000);
+        if (expirationTtl > 0) {
+          kvOptions.expirationTtl = expirationTtl;
+        }
+      }
+
+      // Always put to KV (create or update)
+      await env.LINKS_KV.put(`slug:${slug}`, JSON.stringify(linkData), kvOptions);
     }
 
     return new Response(
