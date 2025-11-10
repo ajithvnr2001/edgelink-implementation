@@ -193,6 +193,9 @@ export default function DashboardPage() {
         throw new Error('Not authenticated. Please log in again.')
       }
 
+      console.log('Generating QR code for:', link.slug)
+      console.log('Token exists:', !!accessToken)
+
       const headers: HeadersInit = {
         'Authorization': `Bearer ${accessToken}`
       }
@@ -202,13 +205,28 @@ export default function DashboardPage() {
         headers
       })
 
+      console.log('Response status:', response.status)
+
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to generate QR code')
+        let errorMessage = 'Failed to generate QR code'
+        try {
+          const error = await response.json()
+          errorMessage = error.error || errorMessage
+          console.error('API Error:', error)
+        } catch (e) {
+          console.error('Failed to parse error response')
+        }
+
+        if (response.status === 401) {
+          errorMessage += '. Your session may have expired. Please log in again.'
+        }
+
+        throw new Error(errorMessage)
       }
 
       if (format === 'svg') {
         const svgText = await response.text()
+        console.log('QR code generated successfully')
         setQrCodeData(svgText)
       } else {
         // For PNG, convert to data URL for display
@@ -217,6 +235,7 @@ export default function DashboardPage() {
         setQrCodeData(dataUrl)
       }
     } catch (err) {
+      console.error('QR Generation Error:', err)
       alert(err instanceof Error ? err.message : 'Failed to generate QR code')
       setQrCodeLink(null)
     } finally {
