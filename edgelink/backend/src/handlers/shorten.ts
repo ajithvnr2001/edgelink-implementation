@@ -52,6 +52,7 @@ export async function handleShorten(
       created_at: now,
       user_id: user?.sub || 'anonymous',
       custom_domain: body.custom_domain,
+      click_count: 0,
       metadata: {}
     };
 
@@ -89,6 +90,10 @@ export async function handleShorten(
     // Add advanced features if provided
     if (body.expires_at) {
       linkData.expires_at = new Date(body.expires_at).getTime();
+    }
+
+    if (body.max_clicks) {
+      linkData.max_clicks = body.max_clicks;
     }
 
     if (body.password) {

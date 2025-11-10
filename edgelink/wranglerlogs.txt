@@ -1,0 +1,56 @@
+
+
+Successfully created tail, expires at 2025-11-10T15:46:40Z
+Connected to edgelink-production, waiting for logs...
+GET https://edgelink-production.quoteviral.workers.dev/api/domains - Ok @ 10/11/2025, 3:25:26 pm
+POST https://edgelink-production.quoteviral.workers.dev/api/shorten - Ok @ 10/11/2025, 3:25:50 pm
+POST https://edgelink-production.quoteviral.workers.dev/api/preview - Ok @ 10/11/2025, 3:26:05 pm
+POST https://edgelink-production.quoteviral.workers.dev/api/suggest-slug - Ok @ 10/11/2025, 3:26:05 pm
+POST https://edgelink-production.quoteviral.workers.dev/api/shorten - Ok @ 10/11/2025, 3:26:09 pm
+GET https://edgelink-production.quoteviral.workers.dev/api/links - Ok @ 10/11/2025, 3:26:13 pm
+GET https://edgelink-production.quoteviral.workers.dev/api/links - Ok @ 10/11/2025, 3:26:14 pm
+GET https://edgelink-production.quoteviral.workers.dev/0bZ7bC - Ok @ 10/11/2025, 3:26:18 pm
+  (warn) ANALYTICS_ENGINE not configured, skipping analytics tracking
+  (log) [incrementClickCount] Starting for slug: 0bZ7bC, userId: usr_73c0ee56-459e-4ebd-ac8d-d4fda45195fd
+  (log) [incrementClickCount] Updated D1 database, rows affected: 2
+  (log) [incrementClickCount] Updated KV store: 0 -> 1
+  (log) [incrementClickCount] Completed successfully for slug: 0bZ7bC
+GET https://edgelink-production.quoteviral.workers.dev/api/links - Ok @ 10/11/2025, 3:26:32 pm
+GET https://edgelink-production.quoteviral.workers.dev/api/links - Ok @ 10/11/2025, 3:26:38 pm
+GET https://edgelink-production.quoteviral.workers.dev/api/domains - Ok @ 10/11/2025, 3:27:05 pm
+GET https://edgelink-production.quoteviral.workers.dev/api/links - Ok @ 10/11/2025, 3:27:43 pm
+GET https://edgelink-production.quoteviral.workers.dev/api/domains - Ok @ 10/11/2025, 3:27:46 pm
+GET https://edgelink-production.quoteviral.workers.dev/api/links - Ok @ 10/11/2025, 3:27:49 pm
+GET https://edgelink-production.quoteviral.workers.dev/api/domains - Ok @ 10/11/2025, 3:28:16 pm
+POST https://edgelink-production.quoteviral.workers.dev/api/preview - Ok @ 10/11/2025, 3:28:20 pm
+  (error) Failed to fetch link preview: Error: HTTP 429
+POST https://edgelink-production.quoteviral.workers.dev/api/suggest-slug - Ok @ 10/11/2025, 3:28:20 pm
+  (log) Failed to fetch URL for suggestions: Error: HTTP 429
+POST https://edgelink-production.quoteviral.workers.dev/api/shorten - Ok @ 10/11/2025, 3:28:27 pm
+GET https://edgelink-production.quoteviral.workers.dev/api/links - Ok @ 10/11/2025, 3:28:31 pm
+GET https://edgelink-production.quoteviral.workers.dev/api/links - Ok @ 10/11/2025, 3:28:35 pm
+GET https://edgelink-production.quoteviral.workers.dev/gemini - Ok @ 10/11/2025, 3:28:37 pm
+  (warn) ANALYTICS_ENGINE not configured, skipping analytics tracking
+  (log) [incrementClickCount] Starting for slug: gemini, userId: usr_73c0ee56-459e-4ebd-ac8d-d4fda45195fd       
+  (log) [incrementClickCount] Updated D1 database, rows affected: 2
+  (log) [incrementClickCount] Updated KV store: 0 -> 1
+  (log) [incrementClickCount] Completed successfully for slug: gemini
+GET https://edgelink-production.quoteviral.workers.dev/api/links - Ok @ 10/11/2025, 3:28:45 pm
+GET https://edgelink-production.quoteviral.workers.dev/api/links - Ok @ 10/11/2025, 3:29:01 pm
+GET https://edgelink-production.quoteviral.workers.dev/api/links - Ok @ 10/11/2025, 3:29:09 pm
+GET https://edgelink-production.quoteviral.workers.dev/api/links - Ok @ 10/11/2025, 3:29:25 pm
+GET https://edgelink-production.quoteviral.workers.dev/gemini - Ok @ 10/11/2025, 3:29:33 pm
+  (warn) ANALYTICS_ENGINE not configured, skipping analytics tracking
+  (log) [incrementClickCount] Starting for slug: gemini, userId: usr_73c0ee56-459e-4ebd-ac8d-d4fda45195fd       
+  (log) [incrementClickCount] Updated D1 database, rows affected: 2
+  (log) [incrementClickCount] Updated KV store: 1 -> 2
+  (log) [incrementClickCount] Completed successfully for slug: gemini
+GET https://edgelink-production.quoteviral.workers.dev/api/links - Ok @ 10/11/2025, 3:29:47 pm
+GET https://edgelink-production.quoteviral.workers.dev/api/links - Ok @ 10/11/2025, 3:30:58 pm
+GET https://edgelink-production.quoteviral.workers.dev/gemini - Ok @ 10/11/2025, 3:31:37 pm
+  (warn) ANALYTICS_ENGINE not configured, skipping analytics tracking
+  (log) [incrementClickCount] Starting for slug: gemini, userId: usr_73c0ee56-459e-4ebd-ac8d-d4fda45195fd       
+  (log) [incrementClickCount] Updated D1 database, rows affected: 2
+  (log) [incrementClickCount] Updated KV store: 2 -> 3
+  (log) [incrementClickCount] Completed successfully for slug: gemini
+GET https://edgelink-production.quoteviral.workers.dev/api/links - Ok @ 10/11/2025, 3:31:45 pm

@@ -18,7 +18,8 @@ import { determineVariant } from './ab-testing';
 export async function handleRedirect(
   request: Request,
   env: Env,
-  slug: string
+  slug: string,
+  ctx: ExecutionContext
 ): Promise<Response> {
   try {
     // Get link data from KV (fast path)
@@ -189,13 +190,17 @@ export async function handleRedirect(
     }
 
     // Track analytics (async, don't block redirect)
-    trackAnalytics(env, slug, request, linkData).catch(err =>
-      console.error('Analytics tracking failed:', err)
+    ctx.waitUntil(
+      trackAnalytics(env, slug, request, linkData).catch(err =>
+        console.error('Analytics tracking failed:', err)
+      )
     );
 
-    // Increment click count (async)
-    incrementClickCount(env, slug, linkData.user_id).catch(err =>
-      console.error('Click count increment failed:', err)
+    // Increment click count (async) - CRITICAL: Use waitUntil to ensure it completes
+    ctx.waitUntil(
+      incrementClickCount(env, slug, linkData.user_id).catch(err =>
+        console.error('Click count increment failed:', err)
+      )
     );
 
     // Return redirect (FR-2.1: 301 permanent)
@@ -258,11 +263,16 @@ async function trackAnalytics(
     plan: undefined // We'd need to fetch this from DB
   };
 
-  await env.ANALYTICS_ENGINE.writeDataPoint({
-    indexes: [slug, country, device],
-    blobs: [referrer, browser, os],
-    doubles: [Date.now()]
-  });
+  // Write to Analytics Engine (if available)
+  if (env.ANALYTICS_ENGINE) {
+    await env.ANALYTICS_ENGINE.writeDataPoint({
+      indexes: [slug, country, device],
+      blobs: [referrer, browser, os],
+      doubles: [Date.now()]
+    });
+  } else {
+    console.warn('ANALYTICS_ENGINE not configured, skipping analytics tracking');
+  }
 }
 
 /**
@@ -273,27 +283,41 @@ async function incrementClickCount(
   slug: string,
   userId: string
 ): Promise<void> {
-  if (userId === 'anonymous') {
-    await env.DB.prepare(`
-      UPDATE anonymous_links
-      SET click_count = click_count + 1
-      WHERE slug = ?
-    `).bind(slug).run();
-  } else {
-    // Update D1 database
-    await env.DB.prepare(`
-      UPDATE links
-      SET click_count = click_count + 1
-      WHERE slug = ?
-    `).bind(slug).run();
+  try {
+    console.log(`[incrementClickCount] Starting for slug: ${slug}, userId: ${userId}`);
 
-    // Update KV store to keep it in sync
-    const linkDataStr = await env.LINKS_KV.get(`slug:${slug}`);
-    if (linkDataStr) {
-      const linkData: LinkKVValue = JSON.parse(linkDataStr);
-      linkData.click_count = (linkData.click_count || 0) + 1;
-      await env.LINKS_KV.put(`slug:${slug}`, JSON.stringify(linkData));
+    if (userId === 'anonymous') {
+      const result = await env.DB.prepare(`
+        UPDATE anonymous_links
+        SET click_count = click_count + 1
+        WHERE slug = ?
+      `).bind(slug).run();
+      console.log(`[incrementClickCount] Updated anonymous link, rows affected: ${result.meta.changes}`);
+    } else {
+      // Update D1 database
+      const dbResult = await env.DB.prepare(`
+        UPDATE links
+        SET click_count = click_count + 1
+        WHERE slug = ?
+      `).bind(slug).run();
+      console.log(`[incrementClickCount] Updated D1 database, rows affected: ${dbResult.meta.changes}`);
+
+      // Update KV store to keep it in sync
+      const linkDataStr = await env.LINKS_KV.get(`slug:${slug}`);
+      if (linkDataStr) {
+        const linkData: LinkKVValue = JSON.parse(linkDataStr);
+        const oldCount = linkData.click_count || 0;
+        linkData.click_count = oldCount + 1;
+        await env.LINKS_KV.put(`slug:${slug}`, JSON.stringify(linkData));
+        console.log(`[incrementClickCount] Updated KV store: ${oldCount} -> ${linkData.click_count}`);
+      } else {
+        console.warn(`[incrementClickCount] KV data not found for slug: ${slug}`);
+      }
     }
+    console.log(`[incrementClickCount] Completed successfully for slug: ${slug}`);
+  } catch (error) {
+    console.error(`[incrementClickCount] Error for slug ${slug}:`, error);
+    throw error;
   }
 }
 

@@ -547,7 +547,7 @@ export default {
           });
         }
 
-        const response = await handleRedirect(request, env, slug);
+        const response = await handleRedirect(request, env, slug, ctx);
         return addCorsHeaders(response, corsHeaders);
       }
 
