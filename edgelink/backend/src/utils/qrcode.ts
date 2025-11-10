@@ -690,9 +690,17 @@ class QRPolynomial {
   multiply(e: QRPolynomial): QRPolynomial {
     const num = new Array(this.getLength() + e.getLength() - 1);
 
+    for (let i = 0; i < num.length; i++) {
+      num[i] = 0;
+    }
+
     for (let i = 0; i < this.getLength(); i++) {
       for (let j = 0; j < e.getLength(); j++) {
-        num[i + j] ^= QRMath.glog(QRMath.gexp(this.get(i)) * QRMath.gexp(e.get(j)));
+        const a = this.get(i);
+        const b = e.get(j);
+        if (a !== 0 && b !== 0) {
+          num[i + j] ^= QRMath.gexp(QRMath.glog(a) + QRMath.glog(b));
+        }
       }
     }
 
@@ -704,7 +712,14 @@ class QRPolynomial {
       return this;
     }
 
-    const ratio = QRMath.glog(this.get(0)) - QRMath.glog(e.get(0));
+    const thisLeading = this.get(0);
+    const eLeading = e.get(0);
+
+    if (thisLeading === 0 || eLeading === 0) {
+      throw new Error('Invalid polynomial for modulo operation');
+    }
+
+    const ratio = QRMath.glog(thisLeading) - QRMath.glog(eLeading);
 
     const num = new Array(this.getLength());
 
@@ -713,7 +728,10 @@ class QRPolynomial {
     }
 
     for (let i = 0; i < e.getLength(); i++) {
-      num[i] ^= QRMath.gexp(QRMath.glog(e.get(i)) + ratio);
+      const coeff = e.get(i);
+      if (coeff !== 0) {
+        num[i] ^= QRMath.gexp(QRMath.glog(coeff) + ratio);
+      }
     }
 
     return new QRPolynomial(num, 0).mod(e);
