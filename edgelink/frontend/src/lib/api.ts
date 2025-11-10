@@ -259,10 +259,13 @@ export async function getLinks(params?: {
 /**
  * Update link
  */
-export async function updateLink(slug: string, destination: string) {
+export async function updateLink(slug: string, destination: string, newSlug?: string) {
   return apiRequest(`/api/links/${slug}`, {
     method: 'PUT',
-    body: JSON.stringify({ destination }),
+    body: JSON.stringify({
+      destination,
+      new_slug: newSlug
+    }),
   })
 }
 
