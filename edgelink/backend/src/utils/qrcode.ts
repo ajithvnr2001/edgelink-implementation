@@ -77,17 +77,22 @@ export function generateQRCodeDataURL(text: string, options: {
 }
 
 function getBestVersion(text: string): number {
+  // Byte mode capacities with error correction level H (30%)
+  // These are the actual byte capacities for QR codes with high error correction
   const length = text.length;
-  if (length <= 25) return 1;
-  if (length <= 47) return 2;
-  if (length <= 77) return 3;
-  if (length <= 114) return 4;
-  if (length <= 154) return 5;
-  if (length <= 195) return 6;
-  if (length <= 224) return 7;
-  if (length <= 279) return 8;
-  if (length <= 335) return 9;
-  return 10;
+  if (length <= 7) return 1;
+  if (length <= 14) return 2;
+  if (length <= 24) return 3;
+  if (length <= 34) return 4;
+  if (length <= 44) return 5;
+  if (length <= 58) return 6;
+  if (length <= 64) return 7;
+  if (length <= 84) return 8;
+  if (length <= 98) return 9;
+  if (length <= 119) return 10;
+  // For longer URLs, we need higher versions
+  // but keeping it simple for now
+  throw new Error('URL too long for QR code generation');
 }
 
 function getErrorCorrectionLevel(level: 'L' | 'M' | 'Q' | 'H'): number {
