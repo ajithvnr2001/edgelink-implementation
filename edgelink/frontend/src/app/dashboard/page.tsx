@@ -739,7 +739,7 @@ export default function DashboardPage() {
 
             <div className="space-y-4">
               {/* QR Code Display */}
-              <div className="bg-white p-8 rounded-lg flex items-center justify-center">
+              <div className="bg-white p-8 rounded-lg flex items-center justify-center min-h-[400px]">
                 {qrCodeLoading ? (
                   <div className="text-gray-600 text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-2"></div>
@@ -748,7 +748,8 @@ export default function DashboardPage() {
                 ) : qrCodeData ? (
                   <div
                     dangerouslySetInnerHTML={{ __html: qrCodeData }}
-                    className="max-w-md w-full"
+                    className="w-80 h-80"
+                    style={{ imageRendering: 'pixelated' }}
                   />
                 ) : (
                   <div className="text-gray-600">Failed to generate QR code</div>

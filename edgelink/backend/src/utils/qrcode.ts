@@ -31,18 +31,19 @@ export function generateQRCodeSVG(text: string, options: {
   qr.make();
 
   const moduleCount = qr.getModuleCount();
-  const size = moduleCount * cellSize + margin * 2 * cellSize;
+  const size = moduleCount + margin * 2;
 
-  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">`;
+  // Use viewBox for scalability - the actual pixel dimensions can be set by CSS
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" style="max-width: 100%; height: auto; display: block;">`;
   svg += `<rect width="${size}" height="${size}" fill="#ffffff"/>`;
   svg += `<g fill="#000000">`;
 
   for (let row = 0; row < moduleCount; row++) {
     for (let col = 0; col < moduleCount; col++) {
       if (qr.isDark(row, col)) {
-        const x = col * cellSize + margin * cellSize;
-        const y = row * cellSize + margin * cellSize;
-        svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}"/>`;
+        const x = col + margin;
+        const y = row + margin;
+        svg += `<rect x="${x}" y="${y}" width="1" height="1"/>`;
       }
     }
   }
