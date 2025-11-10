@@ -5,7 +5,7 @@
 
 import type { Env } from '../types';
 import { checkPasswordHash } from '../utils/password';
-import QRCode from 'qrcode';
+import qrcode from 'qrcode-generator';
 
 /**
  * Handle GET /api/links - Get user's links with full details
@@ -567,20 +567,24 @@ export async function handleGenerateQR(
     const domain = link.custom_domain || 'edgelink-production.quoteviral.workers.dev';
     const shortUrl = `https://${domain}/${slug}`;
 
-    // Generate QR code based on format
+    // Generate QR code using qrcode-generator
+    // Type 0 means auto-detect the best type for the data
+    // Error correction level 'H' provides the highest error correction (~30%)
+    const qr = qrcode(0, 'H');
+    qr.addData(shortUrl);
+    qr.make();
+
     if (format === 'svg') {
-      const qrSvg = await QRCode.toString(shortUrl, {
-        type: 'svg',
-        width: 512,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        },
-        errorCorrectionLevel: 'H'
+      // Generate SVG with custom styling
+      const cellSize = 8;
+      const margin = 4;
+      const svg = qr.createSvgTag({
+        cellSize,
+        margin,
+        scalable: true
       });
 
-      return new Response(qrSvg, {
+      return new Response(svg, {
         status: 200,
         headers: {
           'Content-Type': 'image/svg+xml',
@@ -588,19 +592,11 @@ export async function handleGenerateQR(
         }
       });
     } else {
-      // Generate PNG as data URL
-      const qrDataUrl = await QRCode.toDataURL(shortUrl, {
-        width: 512,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        },
-        errorCorrectionLevel: 'H'
-      });
+      // For PNG format, generate data URL and convert to binary
+      const dataUrl = qr.createDataURL(8, 4);
 
       // Extract base64 data from data URL
-      const base64Data = qrDataUrl.split(',')[1];
+      const base64Data = dataUrl.split(',')[1];
       const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
 
       return new Response(binaryData, {
