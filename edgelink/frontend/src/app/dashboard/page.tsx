@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { getLinks, deleteLink, updateLink, getUser, logout, getAccessToken, type Link as LinkType } from '@/lib/api'
+import { getLinks, deleteLink, updateLink, getUser, logout, getAccessToken, type Link as LinkType, setDeviceRouting, getRouting, deleteRouting, type DeviceRouting, type RoutingConfig } from '@/lib/api'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -24,6 +24,14 @@ export default function DashboardPage() {
   const [qrCodeLink, setQrCodeLink] = useState<LinkType | null>(null)
   const [qrCodeData, setQrCodeData] = useState<string | null>(null)
   const [qrCodeLoading, setQrCodeLoading] = useState(false)
+
+  // Routing modal state
+  const [routingLink, setRoutingLink] = useState<LinkType | null>(null)
+  const [routingConfig, setRoutingConfig] = useState<RoutingConfig | null>(null)
+  const [routingLoading, setRoutingLoading] = useState(false)
+  const [mobileUrl, setMobileUrl] = useState('')
+  const [tabletUrl, setTabletUrl] = useState('')
+  const [desktopUrl, setDesktopUrl] = useState('')
 
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('')
@@ -287,6 +295,114 @@ export default function DashboardPage() {
     setQrCodeLoading(false)
   }
 
+  // Routing configuration handlers
+  const openRoutingModal = async (link: LinkType) => {
+    if (!user) return
+
+    // Check if user is Pro
+    if (user.plan !== 'pro') {
+      alert('Device routing is a Pro feature. Upgrade to unlock this feature!')
+      return
+    }
+
+    setRoutingLink(link)
+    setRoutingLoading(true)
+    setMobileUrl('')
+    setTabletUrl('')
+    setDesktopUrl('')
+
+    try {
+      // Load existing routing configuration
+      const config = await getRouting(link.slug)
+      setRoutingConfig(config)
+
+      // Pre-fill form with existing values
+      if (config.routing.device) {
+        setMobileUrl(config.routing.device.mobile || '')
+        setTabletUrl(config.routing.device.tablet || '')
+        setDesktopUrl(config.routing.device.desktop || '')
+      }
+    } catch (err) {
+      // If no routing config exists yet, that's okay
+      console.log('No existing routing config:', err)
+      setRoutingConfig(null)
+    } finally {
+      setRoutingLoading(false)
+    }
+  }
+
+  const closeRoutingModal = () => {
+    setRoutingLink(null)
+    setRoutingConfig(null)
+    setMobileUrl('')
+    setTabletUrl('')
+    setDesktopUrl('')
+    setRoutingLoading(false)
+  }
+
+  const handleSaveRouting = async () => {
+    if (!routingLink) return
+
+    // Validate that at least one URL is provided
+    if (!mobileUrl.trim() && !tabletUrl.trim() && !desktopUrl.trim()) {
+      alert('Please provide at least one device URL')
+      return
+    }
+
+    // Validate URLs
+    const urlsToValidate = [
+      { url: mobileUrl, name: 'Mobile' },
+      { url: tabletUrl, name: 'Tablet' },
+      { url: desktopUrl, name: 'Desktop' }
+    ]
+
+    for (const { url, name } of urlsToValidate) {
+      if (url.trim()) {
+        try {
+          new URL(url)
+        } catch {
+          alert(`${name} URL is invalid. Please enter a valid URL.`)
+          return
+        }
+      }
+    }
+
+    setRoutingLoading(true)
+    try {
+      const routing: DeviceRouting = {}
+      if (mobileUrl.trim()) routing.mobile = mobileUrl.trim()
+      if (tabletUrl.trim()) routing.tablet = tabletUrl.trim()
+      if (desktopUrl.trim()) routing.desktop = desktopUrl.trim()
+
+      await setDeviceRouting(routingLink.slug, routing)
+      alert('Device routing configured successfully! ✅')
+      closeRoutingModal()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to save routing configuration')
+    } finally {
+      setRoutingLoading(false)
+    }
+  }
+
+  const handleDeleteRouting = async () => {
+    if (!routingLink) return
+
+    if (!confirm('Are you sure you want to delete all routing rules for this link?')) {
+      return
+    }
+
+    setRoutingLoading(true)
+    try {
+      await deleteRouting(routingLink.slug)
+      alert('Routing rules deleted successfully')
+      closeRoutingModal()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete routing rules')
+    } finally {
+      setRoutingLoading(false)
+    }
+  }
+
   const copyToClipboard = (url: string, slug: string) => {
     navigator.clipboard.writeText(url)
     setCopied(slug)
@@ -529,6 +645,13 @@ export default function DashboardPage() {
                         title={user?.plan !== 'pro' ? 'QR code generation is a Pro feature' : 'Generate QR code'}
                       >
                         {user?.plan === 'pro' ? '📱 QR Code' : '🔒 QR Code'}
+                      </button>
+                      <button
+                        onClick={() => openRoutingModal(link)}
+                        className="btn-secondary text-sm"
+                        title={user?.plan !== 'pro' ? 'Device routing is a Pro feature' : 'Configure device routing'}
+                      >
+                        {user?.plan === 'pro' ? '🔀 Routing' : '🔒 Routing'}
                       </button>
                       <button
                         onClick={() => handleDelete(link.slug)}
@@ -783,6 +906,141 @@ export default function DashboardPage() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Device Routing Modal */}
+      {routingLink && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-2xl w-full p-6 border border-gray-700">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-white">Device Routing</h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  Configure different URLs for mobile, tablet, and desktop users
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Link: <code className="text-primary-500">{getShortUrl(routingLink)}</code>
+                </p>
+              </div>
+              <button
+                onClick={closeRoutingModal}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {routingLoading && !mobileUrl && !tabletUrl && !desktopUrl ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+                <p className="text-gray-400">Loading routing configuration...</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Info Banner */}
+                <div className="bg-primary-500/10 border border-primary-500/30 rounded-lg p-4">
+                  <p className="text-sm text-gray-300">
+                    <span className="font-semibold text-primary-400">How it works:</span> Visitors will be
+                    automatically redirected to different URLs based on their device type. Detection is done
+                    via User-Agent header parsing.
+                  </p>
+                </div>
+
+                {/* Form Fields */}
+                <div className="space-y-4">
+                  {/* Mobile URL */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      📱 Mobile URL
+                      <span className="text-gray-500 ml-2 font-normal">(iPhone, Android phones)</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={mobileUrl}
+                      onChange={(e) => setMobileUrl(e.target.value)}
+                      placeholder="https://mobile.example.com"
+                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      disabled={routingLoading}
+                    />
+                  </div>
+
+                  {/* Tablet URL */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      💻 Tablet URL
+                      <span className="text-gray-500 ml-2 font-normal">(iPad, Android tablets)</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={tabletUrl}
+                      onChange={(e) => setTabletUrl(e.target.value)}
+                      placeholder="https://tablet.example.com"
+                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      disabled={routingLoading}
+                    />
+                  </div>
+
+                  {/* Desktop URL */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      🖥️ Desktop URL
+                      <span className="text-gray-500 ml-2 font-normal">(Computers, laptops)</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={desktopUrl}
+                      onChange={(e) => setDesktopUrl(e.target.value)}
+                      placeholder="https://www.example.com"
+                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      disabled={routingLoading}
+                    />
+                  </div>
+                </div>
+
+                {/* Device Detection Info */}
+                <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-white mb-2">Device Detection Patterns</h4>
+                  <div className="text-xs text-gray-400 space-y-1">
+                    <p><span className="text-primary-400">Mobile:</span> User-Agent contains Mobile, Android, or iPhone</p>
+                    <p><span className="text-primary-400">Tablet:</span> User-Agent contains iPad or Tablet</p>
+                    <p><span className="text-primary-400">Desktop:</span> Default for all other devices</p>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-between items-center pt-4 border-t border-gray-600">
+                  <div>
+                    {routingConfig?.routing?.device && (
+                      <button
+                        onClick={handleDeleteRouting}
+                        className="text-sm text-error-500 hover:text-error-400 disabled:opacity-50"
+                        disabled={routingLoading}
+                      >
+                        🗑️ Delete Routing Rules
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={closeRoutingModal}
+                      className="btn-secondary"
+                      disabled={routingLoading}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveRouting}
+                      className="btn-primary disabled:opacity-50"
+                      disabled={routingLoading}
+                    >
+                      {routingLoading ? 'Saving...' : 'Save Routing'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

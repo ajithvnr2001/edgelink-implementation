@@ -367,3 +367,91 @@ export async function revokeAPIKey(keyId: string) {
     method: 'DELETE',
   })
 }
+
+/**
+ * Week 5-6: Smart Routing API Functions
+ */
+
+export interface DeviceRouting {
+  mobile?: string
+  tablet?: string
+  desktop?: string
+}
+
+export interface GeoRouting {
+  [countryCode: string]: string
+}
+
+export interface TimeRoutingRule {
+  start_hour: number
+  end_hour: number
+  days?: string[]
+  timezone?: string
+  destination: string
+}
+
+export interface RoutingConfig {
+  slug: string
+  destination: string
+  routing: {
+    device: DeviceRouting | null
+    geo: GeoRouting | null
+    time: TimeRoutingRule[] | null
+    referrer: Record<string, string> | null
+  }
+}
+
+/**
+ * Set device-based routing for a link (Pro feature)
+ */
+export async function setDeviceRouting(
+  slug: string,
+  routing: DeviceRouting
+): Promise<{ message: string; slug: string; device_routing: DeviceRouting }> {
+  return apiRequest(`/api/links/${slug}/routing/device`, {
+    method: 'POST',
+    body: JSON.stringify(routing),
+  })
+}
+
+/**
+ * Set geographic routing for a link (Pro feature)
+ */
+export async function setGeoRouting(
+  slug: string,
+  routes: GeoRouting
+): Promise<{ message: string; slug: string; geo_routing: GeoRouting }> {
+  return apiRequest(`/api/links/${slug}/routing/geo`, {
+    method: 'POST',
+    body: JSON.stringify({ routes }),
+  })
+}
+
+/**
+ * Set time-based routing for a link (Pro feature)
+ */
+export async function setTimeRouting(
+  slug: string,
+  rules: TimeRoutingRule[]
+): Promise<{ message: string; slug: string; time_routing: TimeRoutingRule[] }> {
+  return apiRequest(`/api/links/${slug}/routing/time`, {
+    method: 'POST',
+    body: JSON.stringify({ rules }),
+  })
+}
+
+/**
+ * Get routing configuration for a link
+ */
+export async function getRouting(slug: string): Promise<RoutingConfig> {
+  return apiRequest(`/api/links/${slug}/routing`)
+}
+
+/**
+ * Delete all routing rules for a link
+ */
+export async function deleteRouting(slug: string): Promise<{ message: string; slug: string }> {
+  return apiRequest(`/api/links/${slug}/routing`, {
+    method: 'DELETE',
+  })
+}
