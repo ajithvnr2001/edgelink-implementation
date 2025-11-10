@@ -22,7 +22,18 @@
       "Bash(wrangler d1 list:*)",
       "Bash(wrangler kv:*)",
       "Bash(wrangler secret list:*)",
-      "Bash(npm run deploy:*)"
+      "Bash(npm run deploy:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(cat:*)",
+      "Bash(nul)",
+      "Bash(ping:*)",
+      "Bash(npm run pages:build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(wrangler pages deployment list:*)",
+      "Bash(wrangler pages deployment create:*)"
     ],
     "deny": [],
     "ask": []

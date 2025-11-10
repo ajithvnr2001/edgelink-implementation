@@ -66,6 +66,57 @@ export default {
         );
       }
 
+      // Manual cleanup endpoint (for testing)
+      if (path === '/api/cleanup/expired' && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        try {
+          // Delete expired authenticated links
+          const linksResult = await env.DB.prepare(`
+            DELETE FROM links
+            WHERE expires_at IS NOT NULL
+            AND expires_at < datetime('now')
+          `).run();
+
+          // Delete expired anonymous links
+          const anonResult = await env.DB.prepare(`
+            DELETE FROM anonymous_links
+            WHERE expires_at < datetime('now')
+          `).run();
+
+          const totalDeleted = (linksResult.meta.changes || 0) + (anonResult.meta.changes || 0);
+
+          return new Response(
+            JSON.stringify({
+              message: 'Cleanup completed successfully',
+              deleted: {
+                authenticated_links: linksResult.meta.changes || 0,
+                anonymous_links: anonResult.meta.changes || 0,
+                total: totalDeleted
+              }
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        } catch (error) {
+          return new Response(
+            JSON.stringify({
+              error: 'Cleanup failed',
+              code: 'CLEANUP_FAILED'
+            }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+      }
+
       // Authentication endpoints (no auth required)
       if (path === '/auth/signup' && method === 'POST') {
         const response = await handleSignup(request, env);
@@ -574,6 +625,42 @@ export default {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
+    }
+  },
+
+  /**
+   * Scheduled handler for periodic cleanup tasks
+   * Runs every hour to delete expired links
+   */
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    console.log('[Cron] Starting scheduled cleanup task');
+
+    try {
+      // Clean up expired links from D1 database
+      const now = new Date().toISOString();
+
+      // Delete expired authenticated links
+      const linksResult = await env.DB.prepare(`
+        DELETE FROM links
+        WHERE expires_at IS NOT NULL
+        AND expires_at < datetime('now')
+      `).run();
+
+      // Delete expired anonymous links
+      const anonResult = await env.DB.prepare(`
+        DELETE FROM anonymous_links
+        WHERE expires_at < datetime('now')
+      `).run();
+
+      const totalDeleted = (linksResult.meta.changes || 0) + (anonResult.meta.changes || 0);
+
+      console.log(`[Cron] Cleanup complete: Deleted ${totalDeleted} expired links`);
+      console.log(`[Cron] - Authenticated links: ${linksResult.meta.changes || 0}`);
+      console.log(`[Cron] - Anonymous links: ${anonResult.meta.changes || 0}`);
+
+      // Note: KV entries auto-expire via TTL, no need to manually delete
+    } catch (error) {
+      console.error('[Cron] Cleanup failed:', error);
     }
   }
 };

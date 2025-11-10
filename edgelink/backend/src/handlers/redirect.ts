@@ -83,8 +83,25 @@ export async function handleRedirect(
 
     // Check password protection (Pro feature)
     if (linkData.password_hash) {
-      const password = request.headers.get('X-Link-Password');
+      const url = new URL(request.url);
+      const passwordFromQuery = url.searchParams.get('password');
+      const passwordFromHeader = request.headers.get('X-Link-Password');
+      const password = passwordFromQuery || passwordFromHeader;
+
       if (!password || !(await verifyPassword(password, linkData.password_hash))) {
+        // For browser requests, show HTML password form
+        const acceptHeader = request.headers.get('Accept') || '';
+        if (acceptHeader.includes('text/html')) {
+          return new Response(
+            generatePasswordPage(slug),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'text/html' }
+            }
+          );
+        }
+
+        // For API requests, return JSON error
         return new Response(
           JSON.stringify({
             error: 'Password required',
@@ -319,6 +336,157 @@ async function incrementClickCount(
     console.error(`[incrementClickCount] Error for slug ${slug}:`, error);
     throw error;
   }
+}
+
+/**
+ * Generate HTML password protection page
+ */
+function generatePasswordPage(slug: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password Protected Link - EdgeLink</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 40px;
+      max-width: 400px;
+      width: 100%;
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 32px;
+    }
+    h1 {
+      font-size: 24px;
+      color: #1a202c;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    p {
+      color: #718096;
+      text-align: center;
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+    .form-group {
+      margin-bottom: 24px;
+    }
+    label {
+      display: block;
+      color: #4a5568;
+      font-weight: 500;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .error {
+      background: #fed7d7;
+      color: #c53030;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">🔒</div>
+    <h1>Password Protected Link</h1>
+    <p>This link is password protected. Enter the password to continue.</p>
+
+    <div id="error" class="error"></div>
+
+    <form id="passwordForm">
+      <div class="form-group">
+        <label for="password">Enter Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          placeholder="••••••••"
+          required
+          autofocus
+        >
+      </div>
+      <button type="submit">Unlock Link</button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('password').value;
+      const errorDiv = document.getElementById('error');
+      const button = e.target.querySelector('button');
+
+      // Disable button and show loading
+      button.disabled = true;
+      button.textContent = 'Verifying...';
+      errorDiv.style.display = 'none';
+
+      // Redirect with password in query parameter
+      const url = new URL(window.location.href);
+      url.searchParams.set('password', password);
+      window.location.href = url.toString();
+    });
+  </script>
+</body>
+</html>`;
 }
 
 /**

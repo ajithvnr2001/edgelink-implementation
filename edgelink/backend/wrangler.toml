@@ -39,3 +39,8 @@ name = "RATE_LIMITER"
 type = "ratelimit"
 namespace_id = "1001"
 simple = { limit = 1000, period = 86400 }
+
+# Cron Triggers for scheduled tasks
+# Runs every hour to clean up expired links
+[triggers]
+crons = ["0 * * * *"]  # Every hour at minute 0
