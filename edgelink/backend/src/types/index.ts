@@ -22,6 +22,7 @@ export interface Env {
   // Environment variables
   JWT_SECRET: string;
   ENVIRONMENT: string;
+  FALLBACK_URL?: string; // Optional: URL to proxy requests when slug not found (e.g., your main website)
 }
 
 export interface JWTPayload {

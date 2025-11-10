@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { API_URL, getAuthHeaders, getUser } from '@/lib/api';
+import { API_URL, getAuthHeaders, getUser, getDomains } from '@/lib/api';
 
 interface LinkPreview {
   url: string;
@@ -26,10 +26,21 @@ interface UTMParams {
   content?: string;
 }
 
+interface Domain {
+  domain_id: string;
+  domain_name: string;
+  verified: boolean;
+  verification_token?: string;
+  verified_at?: string;
+  created_at: string;
+}
+
 export default function CreateLinkPage() {
   const router = useRouter();
   const [url, setUrl] = useState('');
   const [customSlug, setCustomSlug] = useState('');
+  const [customDomain, setCustomDomain] = useState('');
+  const [domains, setDomains] = useState<Domain[]>([]);
   const [slugSuggestions, setSlugSuggestions] = useState<string[]>([]);
   const [linkPreview, setLinkPreview] = useState<LinkPreview | null>(null);
   const [showUTMBuilder, setShowUTMBuilder] = useState(false);
@@ -47,14 +58,26 @@ export default function CreateLinkPage() {
   const [success, setSuccess] = useState(false);
   const [shortUrl, setShortUrl] = useState('');
 
-  // Check authentication on mount
+  // Check authentication and load domains on mount
   useEffect(() => {
     const currentUser = getUser();
     if (!currentUser) {
       router.push('/login');
       return;
     }
+    loadDomains();
   }, [router]);
+
+  const loadDomains = async () => {
+    try {
+      const data = await getDomains() as any;
+      // Filter to only show verified domains
+      const verifiedDomains = (data.domains || []).filter((d: Domain) => d.verified);
+      setDomains(verifiedDomains);
+    } catch (error) {
+      console.error('Failed to load domains:', error);
+    }
+  };
 
   // Fetch slug suggestions when URL changes
   useEffect(() => {
@@ -147,6 +170,7 @@ export default function CreateLinkPage() {
       const body: any = {
         url: finalUrl,
         custom_slug: customSlug || undefined,
+        custom_domain: customDomain || undefined,
         expires_at: expiresAt || undefined,
         max_clicks: maxClicks ? parseInt(maxClicks) : undefined,
         password: password || undefined
@@ -290,6 +314,34 @@ export default function CreateLinkPage() {
               <p className="text-sm text-gray-400 mt-2">
                 5-20 characters, alphanumeric and dashes only
               </p>
+            </div>
+
+            {/* Custom Domain Selector */}
+            <div className="bg-gray-800 rounded-lg p-6">
+              <label className="block text-sm font-medium mb-2">
+                Custom Domain (Optional)
+              </label>
+              <select
+                value={customDomain}
+                onChange={(e) => setCustomDomain(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+              >
+                <option value="">Default (edgelink-production.quoteviral.workers.dev)</option>
+                {domains.map((domain) => (
+                  <option key={domain.domain_id} value={domain.domain_name}>
+                    {domain.domain_name}
+                  </option>
+                ))}
+              </select>
+              {domains.length === 0 ? (
+                <p className="text-sm text-gray-400 mt-2">
+                  No verified custom domains. <a href="/domains" className="text-blue-400 hover:text-blue-300">Add a domain</a>
+                </p>
+              ) : (
+                <p className="text-sm text-gray-400 mt-2">
+                  Select a verified domain or use the default
+                </p>
+              )}
             </div>
 
             {/* UTM Builder */}

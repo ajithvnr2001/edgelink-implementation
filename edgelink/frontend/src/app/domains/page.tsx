@@ -14,6 +14,7 @@ interface Domain {
   domain_id: string;
   domain_name: string;
   verified: boolean;
+  verification_token?: string;
   verified_at?: string;
   created_at: string;
 }
@@ -67,16 +68,29 @@ export default function DomainsPage() {
     setSuccess('');
 
     try {
-      const result = await verifyDomain(domainId);
+      const result = await verifyDomain(domainId) as any;
       if (result.verified) {
         setSuccess('Domain verified successfully!');
         setVerificationInfo(null);
         loadDomains();
       } else {
-        setError(result.message || 'Verification failed. Please check DNS records.');
+        // More detailed error message
+        const errorMsg = result.message || 'Verification failed. Please check DNS records.';
+        const dnsInfo = result.dns_check ?
+          `\n\nExpected DNS Record:\nType: ${result.dns_check.record_type}\nName: ${result.dns_check.record_name}\nValue: ${result.dns_check.record_value}`
+          : '';
+        setError(errorMsg + dnsInfo);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to verify domain');
+      // Parse the error response to show more details
+      let errorMessage = 'Failed to verify domain. ';
+      try {
+        const errorData = JSON.parse(err.message || '{}');
+        errorMessage += errorData.message || errorData.error || err.message;
+      } catch {
+        errorMessage += err.message || 'Please ensure the TXT record is added to your DNS.';
+      }
+      setError(errorMessage);
     }
   };
 
@@ -204,7 +218,7 @@ export default function DomainsPage() {
             <div className="divide-y divide-gray-700">
               {domains.map((domain) => (
                 <div key={domain.domain_id} className="p-6 hover:bg-gray-750 transition-colors">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold text-white">{domain.domain_name}</h3>
@@ -241,6 +255,54 @@ export default function DomainsPage() {
                       </button>
                     </div>
                   </div>
+
+                  {/* Show verification instructions for unverified domains */}
+                  {!domain.verified && domain.verification_token && (
+                    <div className="mt-4 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+                      <h4 className="text-sm font-semibold text-white mb-3">DNS Verification Required</h4>
+                      <p className="text-xs text-gray-400 mb-3">
+                        Add this TXT record to your DNS in Cloudflare (or your DNS provider):
+                      </p>
+
+                      <div className="space-y-2 mb-3">
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="text-gray-500">Type</div>
+                          <div className="text-gray-500">Name</div>
+                          <div className="text-gray-500">Value</div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 p-2 bg-gray-800 rounded border border-gray-600">
+                          <div className="text-white font-mono text-xs">TXT</div>
+                          <div className="text-white font-mono text-xs">_edgelink-verify</div>
+                          <div className="text-white font-mono text-xs truncate" title={domain.verification_token}>
+                            {domain.verification_token}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => copyToClipboard(domain.verification_token!)}
+                          className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors text-xs"
+                        >
+                          Copy Token
+                        </button>
+                        <a
+                          href={`https://dash.cloudflare.com/`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1 bg-blue-600/20 text-blue-300 border border-blue-700 rounded hover:bg-blue-600/30 transition-colors text-xs"
+                        >
+                          Open Cloudflare DNS
+                        </a>
+                      </div>
+
+                      <div className="mt-3 p-2 bg-blue-900/20 border border-blue-700/50 rounded">
+                        <p className="text-xs text-blue-200">
+                          After adding the DNS record, click "Verify Now" button above. DNS propagation may take a few minutes.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

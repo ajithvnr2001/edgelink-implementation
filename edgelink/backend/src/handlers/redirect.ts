@@ -25,7 +25,37 @@ export async function handleRedirect(
     const linkDataStr = await env.LINKS_KV.get(`slug:${slug}`);
 
     if (!linkDataStr) {
-      // Link not found
+      // Link not found - check for fallback URL
+      // If FALLBACK_URL is set, proxy the request to the original website
+      if (env.FALLBACK_URL) {
+        const url = new URL(request.url);
+        const fallbackUrl = `${env.FALLBACK_URL}${url.pathname}${url.search}`;
+
+        // Proxy the request to the fallback URL
+        try {
+          const fallbackResponse = await fetch(fallbackUrl, {
+            method: request.method,
+            headers: request.headers,
+            redirect: 'manual'
+          });
+
+          // Return the proxied response
+          return new Response(fallbackResponse.body, {
+            status: fallbackResponse.status,
+            statusText: fallbackResponse.statusText,
+            headers: fallbackResponse.headers
+          });
+        } catch (error) {
+          console.error('Fallback URL fetch error:', error);
+          // If fallback fails, return 404
+          return new Response('Link not found', {
+            status: 404,
+            headers: { 'Content-Type': 'text/plain' }
+          });
+        }
+      }
+
+      // No fallback configured - return 404
       return new Response('Link not found', {
         status: 404,
         headers: { 'Content-Type': 'text/plain' }
