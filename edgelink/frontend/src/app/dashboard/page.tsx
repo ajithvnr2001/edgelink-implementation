@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { getLinks, deleteLink, updateLink, getUser, logout, type Link as LinkType } from '@/lib/api'
+import { getLinks, deleteLink, updateLink, getUser, logout, getAccessToken, type Link as LinkType } from '@/lib/api'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -187,8 +187,14 @@ export default function DashboardPage() {
 
     try {
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://edgelink-production.quoteviral.workers.dev'
+      const accessToken = getAccessToken()
+
+      if (!accessToken) {
+        throw new Error('Not authenticated. Please log in again.')
+      }
+
       const headers: HeadersInit = {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${accessToken}`
       }
 
       const response = await fetch(`${API_BASE}/api/links/${link.slug}/qr?format=${format}`, {
@@ -223,8 +229,14 @@ export default function DashboardPage() {
 
     try {
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://edgelink-production.quoteviral.workers.dev'
+      const accessToken = getAccessToken()
+
+      if (!accessToken) {
+        throw new Error('Not authenticated. Please log in again.')
+      }
+
       const headers: HeadersInit = {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${accessToken}`
       }
 
       const response = await fetch(`${API_BASE}/api/links/${qrCodeLink.slug}/qr?format=${format}`, {
