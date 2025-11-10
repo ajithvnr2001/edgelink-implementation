@@ -181,7 +181,8 @@ export default {
           return addCorsHeaders(rateLimitError, corsHeaders);
         }
 
-        const response = await handleGetLinks(env, user.sub);
+        // Pass search parameters for pagination and filtering
+        const response = await handleGetLinks(env, user.sub, url.searchParams);
         const finalResponse = addRateLimitHeaders(response, info);
         return addCorsHeaders(finalResponse, corsHeaders);
       }
