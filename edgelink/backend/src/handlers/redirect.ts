@@ -250,11 +250,20 @@ async function incrementClickCount(
       WHERE slug = ?
     `).bind(slug).run();
   } else {
+    // Update D1 database
     await env.DB.prepare(`
       UPDATE links
       SET click_count = click_count + 1
       WHERE slug = ?
     `).bind(slug).run();
+
+    // Update KV store to keep it in sync
+    const linkDataStr = await env.LINKS_KV.get(`slug:${slug}`);
+    if (linkDataStr) {
+      const linkData: LinkKVValue = JSON.parse(linkDataStr);
+      linkData.click_count = (linkData.click_count || 0) + 1;
+      await env.LINKS_KV.put(`slug:${slug}`, JSON.stringify(linkData));
+    }
   }
 }
 
