@@ -25,7 +25,10 @@ export async function handleRedirect(
     // Get link data from KV (fast path)
     const linkDataStr = await env.LINKS_KV.get(`slug:${slug}`);
 
+    console.log(`[handleRedirect] Fetching KV data for slug: ${slug}`);
+
     if (!linkDataStr) {
+      console.log(`[handleRedirect] KV data not found for slug: ${slug}`);
       // Link not found - check for fallback URL
       // If FALLBACK_URL is set, proxy the request to the original website
       if (env.FALLBACK_URL) {
@@ -64,6 +67,7 @@ export async function handleRedirect(
     }
 
     const linkData: LinkKVValue = JSON.parse(linkDataStr);
+    console.log(`[handleRedirect] KV data loaded for slug: ${slug}, destination: ${linkData.destination}`);
 
     // Check time-based expiration
     if (linkData.expires_at && Date.now() > linkData.expires_at) {
@@ -221,6 +225,7 @@ export async function handleRedirect(
     );
 
     // Return redirect (FR-2.1: 301 permanent)
+    console.log(`[handleRedirect] Redirecting slug: ${slug} to destination: ${destination}`);
     return Response.redirect(destination, 301);
   } catch (error) {
     console.error('Redirect error:', error);

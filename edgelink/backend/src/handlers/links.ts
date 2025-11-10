@@ -249,36 +249,72 @@ export async function handleUpdateLink(
       WHERE slug = ? AND user_id = ?
     `).bind(slug, userId).first();
 
-    if (updatedLink) {
-      // Build complete KV data structure
-      const linkData: any = {
-        slug: updatedLink.slug,
-        user_id: updatedLink.user_id,
-        destination: updatedLink.destination,
-        custom_domain: updatedLink.custom_domain || null,
-        click_count: updatedLink.click_count || 0,
-        expires_at: updatedLink.expires_at ? new Date(updatedLink.expires_at as string).getTime() : null,
-        max_clicks: updatedLink.max_clicks || null,
-        password_hash: updatedLink.password_hash || null,
-        device_routing: updatedLink.device_routing ? JSON.parse(updatedLink.device_routing as string) : null,
-        geo_routing: updatedLink.geo_routing ? JSON.parse(updatedLink.geo_routing as string) : null,
-        referrer_routing: updatedLink.referrer_routing ? JSON.parse(updatedLink.referrer_routing as string) : null,
-        ab_testing: updatedLink.ab_testing ? JSON.parse(updatedLink.ab_testing as string) : null,
-        utm_params: updatedLink.utm_params || null,
-        utm_template: updatedLink.utm_params || null
-      };
-
-      // Calculate TTL if there's an expiration
-      const kvOptions: any = {};
-      if (linkData.expires_at) {
-        const expirationTtl = Math.floor((linkData.expires_at - Date.now()) / 1000);
-        if (expirationTtl > 0) {
-          kvOptions.expirationTtl = expirationTtl;
+    if (!updatedLink) {
+      console.error(`[handleUpdateLink] Link not found in D1 after update: ${slug}`);
+      return new Response(
+        JSON.stringify({
+          error: 'Link update failed - link not found after update',
+          code: 'UPDATE_VERIFICATION_FAILED'
+        }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
         }
-      }
+      );
+    }
 
-      // Always put to KV (create or update)
-      await env.LINKS_KV.put(`slug:${slug}`, JSON.stringify(linkData), kvOptions);
+    // Build complete KV data structure
+    const linkData: any = {
+      slug: updatedLink.slug,
+      user_id: updatedLink.user_id,
+      destination: updatedLink.destination,
+      custom_domain: updatedLink.custom_domain || null,
+      click_count: updatedLink.click_count || 0,
+      expires_at: updatedLink.expires_at ? new Date(updatedLink.expires_at as string).getTime() : null,
+      max_clicks: updatedLink.max_clicks || null,
+      password_hash: updatedLink.password_hash || null,
+      device_routing: updatedLink.device_routing ? JSON.parse(updatedLink.device_routing as string) : null,
+      geo_routing: updatedLink.geo_routing ? JSON.parse(updatedLink.geo_routing as string) : null,
+      referrer_routing: updatedLink.referrer_routing ? JSON.parse(updatedLink.referrer_routing as string) : null,
+      ab_testing: updatedLink.ab_testing ? JSON.parse(updatedLink.ab_testing as string) : null,
+      utm_params: updatedLink.utm_params || null,
+      utm_template: updatedLink.utm_params || null
+    };
+
+    console.log(`[handleUpdateLink] Updating KV for slug: ${slug}, destination: ${linkData.destination}`);
+
+    // Calculate TTL if there's an expiration
+    const kvOptions: any = {};
+    if (linkData.expires_at) {
+      const expirationTtl = Math.floor((linkData.expires_at - Date.now()) / 1000);
+      if (expirationTtl > 0) {
+        kvOptions.expirationTtl = expirationTtl;
+      }
+    }
+
+    // Always put to KV (create or update)
+    try {
+      await env.LINKS_KV.put(
+        `slug:${slug}`,
+        JSON.stringify(linkData),
+        Object.keys(kvOptions).length > 0 ? kvOptions : undefined
+      );
+      console.log(`[handleUpdateLink] Successfully updated KV for slug: ${slug}`);
+
+      // Verify the KV write by reading it back
+      const verifyKV = await env.LINKS_KV.get(`slug:${slug}`);
+      if (verifyKV) {
+        const verifiedData = JSON.parse(verifyKV);
+        console.log(`[handleUpdateLink] KV verification - destination: ${verifiedData.destination}`);
+        if (verifiedData.destination !== linkData.destination) {
+          console.error(`[handleUpdateLink] KV verification FAILED! Expected: ${linkData.destination}, Got: ${verifiedData.destination}`);
+        }
+      } else {
+        console.error(`[handleUpdateLink] KV verification FAILED! Entry not found after write`);
+      }
+    } catch (kvError) {
+      console.error(`[handleUpdateLink] KV update failed for slug: ${slug}`, kvError);
+      // Don't fail the request, but log the error
     }
 
     return new Response(
