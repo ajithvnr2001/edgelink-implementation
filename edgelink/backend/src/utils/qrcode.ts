@@ -22,7 +22,6 @@ export function generateQRCodeSVG(text: string, options: {
   margin?: number;
   errorCorrection?: 'L' | 'M' | 'Q' | 'H';
 } = {}): string {
-  const cellSize = options.cellSize || 8;
   const margin = options.margin || 4;
 
   // Determine best version (size) for the data
@@ -33,23 +32,25 @@ export function generateQRCodeSVG(text: string, options: {
   const moduleCount = qr.getModuleCount();
   const size = moduleCount + margin * 2;
 
-  // Use viewBox for scalability with proper rendering attributes
+  // Build SVG with proper structure
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">`;
   svg += `<rect x="0" y="0" width="${size}" height="${size}" fill="#ffffff"/>`;
-  svg += `<path fill="#000000" d="`;
 
-  // Generate path data for all dark modules
+  // Draw each dark module as a separate rectangle for reliability
+  let darkModuleCount = 0;
   for (let row = 0; row < moduleCount; row++) {
     for (let col = 0; col < moduleCount; col++) {
       if (qr.isDark(row, col)) {
         const x = col + margin;
         const y = row + margin;
-        svg += `M${x},${y}h1v1h-1z`;
+        svg += `<rect x="${x}" y="${y}" width="1" height="1" fill="#000000"/>`;
+        darkModuleCount++;
       }
     }
   }
 
-  svg += `"/>`;
+  console.log(`QR Code generated: ${moduleCount}x${moduleCount}, ${darkModuleCount} dark modules for text: "${text.substring(0, 50)}..."`);
+
   svg += `</svg>`;
   return svg;
 }
@@ -131,7 +132,7 @@ class QRCodeModel {
   }
 
   isDark(row: number, col: number): boolean {
-    return this.modules[row][col];
+    return this.modules[row][col] === true;
   }
 
   getModuleCount(): number {
@@ -149,7 +150,7 @@ class QRCodeModel {
     for (let row = 0; row < this.moduleCount; row++) {
       this.modules[row] = new Array(this.moduleCount);
       for (let col = 0; col < this.moduleCount; col++) {
-        this.modules[row][col] = false;
+        this.modules[row][col] = null as any;
       }
     }
 
