@@ -266,7 +266,27 @@ export async function handleUpdateLink(
     // Update link in D1
     // If slug is changing, we need to delete old and insert new (since slug is PRIMARY KEY)
     if (finalSlug !== slug) {
-      // Insert new record with new slug
+      // Preserve existing values if not provided in body
+      const preservedExpires = body.expires_at !== undefined ? body.expires_at : link.expires_at;
+      const preservedMaxClicks = body.max_clicks !== undefined ? body.max_clicks : link.max_clicks;
+      const preservedPasswordHash = passwordHash !== null ? passwordHash : link.password_hash;
+      const preservedDeviceRouting = body.device_routing !== undefined
+        ? (body.device_routing ? JSON.stringify(body.device_routing) : null)
+        : link.device_routing;
+      const preservedGeoRouting = body.geo_routing !== undefined
+        ? (body.geo_routing ? JSON.stringify(body.geo_routing) : null)
+        : link.geo_routing;
+      const preservedReferrerRouting = body.referrer_routing !== undefined
+        ? (body.referrer_routing ? JSON.stringify(body.referrer_routing) : null)
+        : link.referrer_routing;
+      const preservedAbTesting = body.ab_testing !== undefined
+        ? (body.ab_testing ? JSON.stringify(body.ab_testing) : null)
+        : link.ab_testing;
+      const preservedUtmParams = body.utm_params !== undefined ? body.utm_params : link.utm_params;
+
+      console.log(`[handleUpdateLink] Inserting new record with slug: ${finalSlug}, preserving all existing data`);
+
+      // Insert new record with new slug, preserving all existing data
       await env.DB.prepare(`
         INSERT INTO links (
           slug, user_id, destination, custom_domain,
@@ -280,21 +300,25 @@ export async function handleUpdateLink(
         body.destination,
         link.custom_domain,
         link.created_at, // Preserve original creation date
-        body.expires_at || null,
-        body.max_clicks || null,
+        preservedExpires,
+        preservedMaxClicks,
         link.click_count || 0, // Preserve click count
-        passwordHash,
-        body.device_routing ? JSON.stringify(body.device_routing) : null,
-        body.geo_routing ? JSON.stringify(body.geo_routing) : null,
-        body.referrer_routing ? JSON.stringify(body.referrer_routing) : null,
-        body.ab_testing ? JSON.stringify(body.ab_testing) : null,
-        body.utm_params || null
+        preservedPasswordHash,
+        preservedDeviceRouting,
+        preservedGeoRouting,
+        preservedReferrerRouting,
+        preservedAbTesting,
+        preservedUtmParams
       ).run();
+
+      console.log(`[handleUpdateLink] New record inserted successfully`);
 
       // Delete old record
       await env.DB.prepare(`
         DELETE FROM links WHERE slug = ? AND user_id = ?
       `).bind(slug, userId).run();
+
+      console.log(`[handleUpdateLink] Old record deleted`);
 
       // Delete old KV entry
       await env.LINKS_KV.delete(`slug:${slug}`);
