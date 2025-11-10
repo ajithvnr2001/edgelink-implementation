@@ -224,9 +224,11 @@ export async function handleRedirect(
       )
     );
 
-    // Return redirect (FR-2.1: 301 permanent)
+    // Return redirect (FR-2.1: 302 temporary for editable links)
+    // Using 302 instead of 301 to prevent aggressive browser caching
+    // This allows users to edit destinations and see changes immediately
     console.log(`[handleRedirect] Redirecting slug: ${slug} to destination: ${destination}`);
-    return Response.redirect(destination, 301);
+    return Response.redirect(destination, 302);
   } catch (error) {
     console.error('Redirect error:', error);
     return new Response('Internal server error', {
