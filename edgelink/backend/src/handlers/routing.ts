@@ -31,6 +31,21 @@ export async function handleSetDeviceRouting(
       );
     }
 
+    // Check if user has Pro plan (device routing is a Pro feature)
+    const user = await env.DB.prepare(
+      'SELECT plan FROM users WHERE user_id = ?'
+    ).bind(userId).first<{ plan: string }>();
+
+    if (!user || user.plan !== 'pro') {
+      return new Response(
+        JSON.stringify({
+          error: 'Device routing is a Pro feature',
+          code: 'PRO_FEATURE_REQUIRED'
+        }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const body: any = await request.json();
     const { mobile, tablet, desktop } = body;
 
@@ -56,7 +71,7 @@ export async function handleSetDeviceRouting(
 
     // Check if link exists and belongs to user
     const link = await env.DB.prepare(
-      'SELECT * FROM urls WHERE slug = ? AND user_id = ?'
+      'SELECT * FROM links WHERE slug = ? AND user_id = ?'
     ).bind(slug, userId).first();
 
     if (!link) {
@@ -112,6 +127,21 @@ export async function handleSetGeoRouting(
       );
     }
 
+    // Check if user has Pro plan (geographic routing is a Pro feature)
+    const user = await env.DB.prepare(
+      'SELECT plan FROM users WHERE user_id = ?'
+    ).bind(userId).first<{ plan: string }>();
+
+    if (!user || user.plan !== 'pro') {
+      return new Response(
+        JSON.stringify({
+          error: 'Geographic routing is a Pro feature',
+          code: 'PRO_FEATURE_REQUIRED'
+        }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const body: any = await request.json();
     const { routes } = body; // { "US": "https://...", "UK": "https://..." }
 
@@ -137,7 +167,7 @@ export async function handleSetGeoRouting(
 
     // Check if link exists and belongs to user
     const link = await env.DB.prepare(
-      'SELECT * FROM urls WHERE slug = ? AND user_id = ?'
+      'SELECT * FROM links WHERE slug = ? AND user_id = ?'
     ).bind(slug, userId).first();
 
     if (!link) {
@@ -193,6 +223,21 @@ export async function handleSetTimeRouting(
       );
     }
 
+    // Check if user has Pro plan (time-based routing is a Pro feature)
+    const user = await env.DB.prepare(
+      'SELECT plan FROM users WHERE user_id = ?'
+    ).bind(userId).first<{ plan: string }>();
+
+    if (!user || user.plan !== 'pro') {
+      return new Response(
+        JSON.stringify({
+          error: 'Time-based routing is a Pro feature',
+          code: 'PRO_FEATURE_REQUIRED'
+        }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const body: any = await request.json();
     const { rules } = body; // [{ start_hour, end_hour, days, timezone, destination }]
 
@@ -239,7 +284,7 @@ export async function handleSetTimeRouting(
 
     // Check if link exists and belongs to user
     const link = await env.DB.prepare(
-      'SELECT * FROM urls WHERE slug = ? AND user_id = ?'
+      'SELECT * FROM links WHERE slug = ? AND user_id = ?'
     ).bind(slug, userId).first();
 
     if (!link) {
@@ -297,7 +342,7 @@ export async function handleGetRouting(
 
     // Check if link exists and belongs to user
     const link = await env.DB.prepare(
-      'SELECT * FROM urls WHERE slug = ? AND user_id = ?'
+      'SELECT * FROM links WHERE slug = ? AND user_id = ?'
     ).bind(slug, userId).first();
 
     if (!link) {
@@ -363,7 +408,7 @@ export async function handleDeleteRouting(
 
     // Check if link exists and belongs to user
     const link = await env.DB.prepare(
-      'SELECT * FROM urls WHERE slug = ? AND user_id = ?'
+      'SELECT * FROM links WHERE slug = ? AND user_id = ?'
     ).bind(slug, userId).first();
 
     if (!link) {
