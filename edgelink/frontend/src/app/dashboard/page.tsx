@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { getLinks, deleteLink, updateLink, getUser, logout, type Link as LinkType } from '@/lib/api'
+import { getLinks, deleteLink, updateLink, getUser, logout, getAccessToken, type Link as LinkType } from '@/lib/api'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -19,6 +19,11 @@ export default function DashboardPage() {
   const [editDestination, setEditDestination] = useState('')
   const [editSlug, setEditSlug] = useState('')
   const [editLoading, setEditLoading] = useState(false)
+
+  // QR code modal state
+  const [qrCodeLink, setQrCodeLink] = useState<LinkType | null>(null)
+  const [qrCodeData, setQrCodeData] = useState<string | null>(null)
+  const [qrCodeLoading, setQrCodeLoading] = useState(false)
 
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('')
@@ -165,6 +170,121 @@ export default function DashboardPage() {
     } finally {
       setEditLoading(false)
     }
+  }
+
+  const handleGenerateQR = async (link: LinkType, format: 'svg' | 'png' = 'svg') => {
+    if (!user) return
+
+    // Check if user is Pro
+    if (user.plan !== 'pro') {
+      alert('QR code generation is a Pro feature. Upgrade to unlock this feature!')
+      return
+    }
+
+    setQrCodeLink(link)
+    setQrCodeLoading(true)
+    setQrCodeData(null)
+
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://edgelink-production.quoteviral.workers.dev'
+      const accessToken = getAccessToken()
+
+      if (!accessToken) {
+        throw new Error('Not authenticated. Please log in again.')
+      }
+
+      console.log('Generating QR code for:', link.slug)
+      console.log('Token exists:', !!accessToken)
+
+      const headers: HeadersInit = {
+        'Authorization': `Bearer ${accessToken}`
+      }
+
+      const response = await fetch(`${API_BASE}/api/links/${link.slug}/qr?format=${format}`, {
+        method: 'GET',
+        headers
+      })
+
+      console.log('Response status:', response.status)
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to generate QR code'
+        try {
+          const error = await response.json()
+          errorMessage = error.error || errorMessage
+          console.error('API Error:', error)
+        } catch (e) {
+          console.error('Failed to parse error response')
+        }
+
+        if (response.status === 401) {
+          errorMessage += '. Your session may have expired. Please log in again.'
+        }
+
+        throw new Error(errorMessage)
+      }
+
+      if (format === 'svg') {
+        const svgText = await response.text()
+        console.log('QR code generated successfully')
+        setQrCodeData(svgText)
+      } else {
+        // For PNG, convert to data URL for display
+        const blob = await response.blob()
+        const dataUrl = URL.createObjectURL(blob)
+        setQrCodeData(dataUrl)
+      }
+    } catch (err) {
+      console.error('QR Generation Error:', err)
+      alert(err instanceof Error ? err.message : 'Failed to generate QR code')
+      setQrCodeLink(null)
+    } finally {
+      setQrCodeLoading(false)
+    }
+  }
+
+  const downloadQRCode = async (format: 'svg' | 'png') => {
+    if (!qrCodeLink) return
+
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://edgelink-production.quoteviral.workers.dev'
+      const accessToken = getAccessToken()
+
+      if (!accessToken) {
+        throw new Error('Not authenticated. Please log in again.')
+      }
+
+      const headers: HeadersInit = {
+        'Authorization': `Bearer ${accessToken}`
+      }
+
+      const response = await fetch(`${API_BASE}/api/links/${qrCodeLink.slug}/qr?format=${format}`, {
+        method: 'GET',
+        headers
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to download QR code')
+      }
+
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${qrCodeLink.slug}-qr.${format}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to download QR code')
+    }
+  }
+
+  const closeQRModal = () => {
+    setQrCodeLink(null)
+    setQrCodeData(null)
+    setQrCodeLoading(false)
   }
 
   const copyToClipboard = (url: string, slug: string) => {
@@ -404,6 +524,13 @@ export default function DashboardPage() {
                         📊 Analytics
                       </Link>
                       <button
+                        onClick={() => handleGenerateQR(link, 'svg')}
+                        className="btn-secondary text-sm"
+                        title={user?.plan !== 'pro' ? 'QR code generation is a Pro feature' : 'Generate QR code'}
+                      >
+                        {user?.plan === 'pro' ? '📱 QR Code' : '🔒 QR Code'}
+                      </button>
+                      <button
                         onClick={() => handleDelete(link.slug)}
                         className="btn-secondary text-sm text-error-500 hover:bg-error-500/10"
                       >
@@ -585,6 +712,75 @@ export default function DashboardPage() {
                 >
                   {editLoading ? 'Saving...' : 'Save Changes'}
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Modal */}
+      {qrCodeLink && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-2xl w-full p-6 border border-gray-700">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-white">QR Code</h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  Scan to access: <code className="text-primary-500">{getShortUrl(qrCodeLink)}</code>
+                </p>
+              </div>
+              <button
+                onClick={closeQRModal}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* QR Code Display */}
+              <div className="bg-white p-8 rounded-lg flex items-center justify-center min-h-[400px]">
+                {qrCodeLoading ? (
+                  <div className="text-gray-600 text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-2"></div>
+                    <p>Generating QR code...</p>
+                  </div>
+                ) : qrCodeData ? (
+                  <div
+                    dangerouslySetInnerHTML={{ __html: qrCodeData }}
+                    className="w-80 h-80"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                ) : (
+                  <div className="text-gray-600">Failed to generate QR code</div>
+                )}
+              </div>
+
+              {/* Download Options */}
+              {qrCodeData && !qrCodeLoading && (
+                <div className="flex justify-center space-x-3 pt-4">
+                  <button
+                    onClick={() => downloadQRCode('svg')}
+                    className="btn-secondary"
+                  >
+                    📥 Download SVG
+                  </button>
+                  <button
+                    onClick={() => downloadQRCode('png')}
+                    className="btn-primary"
+                  >
+                    📥 Download PNG
+                  </button>
+                </div>
+              )}
+
+              {/* Info */}
+              <div className="bg-primary-500/10 border border-primary-500/30 rounded-lg p-4">
+                <p className="text-sm text-gray-300">
+                  <span className="font-semibold text-primary-400">Pro Tip:</span> Share this QR code on
+                  printed materials, social media, or presentations. Anyone who scans it will be redirected
+                  to your destination URL.
+                </p>
               </div>
             </div>
           </div>
