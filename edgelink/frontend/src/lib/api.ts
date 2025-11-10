@@ -218,10 +218,42 @@ export async function shortenUrl(request: ShortenRequest) {
 }
 
 /**
- * Get user's links
+ * Get user's links with optional pagination and search
  */
-export async function getLinks(): Promise<{ links: Link[]; total: number }> {
-  return apiRequest<{ links: Link[]; total: number }>('/api/links')
+export async function getLinks(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  searchField?: string;
+}): Promise<{
+  links: Link[];
+  total: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
+}> {
+  let endpoint = '/api/links';
+
+  if (params) {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.set('page', params.page.toString());
+    if (params.limit) queryParams.set('limit', params.limit.toString());
+    if (params.search) queryParams.set('search', params.search);
+    if (params.searchField) queryParams.set('searchField', params.searchField);
+
+    const queryString = queryParams.toString();
+    if (queryString) {
+      endpoint += `?${queryString}`;
+    }
+  }
+
+  return apiRequest<{
+    links: Link[];
+    total: number;
+    page?: number;
+    limit?: number;
+    totalPages?: number;
+  }>(endpoint);
 }
 
 /**

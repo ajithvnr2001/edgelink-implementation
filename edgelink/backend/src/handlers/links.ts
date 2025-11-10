@@ -8,9 +8,56 @@ import { checkPasswordHash } from '../utils/password';
 
 /**
  * Handle GET /api/links - Get user's links with full details
+ * Supports pagination and search via query parameters
  */
-export async function handleGetLinks(env: Env, userId: string): Promise<Response> {
+export async function handleGetLinks(
+  env: Env,
+  userId: string,
+  searchParams?: URLSearchParams
+): Promise<Response> {
   try {
+    // Parse query parameters
+    const page = parseInt(searchParams?.get('page') || '1', 10);
+    const limit = parseInt(searchParams?.get('limit') || '50', 10);
+    const search = searchParams?.get('search') || '';
+    const searchField = searchParams?.get('searchField') || 'all';
+
+    // Validate and sanitize
+    const validPage = Math.max(1, page);
+    const validLimit = Math.min(Math.max(1, limit), 100); // Max 100 per page
+    const offset = (validPage - 1) * validLimit;
+
+    // Build WHERE clause with search
+    let whereClause = 'user_id = ?';
+    const bindings: any[] = [userId];
+
+    if (search) {
+      if (searchField === 'slug') {
+        whereClause += ' AND slug LIKE ?';
+        bindings.push(`%${search}%`);
+      } else if (searchField === 'destination') {
+        whereClause += ' AND destination LIKE ?';
+        bindings.push(`%${search}%`);
+      } else if (searchField === 'date') {
+        whereClause += ' AND created_at LIKE ?';
+        bindings.push(`%${search}%`);
+      } else {
+        // Search all fields
+        whereClause += ' AND (slug LIKE ? OR destination LIKE ? OR created_at LIKE ?)';
+        bindings.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      }
+    }
+
+    // Get total count for pagination
+    const countResult = await env.DB.prepare(`
+      SELECT COUNT(*) as total
+      FROM links
+      WHERE ${whereClause}
+    `).bind(...bindings).first();
+
+    const total = (countResult?.total as number) || 0;
+
+    // Get paginated results
     const result = await env.DB.prepare(`
       SELECT
         slug,
@@ -28,10 +75,10 @@ export async function handleGetLinks(env: Env, userId: string): Promise<Response
         ab_testing,
         utm_params
       FROM links
-      WHERE user_id = ?
+      WHERE ${whereClause}
       ORDER BY created_at DESC
-      LIMIT 50
-    `).bind(userId).all();
+      LIMIT ? OFFSET ?
+    `).bind(...bindings, validLimit, offset).all();
 
     // Remove password_hash from response
     const links = result.results.map((link: any) => ({
@@ -48,7 +95,10 @@ export async function handleGetLinks(env: Env, userId: string): Promise<Response
     return new Response(
       JSON.stringify({
         links,
-        total: links.length
+        total,
+        page: validPage,
+        limit: validLimit,
+        totalPages: Math.ceil(total / validLimit)
       }),
       {
         status: 200,
