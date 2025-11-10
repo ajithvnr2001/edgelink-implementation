@@ -17,6 +17,7 @@ export default function DashboardPage() {
   // Edit modal state
   const [editingLink, setEditingLink] = useState<LinkType | null>(null)
   const [editDestination, setEditDestination] = useState('')
+  const [editSlug, setEditSlug] = useState('')
   const [editLoading, setEditLoading] = useState(false)
 
   // Search and filter state
@@ -99,11 +100,13 @@ export default function DashboardPage() {
   const openEditModal = (link: LinkType) => {
     setEditingLink(link)
     setEditDestination(link.destination)
+    setEditSlug(link.slug)
   }
 
   const closeEditModal = () => {
     setEditingLink(null)
     setEditDestination('')
+    setEditSlug('')
     setEditLoading(false)
   }
 
@@ -120,18 +123,43 @@ export default function DashboardPage() {
       return
     }
 
+    // Validate slug if changed (Pro users only)
+    const slugChanged = editSlug !== editingLink.slug
+    if (slugChanged) {
+      if (user.plan !== 'pro') {
+        alert('Changing short codes is a Pro feature. Upgrade to use it.')
+        return
+      }
+
+      // Validate slug format
+      const slugRegex = /^[a-zA-Z0-9-]{5,20}$/
+      if (!slugRegex.test(editSlug)) {
+        alert('Invalid short code. Must be 5-20 characters, alphanumeric and dashes only.')
+        return
+      }
+    }
+
     setEditLoading(true)
     try {
-      await updateLink(editingLink.slug, editDestination)
+      const response = await updateLink(
+        editingLink.slug,
+        editDestination,
+        slugChanged ? editSlug : undefined
+      )
 
       // Update the link in the local state
       setLinks(links.map(link =>
         link.slug === editingLink.slug
-          ? { ...link, destination: editDestination }
+          ? { ...link, slug: slugChanged ? editSlug : link.slug, destination: editDestination }
           : link
       ))
 
       closeEditModal()
+
+      // Show success message if slug changed
+      if (slugChanged) {
+        alert(`Short code successfully changed from "${editingLink.slug}" to "${editSlug}"`)
+      }
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to update link')
     } finally {
@@ -479,10 +507,16 @@ export default function DashboardPage() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-xl font-bold text-white">Edit Link</h3>
-                <p className="text-sm text-gray-400 mt-1">
-                  Short code: <code className="text-primary-500">{editingLink.slug}</code>
-                  <span className="text-gray-500 ml-2">(cannot be changed)</span>
-                </p>
+                {user.plan === 'pro' ? (
+                  <p className="text-sm text-gray-400 mt-1">
+                    Update your link settings below
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-400 mt-1">
+                    Short code: <code className="text-primary-500">{editingLink.slug}</code>
+                    <span className="text-gray-500 ml-2">(Pro feature to change)</span>
+                  </p>
+                )}
               </div>
               <button
                 onClick={closeEditModal}
@@ -493,6 +527,32 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-4">
+              {/* Short Code Field (Pro only) */}
+              {user.plan === 'pro' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Short Code
+                    <span className="ml-2 px-2 py-0.5 bg-primary-500/20 text-primary-400 text-xs rounded border border-primary-500/30">
+                      PRO
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editSlug}
+                    onChange={(e) => setEditSlug(e.target.value)}
+                    placeholder="my-custom-slug"
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500"
+                    disabled={editLoading}
+                    pattern="[a-zA-Z0-9-]{5,20}"
+                    maxLength={20}
+                    minLength={5}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    5-20 characters, alphanumeric and dashes only. Change your short code (Pro feature)
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Destination URL
