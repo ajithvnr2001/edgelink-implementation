@@ -257,30 +257,13 @@ The frontend dashboard (`dashboard/page.tsx`) includes a comprehensive modal for
 - Loading states and error handling
 
 **Supported Countries:**
-- 🇺🇸 United States (US)
-- 🇬🇧 United Kingdom (GB)
-- 🇨🇦 Canada (CA)
-- 🇦🇺 Australia (AU)
-- 🇮🇳 India (IN)
-- 🇩🇪 Germany (DE)
-- 🇫🇷 France (FR)
-- 🇮🇹 Italy (IT)
-- 🇪🇸 Spain (ES)
-- 🇧🇷 Brazil (BR)
-- 🇲🇽 Mexico (MX)
-- 🇯🇵 Japan (JP)
-- 🇨🇳 China (CN)
-- 🇰🇷 South Korea (KR)
-- 🇸🇬 Singapore (SG)
-- 🇳🇱 Netherlands (NL)
-- 🇸🇪 Sweden (SE)
-- 🇨🇭 Switzerland (CH)
-- 🇧🇪 Belgium (BE)
-- 🇵🇱 Poland (PL)
-- 🇷🇺 Russia (RU)
-- 🇿🇦 South Africa (ZA)
-- 🇦🇷 Argentina (AR)
-- 🌐 Default/Fallback (all others)
+- ✅ **All 195+ countries worldwide** via ISO 3166-1 alpha-2 codes
+- Organized in dropdown with optgroups for easy navigation:
+  - **Popular Countries**: US, GB, CA, AU, IN, DE, FR, JP, BR, CN (top 10)
+  - **All Countries**: Complete A-Z list from Afghanistan to Zimbabwe
+  - **Special**: Default/Fallback option for unmatched regions
+- Native browser type-to-search for quick country selection
+- Each country includes flag emoji and full name
 
 ### UI Components
 
