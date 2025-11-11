@@ -5,7 +5,7 @@ on:
     branches:
       - master          # Production branch
       - claude/*        # Feature branches (preview)
-  workflow_dispatch:     # Allow manual trigger from GitHub UI
+  workflow_dispatch:     # Manual trigger
 
 jobs:
   deploy:
@@ -26,7 +26,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'                      # Enable npm caching for faster builds
+          cache: 'npm'
           cache-dependency-path: edgelink/frontend/package-lock.json
 
       # -------------------------------
@@ -37,7 +37,7 @@ jobs:
         run: npm install --legacy-peer-deps
 
       # -------------------------------
-      # 4️⃣ Build Next.js app using next-on-pages
+      # 4️⃣ Build Next.js app with next-on-pages
       # -------------------------------
       - name: Build with next-on-pages
         working-directory: edgelink/frontend
@@ -55,4 +55,4 @@ jobs:
           command: >
             pages deploy .vercel/output/static
             --project-name=edgelink-production
-            --branch=${{ github.ref_name == 'master' ? 'production' : github.ref_name }}
+            --branch="${{ github.ref_name == 'master' && 'production' || github.ref_name }}"
