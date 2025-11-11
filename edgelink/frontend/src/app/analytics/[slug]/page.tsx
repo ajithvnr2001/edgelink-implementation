@@ -43,6 +43,9 @@ interface AnalyticsData {
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
 
+// Configure for Cloudflare Pages Edge Runtime
+export const runtime = 'edge'
+
 export default function AnalyticsPage({ params }: { params: { slug: string } }) {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
