@@ -6,7 +6,7 @@
  * Based on PRD Section 11 (Week 2)
  */
 
-import { use, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getLinkAnalytics, getUser } from '@/lib/api'
 import {
@@ -43,8 +43,7 @@ interface AnalyticsData {
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
 
-export default function AnalyticsPage({ params }: { params: Promise<{ slug: string }> }) {
-  const resolvedParams = use(params)
+export default function AnalyticsPage({ params }: { params: { slug: string } }) {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
@@ -55,7 +54,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ slug: stri
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
 
   useEffect(() => {
-    console.log('[Analytics] Component mounted, slug:', resolvedParams.slug)
+    console.log('[Analytics] Component mounted, slug:', params.slug)
     const currentUser = getUser()
     console.log('[Analytics] Current user:', currentUser ? 'Logged in' : 'Not logged in')
     if (!currentUser) {
@@ -65,9 +64,9 @@ export default function AnalyticsPage({ params }: { params: Promise<{ slug: stri
     }
     setUser(currentUser)
 
-    console.log('[Analytics] Fetching analytics for slug:', resolvedParams.slug)
+    console.log('[Analytics] Fetching analytics for slug:', params.slug)
     fetchAnalytics()
-  }, [timeRange, resolvedParams.slug, router])
+  }, [timeRange, params.slug, router])
 
   // Real-time polling effect
   useEffect(() => {
@@ -78,13 +77,13 @@ export default function AnalyticsPage({ params }: { params: Promise<{ slug: stri
     }, 2000)
 
     return () => clearInterval(interval)
-  }, [realtimeMode, timeRange, resolvedParams.slug])
+  }, [realtimeMode, timeRange, params.slug])
 
   async function fetchAnalytics(silent = false) {
     try {
       if (!silent) setLoading(true)
-      console.log('[Analytics] Fetching data for slug:', resolvedParams.slug, 'timeRange:', timeRange)
-      const data = await getLinkAnalytics(resolvedParams.slug, timeRange) as AnalyticsData
+      console.log('[Analytics] Fetching data for slug:', params.slug, 'timeRange:', timeRange)
+      const data = await getLinkAnalytics(params.slug, timeRange) as AnalyticsData
       console.log('[Analytics] Data fetched successfully:', data)
       setAnalytics(data)
       setLastUpdate(new Date())
