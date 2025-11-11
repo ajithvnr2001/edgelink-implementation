@@ -3,9 +3,9 @@ name: Deploy Frontend to Cloudflare Pages
 on:
   push:
     branches:
-      - master          # Production branch
-      - claude/*        # Feature branches (preview)
-  workflow_dispatch:     # Manual trigger
+      - master
+      - claude/*
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -13,46 +13,26 @@ jobs:
     name: Deploy to Cloudflare Pages
 
     steps:
-      # -------------------------------
-      # 1️⃣ Checkout repository code
-      # -------------------------------
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # -------------------------------
-      # 2️⃣ Setup Node.js environment
-      # -------------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: edgelink/frontend/package-lock.json
 
-      # -------------------------------
-      # 3️⃣ Install dependencies
-      # -------------------------------
       - name: Install dependencies
         working-directory: edgelink/frontend
         run: npm install --legacy-peer-deps
 
-      # -------------------------------
-      # 4️⃣ Build Next.js app with next-on-pages
-      # -------------------------------
       - name: Build with next-on-pages
         working-directory: edgelink/frontend
         run: npx @cloudflare/next-on-pages
 
-      # -------------------------------
-      # 5️⃣ Deploy to Cloudflare Pages
-      # -------------------------------
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy .vercel/output/static --project-name=edgelink-production --branch=${{ github.ref_name }}
           workingDirectory: edgelink/frontend
-          command: >
-            pages deploy .vercel/output/static
-            --project-name=edgelink-production
-            --branch="${{ github.ref_name == 'master' && 'production' || github.ref_name }}"
