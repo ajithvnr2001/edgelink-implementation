@@ -358,10 +358,17 @@ export default function DashboardPage() {
 
     for (const { url, name } of urlsToValidate) {
       if (url.trim()) {
+        // Check URL format
         try {
           new URL(url)
         } catch {
           alert(`${name} URL is invalid. Please enter a valid URL.`)
+          return
+        }
+
+        // Check for redirect loop - prevent using the short URL as destination
+        if (url.includes(`/${routingLink.slug}`)) {
+          alert(`⚠️ ${name} URL cannot contain your short link (/${routingLink.slug}).\n\nThis would create a redirect loop!\n\nPlease use only destination URLs (e.g., https://example.com).`)
           return
         }
       }
@@ -948,6 +955,17 @@ export default function DashboardPage() {
                   </p>
                 </div>
 
+                {/* Warning Banner */}
+                <div className="bg-error-500/10 border border-error-500/30 rounded-lg p-4">
+                  <p className="text-sm text-gray-300">
+                    <span className="font-semibold text-error-400">⚠️ Important:</span> Enter only destination URLs (e.g., <code className="text-primary-400">https://example.com</code>).
+                    <br />
+                    <span className="text-xs text-gray-400 mt-1 inline-block">
+                      DO NOT use your short link (<code className="text-error-400">/{routingLink.slug}</code>) as this will create a redirect loop!
+                    </span>
+                  </p>
+                </div>
+
                 {/* Form Fields */}
                 <div className="space-y-4">
                   {/* Mobile URL */}
@@ -960,7 +978,7 @@ export default function DashboardPage() {
                       type="url"
                       value={mobileUrl}
                       onChange={(e) => setMobileUrl(e.target.value)}
-                      placeholder="https://mobile.example.com"
+                      placeholder="https://example.com (destination URL only)"
                       className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                       disabled={routingLoading}
                     />
@@ -976,7 +994,7 @@ export default function DashboardPage() {
                       type="url"
                       value={tabletUrl}
                       onChange={(e) => setTabletUrl(e.target.value)}
-                      placeholder="https://tablet.example.com"
+                      placeholder="https://example.com (destination URL only)"
                       className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                       disabled={routingLoading}
                     />
@@ -992,7 +1010,7 @@ export default function DashboardPage() {
                       type="url"
                       value={desktopUrl}
                       onChange={(e) => setDesktopUrl(e.target.value)}
-                      placeholder="https://www.example.com"
+                      placeholder="https://example.com (destination URL only)"
                       className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                       disabled={routingLoading}
                     />

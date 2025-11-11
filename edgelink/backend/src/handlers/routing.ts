@@ -69,6 +69,25 @@ export async function handleSetDeviceRouting(
       );
     }
 
+    // Prevent redirect loops - check if any URL contains the slug
+    const urlsToCheck = [
+      { url: mobile, name: 'Mobile' },
+      { url: tablet, name: 'Tablet' },
+      { url: desktop, name: 'Desktop' }
+    ];
+
+    for (const { url, name } of urlsToCheck) {
+      if (url && url.includes(`/${slug}`)) {
+        return new Response(
+          JSON.stringify({
+            error: `${name} URL cannot contain your short link (/${slug}). This would create a redirect loop. Please use only destination URLs.`,
+            code: 'REDIRECT_LOOP_DETECTED'
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Check if link exists and belongs to user
     const link = await env.DB.prepare(
       'SELECT * FROM links WHERE slug = ? AND user_id = ?'
