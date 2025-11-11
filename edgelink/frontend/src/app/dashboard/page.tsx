@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { getLinks, deleteLink, updateLink, getUser, logout, getAccessToken, type Link as LinkType, setDeviceRouting, getRouting, deleteRouting, type DeviceRouting, type RoutingConfig } from '@/lib/api'
+import { getLinks, deleteLink, updateLink, getUser, logout, getAccessToken, type Link as LinkType, setDeviceRouting, getRouting, deleteRouting, type DeviceRouting, type RoutingConfig, setGeoRouting, type GeoRouting } from '@/lib/api'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -32,6 +32,12 @@ export default function DashboardPage() {
   const [mobileUrl, setMobileUrl] = useState('')
   const [tabletUrl, setTabletUrl] = useState('')
   const [desktopUrl, setDesktopUrl] = useState('')
+
+  // Geographic routing modal state
+  const [geoRoutingLink, setGeoRoutingLink] = useState<LinkType | null>(null)
+  const [geoRoutingConfig, setGeoRoutingConfig] = useState<RoutingConfig | null>(null)
+  const [geoRoutingLoading, setGeoRoutingLoading] = useState(false)
+  const [geoRoutes, setGeoRoutes] = useState<Array<{ country: string; url: string }>>([])
 
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('')
@@ -410,6 +416,147 @@ export default function DashboardPage() {
     }
   }
 
+  // Geographic routing handlers
+  const openGeoRoutingModal = async (link: LinkType) => {
+    if (!user) return
+
+    // Check if user is Pro
+    if (user.plan !== 'pro') {
+      alert('Geographic routing is a Pro feature. Upgrade to unlock this feature!')
+      return
+    }
+
+    setGeoRoutingLink(link)
+    setGeoRoutingLoading(true)
+    setGeoRoutes([])
+
+    try {
+      // Load existing routing configuration
+      const config = await getRouting(link.slug)
+      setGeoRoutingConfig(config)
+
+      // Pre-fill form with existing values
+      if (config.routing.geo) {
+        const routes = Object.entries(config.routing.geo).map(([country, url]) => ({
+          country,
+          url
+        }))
+        setGeoRoutes(routes)
+      }
+    } catch (err) {
+      // If no routing config exists yet, that's okay
+      console.log('No existing geo routing config:', err)
+      setGeoRoutingConfig(null)
+    } finally {
+      setGeoRoutingLoading(false)
+    }
+  }
+
+  const closeGeoRoutingModal = () => {
+    setGeoRoutingLink(null)
+    setGeoRoutingConfig(null)
+    setGeoRoutes([])
+    setGeoRoutingLoading(false)
+  }
+
+  const addGeoRoute = () => {
+    setGeoRoutes([...geoRoutes, { country: '', url: '' }])
+  }
+
+  const removeGeoRoute = (index: number) => {
+    setGeoRoutes(geoRoutes.filter((_, i) => i !== index))
+  }
+
+  const updateGeoRoute = (index: number, field: 'country' | 'url', value: string) => {
+    const updated = [...geoRoutes]
+    updated[index] = { ...updated[index], [field]: value }
+    setGeoRoutes(updated)
+  }
+
+  const handleSaveGeoRouting = async () => {
+    if (!geoRoutingLink) return
+
+    // Validate that at least one route is provided
+    if (geoRoutes.length === 0) {
+      alert('Please add at least one geographic route')
+      return
+    }
+
+    // Validate routes
+    for (let i = 0; i < geoRoutes.length; i++) {
+      const route = geoRoutes[i]
+
+      if (!route.country.trim()) {
+        alert(`Please select a country for route ${i + 1}`)
+        return
+      }
+
+      if (!route.url.trim()) {
+        alert(`Please enter a URL for ${route.country}`)
+        return
+      }
+
+      // Validate URL format
+      try {
+        new URL(route.url)
+      } catch {
+        alert(`URL for ${route.country} is invalid. Please enter a valid URL.`)
+        return
+      }
+
+      // Check for redirect loop
+      if (route.url.includes(`/${geoRoutingLink.slug}`)) {
+        alert(`⚠️ URL for ${route.country} cannot contain your short link (/${geoRoutingLink.slug}).\n\nThis would create a redirect loop!\n\nPlease use only destination URLs (e.g., https://example.com).`)
+        return
+      }
+    }
+
+    // Check for duplicate countries
+    const countries = geoRoutes.map(r => r.country)
+    const duplicates = countries.filter((c, i) => countries.indexOf(c) !== i)
+    if (duplicates.length > 0) {
+      alert(`Duplicate country codes detected: ${duplicates.join(', ')}. Each country can only have one route.`)
+      return
+    }
+
+    setGeoRoutingLoading(true)
+    try {
+      const routing: GeoRouting = {}
+      geoRoutes.forEach(route => {
+        if (route.country.trim() && route.url.trim()) {
+          routing[route.country.toUpperCase()] = route.url.trim()
+        }
+      })
+
+      await setGeoRouting(geoRoutingLink.slug, routing)
+      alert('Geographic routing configured successfully! ✅')
+      closeGeoRoutingModal()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to save geographic routing')
+    } finally {
+      setGeoRoutingLoading(false)
+    }
+  }
+
+  const handleDeleteGeoRouting = async () => {
+    if (!geoRoutingLink) return
+
+    if (!confirm('Are you sure you want to delete all geographic routing rules for this link?')) {
+      return
+    }
+
+    setGeoRoutingLoading(true)
+    try {
+      await deleteRouting(geoRoutingLink.slug)
+      alert('Geographic routing rules deleted successfully')
+      closeGeoRoutingModal()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete geographic routing rules')
+    } finally {
+      setGeoRoutingLoading(false)
+    }
+  }
+
   const copyToClipboard = (url: string, slug: string) => {
     navigator.clipboard.writeText(url)
     setCopied(slug)
@@ -658,7 +805,14 @@ export default function DashboardPage() {
                         className="btn-secondary text-sm"
                         title={user?.plan !== 'pro' ? 'Device routing is a Pro feature' : 'Configure device routing'}
                       >
-                        {user?.plan === 'pro' ? '🔀 Routing' : '🔒 Routing'}
+                        {user?.plan === 'pro' ? '🔀 Device' : '🔒 Device'}
+                      </button>
+                      <button
+                        onClick={() => openGeoRoutingModal(link)}
+                        className="btn-secondary text-sm"
+                        title={user?.plan !== 'pro' ? 'Geographic routing is a Pro feature' : 'Configure geographic routing'}
+                      >
+                        {user?.plan === 'pro' ? '🌍 Geo' : '🔒 Geo'}
                       </button>
                       <button
                         onClick={() => handleDelete(link.slug)}
@@ -735,12 +889,13 @@ export default function DashboardPage() {
                     Upgrade to Pro
                   </h3>
                   <p className="text-gray-300 mb-4">
-                    Get 5,000 links/month, 10K API calls/day, device routing, QR codes, and more
+                    Get 5,000 links/month, 10K API calls/day, geographic routing, device routing, QR codes, and more
                   </p>
                   <ul className="text-sm text-gray-400 space-y-1">
-                    <li>✓ Advanced routing (device, geo, referrer)</li>
-                    <li>✓ A/B testing</li>
-                    <li>✓ Password-protected links</li>
+                    <li>✓ Geographic routing (country-based redirects)</li>
+                    <li>✓ Device routing (mobile, tablet, desktop)</li>
+                    <li>✓ A/B testing & referrer routing</li>
+                    <li>✓ Password-protected links & QR codes</li>
                     <li>✓ Webhooks & advanced analytics</li>
                   </ul>
                 </div>
@@ -1054,6 +1209,179 @@ export default function DashboardPage() {
                       disabled={routingLoading}
                     >
                       {routingLoading ? 'Saving...' : 'Save Routing'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Geographic Routing Modal */}
+      {geoRoutingLink && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-3xl w-full p-6 border border-gray-700 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-white">Geographic Routing</h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  Route visitors to different URLs based on their country
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Link: <code className="text-primary-500">{getShortUrl(geoRoutingLink)}</code>
+                </p>
+              </div>
+              <button
+                onClick={closeGeoRoutingModal}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {geoRoutingLoading && geoRoutes.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+                <p className="text-gray-400">Loading geographic routing configuration...</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Info Banner */}
+                <div className="bg-primary-500/10 border border-primary-500/30 rounded-lg p-4">
+                  <p className="text-sm text-gray-300">
+                    <span className="font-semibold text-primary-400">How it works:</span> Visitors will be
+                    automatically redirected to different URLs based on their country. Country detection uses
+                    Cloudflare's <code className="text-primary-400">cf-ipcountry</code> header (ISO 3166-1 alpha-2 codes).
+                  </p>
+                </div>
+
+                {/* Warning Banner */}
+                <div className="bg-error-500/10 border border-error-500/30 rounded-lg p-4">
+                  <p className="text-sm text-gray-300">
+                    <span className="font-semibold text-error-400">⚠️ Important:</span> Enter only destination URLs (e.g., <code className="text-primary-400">https://example.com</code>).
+                    <br />
+                    <span className="text-xs text-gray-400 mt-1 inline-block">
+                      DO NOT use your short link (<code className="text-error-400">/{geoRoutingLink.slug}</code>) as this will create a redirect loop!
+                    </span>
+                  </p>
+                </div>
+
+                {/* Country Routes */}
+                <div className="space-y-3">
+                  {geoRoutes.map((route, index) => (
+                    <div key={index} className="flex gap-3 items-start">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Country Code
+                        </label>
+                        <select
+                          value={route.country}
+                          onChange={(e) => updateGeoRoute(index, 'country', e.target.value)}
+                          className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          disabled={geoRoutingLoading}
+                        >
+                          <option value="">Select country...</option>
+                          <option value="US">🇺🇸 United States (US)</option>
+                          <option value="GB">🇬🇧 United Kingdom (GB)</option>
+                          <option value="CA">🇨🇦 Canada (CA)</option>
+                          <option value="AU">🇦🇺 Australia (AU)</option>
+                          <option value="IN">🇮🇳 India (IN)</option>
+                          <option value="DE">🇩🇪 Germany (DE)</option>
+                          <option value="FR">🇫🇷 France (FR)</option>
+                          <option value="IT">🇮🇹 Italy (IT)</option>
+                          <option value="ES">🇪🇸 Spain (ES)</option>
+                          <option value="BR">🇧🇷 Brazil (BR)</option>
+                          <option value="MX">🇲🇽 Mexico (MX)</option>
+                          <option value="JP">🇯🇵 Japan (JP)</option>
+                          <option value="CN">🇨🇳 China (CN)</option>
+                          <option value="KR">🇰🇷 South Korea (KR)</option>
+                          <option value="SG">🇸🇬 Singapore (SG)</option>
+                          <option value="NL">🇳🇱 Netherlands (NL)</option>
+                          <option value="SE">🇸🇪 Sweden (SE)</option>
+                          <option value="CH">🇨🇭 Switzerland (CH)</option>
+                          <option value="BE">🇧🇪 Belgium (BE)</option>
+                          <option value="PL">🇵🇱 Poland (PL)</option>
+                          <option value="RU">🇷🇺 Russia (RU)</option>
+                          <option value="ZA">🇿🇦 South Africa (ZA)</option>
+                          <option value="AR">🇦🇷 Argentina (AR)</option>
+                          <option value="default">🌐 Default/Fallback (all others)</option>
+                        </select>
+                      </div>
+                      <div className="flex-[2]">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Destination URL
+                        </label>
+                        <input
+                          type="url"
+                          value={route.url}
+                          onChange={(e) => updateGeoRoute(index, 'url', e.target.value)}
+                          placeholder="https://example.com"
+                          className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          disabled={geoRoutingLoading}
+                        />
+                      </div>
+                      <div className="pt-8">
+                        <button
+                          onClick={() => removeGeoRoute(index)}
+                          className="text-error-500 hover:text-error-400 text-sm px-3 py-2"
+                          disabled={geoRoutingLoading}
+                          title="Remove this route"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Add Country Button */}
+                  <button
+                    onClick={addGeoRoute}
+                    className="w-full px-4 py-3 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-gray-300 hover:text-white transition-colors disabled:opacity-50"
+                    disabled={geoRoutingLoading}
+                  >
+                    + Add Country
+                  </button>
+                </div>
+
+                {/* Country Detection Info */}
+                <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-white mb-2">Country Detection & Fallback</h4>
+                  <div className="text-xs text-gray-400 space-y-1">
+                    <p><span className="text-primary-400">Detection:</span> Uses Cloudflare's <code>cf-ipcountry</code> header for instant country identification</p>
+                    <p><span className="text-primary-400">Codes:</span> ISO 3166-1 alpha-2 (e.g., US, GB, IN, etc.)</p>
+                    <p><span className="text-primary-400">Fallback:</span> Set "default" route for unmatched countries, otherwise uses main destination URL</p>
+                    <p><span className="text-primary-400">Priority:</span> Geographic routing has priority over referrer routing</p>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-between items-center pt-4 border-t border-gray-600">
+                  <div>
+                    {geoRoutingConfig?.routing?.geo && (
+                      <button
+                        onClick={handleDeleteGeoRouting}
+                        className="text-sm text-error-500 hover:text-error-400 disabled:opacity-50"
+                        disabled={geoRoutingLoading}
+                      >
+                        🗑️ Delete Geographic Routing
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={closeGeoRoutingModal}
+                      className="btn-secondary"
+                      disabled={geoRoutingLoading}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveGeoRouting}
+                      className="btn-primary disabled:opacity-50"
+                      disabled={geoRoutingLoading || geoRoutes.length === 0}
+                    >
+                      {geoRoutingLoading ? 'Saving...' : 'Save Routing'}
                     </button>
                   </div>
                 </div>

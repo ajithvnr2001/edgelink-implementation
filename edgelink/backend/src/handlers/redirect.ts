@@ -183,8 +183,12 @@ export async function handleRedirect(
       // 4. Geographic routing
       if (linkData.geo_routing) {
         const country = request.headers.get('cf-ipcountry') || 'XX';
+        // Check for country-specific route first
         if (linkData.geo_routing[country]) {
           destination = linkData.geo_routing[country];
+        } else if (linkData.geo_routing['default']) {
+          // Fallback to default route for unmatched countries
+          destination = linkData.geo_routing['default'];
         }
       }
 
