@@ -129,6 +129,19 @@ client.set_device_routing("my-link",
 - Common issues and solutions
 - Security best practices
 
+### 5. Webhook Integration Guide
+**File:** `WEBHOOK_DOCUMENTATION.md`
+**Location:** Repository root
+**Content:**
+- Complete webhook setup guide
+- All 4 event types (clicked, created, updated, deleted)
+- Security & signature verification
+- Code examples in 6 languages (Node.js, Python, PHP, Go, Ruby, Rust)
+- Retry logic and best practices
+- Testing with ngrok
+- Troubleshooting common issues
+- Real-world use cases (Slack, CRM, dashboards)
+
 ---
 
 ## 🎯 Documentation Flow for Users
@@ -221,6 +234,7 @@ client.set_device_routing("my-link",
 | **Interactive Docs** | https://edgelink-production.pages.dev/api-docs.html |
 | **OpenAPI Spec** | https://raw.githubusercontent.com/.../openapi.yaml |
 | **Python SDK** | https://github.com/.../examples/python_api_client.py |
+| **Webhook Guide** | https://github.com/.../WEBHOOK_DOCUMENTATION.md |
 | **GitHub Repo** | https://github.com/ajithvnr2001/edgelink-implementation |
 
 ---
