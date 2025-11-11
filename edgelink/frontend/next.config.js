@@ -3,9 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
 
-  // Static generation with dynamic route support
-  // Use 'standalone' output for Cloudflare Pages Functions
-  output: 'standalone',
+  // For Cloudflare Pages with @cloudflare/next-on-pages
+  // DO NOT set 'output' - next-on-pages handles this
+
   images: {
     unoptimized: true,
   },
