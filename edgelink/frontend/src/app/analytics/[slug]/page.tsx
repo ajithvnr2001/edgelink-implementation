@@ -55,15 +55,19 @@ export default function AnalyticsPage({ params }: { params: Promise<{ slug: stri
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
 
   useEffect(() => {
+    console.log('[Analytics] Component mounted, slug:', resolvedParams.slug)
     const currentUser = getUser()
+    console.log('[Analytics] Current user:', currentUser ? 'Logged in' : 'Not logged in')
     if (!currentUser) {
+      console.log('[Analytics] No user found, redirecting to /login')
       router.push('/login')
       return
     }
     setUser(currentUser)
 
+    console.log('[Analytics] Fetching analytics for slug:', resolvedParams.slug)
     fetchAnalytics()
-  }, [timeRange, resolvedParams.slug])
+  }, [timeRange, resolvedParams.slug, router])
 
   // Real-time polling effect
   useEffect(() => {
@@ -79,10 +83,13 @@ export default function AnalyticsPage({ params }: { params: Promise<{ slug: stri
   async function fetchAnalytics(silent = false) {
     try {
       if (!silent) setLoading(true)
+      console.log('[Analytics] Fetching data for slug:', resolvedParams.slug, 'timeRange:', timeRange)
       const data = await getLinkAnalytics(resolvedParams.slug, timeRange) as AnalyticsData
+      console.log('[Analytics] Data fetched successfully:', data)
       setAnalytics(data)
       setLastUpdate(new Date())
     } catch (err: any) {
+      console.error('[Analytics] Error fetching analytics:', err)
       setError(err.message)
     } finally {
       if (!silent) setLoading(false)

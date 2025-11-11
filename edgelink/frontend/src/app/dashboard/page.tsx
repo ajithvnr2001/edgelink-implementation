@@ -941,7 +941,12 @@ export default function DashboardPage() {
                         ✏️ Edit
                       </button>
                       <button
-                        onClick={() => router.push(`/analytics/${link.slug}`)}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          console.log('Analytics button clicked for slug:', link.slug)
+                          router.push(`/analytics/${link.slug}`)
+                        }}
                         className="btn-secondary text-sm"
                       >
                         📊 Analytics
