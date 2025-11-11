@@ -314,47 +314,54 @@ function generateKeyId(): string {
 
 /**
  * Verify API key hash
+ * Uses the same logic as password verification since API keys use hashPassword()
  */
 async function verifyAPIKeyHash(apiKey: string, hash: string): Promise<boolean> {
   try {
-    // For now, use a simple comparison since we're hashing with PBKDF2
-    // In production, you'd use the same verification as password hashing
+    // Decode base64 hash (same format as password hashing)
+    const combined = Uint8Array.from(atob(hash), c => c.charCodeAt(0));
+
+    // Extract salt (first 16 bytes)
+    const salt = combined.slice(0, 16);
+    const storedHash = combined.slice(16);
+
+    // Hash the input API key with the same salt
     const encoder = new TextEncoder();
-    const keyData = encoder.encode(apiKey);
-    const hashParts = hash.split(':');
+    const data = encoder.encode(apiKey);
 
-    if (hashParts.length !== 2) {
-      return false;
-    }
-
-    const [iterations, storedHash] = hashParts;
-    const salt = storedHash.slice(0, 32); // First 32 chars are salt
-
-    // Hash the provided key with same salt
-    const hashBuffer = await crypto.subtle.importKey(
+    const keyMaterial = await crypto.subtle.importKey(
       'raw',
-      keyData,
-      { name: 'PBKDF2' },
+      data,
+      'PBKDF2',
       false,
       ['deriveBits']
     );
 
-    const derivedBits = await crypto.subtle.deriveBits(
+    const hashBuffer = await crypto.subtle.deriveBits(
       {
         name: 'PBKDF2',
-        salt: encoder.encode(salt),
-        iterations: parseInt(iterations),
+        salt: salt,
+        iterations: 100000, // Must match hashPassword iterations
         hash: 'SHA-256'
       },
-      hashBuffer,
+      keyMaterial,
       256
     );
 
-    const derivedHash = Array.from(new Uint8Array(derivedBits))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+    const hashArray = new Uint8Array(hashBuffer);
 
-    return salt + derivedHash === storedHash;
+    // Compare hashes (constant-time comparison)
+    if (hashArray.length !== storedHash.length) {
+      return false;
+    }
+
+    for (let i = 0; i < hashArray.length; i++) {
+      if (hashArray[i] !== storedHash[i]) {
+        return false;
+      }
+    }
+
+    return true;
   } catch (error) {
     console.error('API key hash verification error:', error);
     return false;
