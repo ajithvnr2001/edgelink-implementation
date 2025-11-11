@@ -293,6 +293,63 @@ export default function APIKeysPage() {
           </div>
         </div>
 
+        {/* Webhook Documentation Link - Featured Banner */}
+        <div className="mt-6 p-6 bg-gradient-to-r from-orange-900/50 to-amber-900/50 border-2 border-orange-500 rounded-lg">
+          <div className="flex items-start gap-4">
+            <div className="text-4xl">🔔</div>
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h3 className="text-xl font-bold text-white">Webhook Integration Guide</h3>
+                <span className="px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-bold rounded-full uppercase tracking-wide">
+                  Pro Only
+                </span>
+              </div>
+              <p className="text-gray-300 mb-4">
+                Receive real-time HTTP callbacks when links are clicked, created, updated, or deleted.
+                Build event-driven applications with automatic notifications to your server.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <a
+                  href="https://github.com/ajithvnr2001/edgelink-implementation/blob/main/WEBHOOK_DOCUMENTATION.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium shadow-lg hover:shadow-xl"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  Complete Webhook Guide
+                </a>
+                <a
+                  href="/api-docs.html#/Webhooks"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                  </svg>
+                  API Reference
+                </a>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-orange-400/30">
+                <p className="text-sm text-gray-300 mb-2">
+                  <strong className="text-white">🎯 Key Features:</strong>
+                </p>
+                <ul className="text-sm text-gray-300 space-y-1 ml-4">
+                  <li>• Real-time event notifications (link clicks, CRUD operations)</li>
+                  <li>• HMAC-SHA256 signature verification for security</li>
+                  <li>• Automatic retry logic with exponential backoff</li>
+                  <li>• Code examples in Node.js, Python, PHP, Go, Ruby, Rust</li>
+                  <li>• Testing guides with ngrok and local development</li>
+                  <li>• Production best practices and troubleshooting</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Quick API Examples */}
         <div className="mt-6 p-6 bg-gray-800 border border-gray-700 rounded-lg">
           <h3 className="text-lg font-bold text-white mb-4">Quick Start Examples</h3>
