@@ -15,9 +15,12 @@ binding = "DB"
 database_name = "edgelink-production"
 database_id = "d5f676e0-b43f-4ac9-ab2c-acd1ddcda86b"
 
-# Analytics Engine for click tracking (temporarily disabled - needs to be enabled in dashboard)
-# [[analytics_engine_datasets]]
-# binding = "ANALYTICS_ENGINE"
+# Analytics Engine for click tracking
+# Note: Dual-write strategy - writes to both Analytics Engine and D1 for redundancy
+# D1 provides fallback when Analytics Engine is unavailable
+[[analytics_engine_datasets]]
+binding = "ANALYTICS_ENGINE"
+dataset = "edgelink_analytics"
 
 # R2 Bucket for file storage (exports, imports) (temporarily disabled - needs to be created)
 # [[r2_buckets]]

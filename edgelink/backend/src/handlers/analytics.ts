@@ -155,25 +155,45 @@ async function getTimeSeriesData(
   startTime: number,
   endTime: number
 ): Promise<Array<{ date: string; clicks: number }>> {
-  // In production, query Analytics Engine with SQL:
-  // SELECT DATE(timestamp) as date, COUNT(*) as clicks
-  // FROM analytics WHERE slug = ? AND timestamp >= ? AND timestamp <= ?
-  // GROUP BY date ORDER BY date
+  try {
+    // Query D1 analytics_events table
+    const startDate = new Date(startTime).toISOString();
+    const endDate = new Date(endTime).toISOString();
 
-  // For MVP, we'll create sample structure
-  // In real implementation, replace with Analytics Engine query
-  const days = Math.floor((endTime - startTime) / (24 * 60 * 60 * 1000));
-  const data: Array<{ date: string; clicks: number }> = [];
+    const result = await env.DB.prepare(`
+      SELECT
+        DATE(timestamp) as date,
+        COUNT(*) as clicks
+      FROM analytics_events
+      WHERE slug = ? AND timestamp >= ? AND timestamp <= ?
+      GROUP BY DATE(timestamp)
+      ORDER BY date
+    `).bind(slug, startDate, endDate).all();
 
-  for (let i = 0; i < days; i++) {
-    const date = new Date(startTime + i * 24 * 60 * 60 * 1000);
-    data.push({
-      date: date.toISOString().split('T')[0],
-      clicks: 0 // Will be populated by Analytics Engine
+    // Create a map of dates with clicks
+    const clicksMap = new Map<string, number>();
+    result.results?.forEach((row: any) => {
+      clicksMap.set(row.date, row.clicks);
     });
-  }
 
-  return data;
+    // Fill in all days in range (including days with 0 clicks)
+    const days = Math.floor((endTime - startTime) / (24 * 60 * 60 * 1000));
+    const data: Array<{ date: string; clicks: number }> = [];
+
+    for (let i = 0; i < days; i++) {
+      const date = new Date(startTime + i * 24 * 60 * 60 * 1000);
+      const dateStr = date.toISOString().split('T')[0];
+      data.push({
+        date: dateStr,
+        clicks: clicksMap.get(dateStr) || 0
+      });
+    }
+
+    return data;
+  } catch (error) {
+    console.error('[getTimeSeriesData] Error:', error);
+    return [];
+  }
 }
 
 /**
@@ -184,17 +204,39 @@ async function getGeoData(
   slug: string,
   startTime: number
 ): Promise<Array<{ country: string; country_name: string; clicks: number }>> {
-  // In production, query Analytics Engine:
-  // SELECT country, COUNT(*) as clicks
-  // FROM analytics WHERE slug = ? AND timestamp >= ?
-  // GROUP BY country ORDER BY clicks DESC LIMIT 10
+  try {
+    const startDate = new Date(startTime).toISOString();
 
-  return [
-    // Sample structure - will be replaced with real data
-    { country: 'US', country_name: 'United States', clicks: 0 },
-    { country: 'IN', country_name: 'India', clicks: 0 },
-    { country: 'GB', country_name: 'United Kingdom', clicks: 0 }
-  ];
+    const result = await env.DB.prepare(`
+      SELECT
+        country,
+        COUNT(*) as clicks
+      FROM analytics_events
+      WHERE slug = ? AND timestamp >= ? AND country IS NOT NULL
+      GROUP BY country
+      ORDER BY clicks DESC
+    `).bind(slug, startDate).all();
+
+    // Map country codes to names
+    const countryNames: Record<string, string> = {
+      'US': 'United States', 'GB': 'United Kingdom', 'CA': 'Canada',
+      'IN': 'India', 'DE': 'Germany', 'FR': 'France', 'AU': 'Australia',
+      'JP': 'Japan', 'BR': 'Brazil', 'MX': 'Mexico', 'ES': 'Spain',
+      'IT': 'Italy', 'NL': 'Netherlands', 'SE': 'Sweden', 'CH': 'Switzerland',
+      'PL': 'Poland', 'BE': 'Belgium', 'AT': 'Austria', 'NO': 'Norway',
+      'DK': 'Denmark', 'FI': 'Finland', 'IE': 'Ireland', 'PT': 'Portugal',
+      'XX': 'Unknown'
+    };
+
+    return result.results?.map((row: any) => ({
+      country: row.country,
+      country_name: countryNames[row.country] || row.country,
+      clicks: row.clicks
+    })) || [];
+  } catch (error) {
+    console.error('[getGeoData] Error:', error);
+    return [];
+  }
 }
 
 /**
@@ -205,16 +247,30 @@ async function getDeviceData(
   slug: string,
   startTime: number
 ): Promise<Array<{ device: string; clicks: number; percentage: number }>> {
-  // In production, query Analytics Engine:
-  // SELECT device, COUNT(*) as clicks
-  // FROM analytics WHERE slug = ? AND timestamp >= ?
-  // GROUP BY device
+  try {
+    const startDate = new Date(startTime).toISOString();
 
-  return [
-    { device: 'mobile', clicks: 0, percentage: 0 },
-    { device: 'desktop', clicks: 0, percentage: 0 },
-    { device: 'tablet', clicks: 0, percentage: 0 }
-  ];
+    const result = await env.DB.prepare(`
+      SELECT
+        device,
+        COUNT(*) as clicks
+      FROM analytics_events
+      WHERE slug = ? AND timestamp >= ?
+      GROUP BY device
+      ORDER BY clicks DESC
+    `).bind(slug, startDate).all();
+
+    const totalClicks = result.results?.reduce((sum: number, row: any) => sum + row.clicks, 0) || 0;
+
+    return result.results?.map((row: any) => ({
+      device: row.device,
+      clicks: row.clicks,
+      percentage: totalClicks > 0 ? (row.clicks / totalClicks) * 100 : 0
+    })) || [];
+  } catch (error) {
+    console.error('[getDeviceData] Error:', error);
+    return [];
+  }
 }
 
 /**
@@ -225,18 +281,30 @@ async function getBrowserData(
   slug: string,
   startTime: number
 ): Promise<Array<{ browser: string; clicks: number; percentage: number }>> {
-  // In production, query Analytics Engine:
-  // SELECT browser, COUNT(*) as clicks
-  // FROM analytics WHERE slug = ? AND timestamp >= ?
-  // GROUP BY browser ORDER BY clicks DESC
+  try {
+    const startDate = new Date(startTime).toISOString();
 
-  return [
-    { browser: 'Chrome', clicks: 0, percentage: 0 },
-    { browser: 'Safari', clicks: 0, percentage: 0 },
-    { browser: 'Firefox', clicks: 0, percentage: 0 },
-    { browser: 'Edge', clicks: 0, percentage: 0 },
-    { browser: 'Other', clicks: 0, percentage: 0 }
-  ];
+    const result = await env.DB.prepare(`
+      SELECT
+        COALESCE(browser, 'Unknown') as browser,
+        COUNT(*) as clicks
+      FROM analytics_events
+      WHERE slug = ? AND timestamp >= ?
+      GROUP BY browser
+      ORDER BY clicks DESC
+    `).bind(slug, startDate).all();
+
+    const totalClicks = result.results?.reduce((sum: number, row: any) => sum + row.clicks, 0) || 0;
+
+    return result.results?.map((row: any) => ({
+      browser: row.browser,
+      clicks: row.clicks,
+      percentage: totalClicks > 0 ? (row.clicks / totalClicks) * 100 : 0
+    })) || [];
+  } catch (error) {
+    console.error('[getBrowserData] Error:', error);
+    return [];
+  }
 }
 
 /**
@@ -247,19 +315,30 @@ async function getOSData(
   slug: string,
   startTime: number
 ): Promise<Array<{ os: string; clicks: number; percentage: number }>> {
-  // In production, query Analytics Engine:
-  // SELECT os, COUNT(*) as clicks
-  // FROM analytics WHERE slug = ? AND timestamp >= ?
-  // GROUP BY os ORDER BY clicks DESC
+  try {
+    const startDate = new Date(startTime).toISOString();
 
-  return [
-    { os: 'Windows', clicks: 0, percentage: 0 },
-    { os: 'macOS', clicks: 0, percentage: 0 },
-    { os: 'iOS', clicks: 0, percentage: 0 },
-    { os: 'Android', clicks: 0, percentage: 0 },
-    { os: 'Linux', clicks: 0, percentage: 0 },
-    { os: 'Other', clicks: 0, percentage: 0 }
-  ];
+    const result = await env.DB.prepare(`
+      SELECT
+        COALESCE(os, 'Unknown') as os,
+        COUNT(*) as clicks
+      FROM analytics_events
+      WHERE slug = ? AND timestamp >= ?
+      GROUP BY os
+      ORDER BY clicks DESC
+    `).bind(slug, startDate).all();
+
+    const totalClicks = result.results?.reduce((sum: number, row: any) => sum + row.clicks, 0) || 0;
+
+    return result.results?.map((row: any) => ({
+      os: row.os,
+      clicks: row.clicks,
+      percentage: totalClicks > 0 ? (row.clicks / totalClicks) * 100 : 0
+    })) || [];
+  } catch (error) {
+    console.error('[getOSData] Error:', error);
+    return [];
+  }
 }
 
 /**
@@ -270,18 +349,34 @@ async function getReferrerData(
   slug: string,
   startTime: number
 ): Promise<Array<{ referrer: string; clicks: number; percentage: number }>> {
-  // In production, query Analytics Engine:
-  // SELECT referrer, COUNT(*) as clicks
-  // FROM analytics WHERE slug = ? AND timestamp >= ?
-  // GROUP BY referrer ORDER BY clicks DESC LIMIT 10
+  try {
+    const startDate = new Date(startTime).toISOString();
 
-  return [
-    { referrer: 'direct', clicks: 0, percentage: 0 },
-    { referrer: 'twitter.com', clicks: 0, percentage: 0 },
-    { referrer: 'facebook.com', clicks: 0, percentage: 0 },
-    { referrer: 'linkedin.com', clicks: 0, percentage: 0 },
-    { referrer: 'google.com', clicks: 0, percentage: 0 }
-  ];
+    const result = await env.DB.prepare(`
+      SELECT
+        CASE
+          WHEN referrer IS NULL OR referrer = '' THEN 'direct'
+          ELSE referrer
+        END as referrer,
+        COUNT(*) as clicks
+      FROM analytics_events
+      WHERE slug = ? AND timestamp >= ?
+      GROUP BY referrer
+      ORDER BY clicks DESC
+      LIMIT 10
+    `).bind(slug, startDate).all();
+
+    const totalClicks = result.results?.reduce((sum: number, row: any) => sum + row.clicks, 0) || 0;
+
+    return result.results?.map((row: any) => ({
+      referrer: row.referrer,
+      clicks: row.clicks,
+      percentage: totalClicks > 0 ? (row.clicks / totalClicks) * 100 : 0
+    })) || [];
+  } catch (error) {
+    console.error('[getReferrerData] Error:', error);
+    return [];
+  }
 }
 
 /**

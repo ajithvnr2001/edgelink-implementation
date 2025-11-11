@@ -299,7 +299,49 @@ async function trackAnalytics(
       doubles: [Date.now()]
     });
   } else {
-    console.warn('ANALYTICS_ENGINE not configured, skipping analytics tracking');
+    console.warn('ANALYTICS_ENGINE not configured, using D1 fallback');
+  }
+
+  // ALWAYS write to D1 as fallback/backup (FR-3 requirement)
+  // This ensures analytics work even without Analytics Engine
+  try {
+    const eventId = crypto.randomUUID();
+    const ua = request.headers.get('user-agent') || '';
+
+    // Create IP hash for unique visitor counting (GDPR compliant)
+    const ip = request.headers.get('cf-connecting-ip') || 'unknown';
+    const ipHashBuffer = await crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(ip + slug) // Salt with slug for privacy
+    );
+    const ipHash = Array.from(new Uint8Array(ipHashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    await env.DB.prepare(`
+      INSERT INTO analytics_events (
+        event_id, slug, user_id, timestamp, country, city,
+        device, browser, os, referrer, user_agent, ip_hash
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      eventId,
+      slug,
+      linkData.user_id,
+      new Date().toISOString(),
+      country,
+      city,
+      device,
+      browser,
+      os,
+      referrer,
+      ua,
+      ipHash
+    ).run();
+
+    console.log(`[trackAnalytics] Recorded event ${eventId} for ${slug}`);
+  } catch (error) {
+    console.error('[trackAnalytics] D1 write failed:', error);
+    // Don't throw - analytics failure shouldn't block redirects
   }
 }
 
