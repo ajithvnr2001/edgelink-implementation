@@ -22,7 +22,7 @@ import { handleLinkPreview } from './handlers/link-preview';
 import { handleExportAnalytics, handleExportLinks } from './handlers/export';
 import { handleBulkImport } from './handlers/bulk-import';
 import { handleCreateABTest, handleGetABTestResults, handleDeleteABTest } from './handlers/ab-testing';
-import { handleSetDeviceRouting, handleSetGeoRouting, handleSetTimeRouting, handleGetRouting, handleDeleteRouting } from './handlers/routing';
+import { handleSetDeviceRouting, handleSetGeoRouting, handleSetTimeRouting, handleSetReferrerRouting, handleGetRouting, handleDeleteRouting } from './handlers/routing';
 
 /**
  * Main worker fetch handler
@@ -561,6 +561,17 @@ export default {
         }
 
         const response = await handleSetTimeRouting(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // POST /api/links/:slug/routing/referrer - Set referrer-based routing
+      if (path.startsWith('/api/links/') && path.includes('/routing/referrer') && method === 'POST') {
+        const { user, error} = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleSetReferrerRouting(request, env, user.sub);
         return addCorsHeaders(response, corsHeaders);
       }
 

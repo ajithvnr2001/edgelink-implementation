@@ -382,6 +382,10 @@ export interface GeoRouting {
   [countryCode: string]: string
 }
 
+export interface ReferrerRouting {
+  [domain: string]: string
+}
+
 export interface TimeRoutingRule {
   start_hour: number
   end_hour: number
@@ -437,6 +441,19 @@ export async function setTimeRouting(
   return apiRequest(`/api/links/${slug}/routing/time`, {
     method: 'POST',
     body: JSON.stringify({ rules }),
+  })
+}
+
+/**
+ * Set referrer-based routing for a link (Pro feature)
+ */
+export async function setReferrerRouting(
+  slug: string,
+  routes: ReferrerRouting
+): Promise<{ message: string; slug: string; referrer_routing: ReferrerRouting }> {
+  return apiRequest(`/api/links/${slug}/routing/referrer`, {
+    method: 'POST',
+    body: JSON.stringify({ routes }),
   })
 }
 

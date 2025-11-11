@@ -340,6 +340,112 @@ export async function handleSetTimeRouting(
 }
 
 /**
+ * Configure referrer-based routing for a link
+ * POST /api/links/:slug/routing/referrer
+ */
+export async function handleSetReferrerRouting(
+  request: Request,
+  env: Env,
+  userId: string
+): Promise<Response> {
+  try {
+    const url = new URL(request.url);
+    const slug = url.pathname.split('/')[3];
+
+    if (!slug) {
+      return new Response(
+        JSON.stringify({ error: 'Slug is required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if user has Pro plan (referrer routing is a Pro feature)
+    const user = await env.DB.prepare(
+      'SELECT plan FROM users WHERE user_id = ?'
+    ).bind(userId).first<{ plan: string }>();
+
+    if (!user || user.plan !== 'pro') {
+      return new Response(
+        JSON.stringify({
+          error: 'Referrer-based routing is a Pro feature',
+          code: 'PRO_FEATURE_REQUIRED'
+        }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const body: any = await request.json();
+    const { routes } = body; // { "twitter.com": "https://...", "linkedin.com": "https://...", "default": "https://..." }
+
+    // Validation
+    if (!routes || typeof routes !== 'object') {
+      return new Response(
+        JSON.stringify({ error: 'Routes object is required (referrer domain -> URL)' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate URLs
+    try {
+      for (const url of Object.values(routes)) {
+        if (typeof url === 'string') new URL(url);
+      }
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid URL format in routes' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate referrer domains
+    for (const domain of Object.keys(routes)) {
+      if (domain !== 'default' && domain.includes('/')) {
+        return new Response(
+          JSON.stringify({ error: 'Referrer keys should be domain names only (e.g., "twitter.com"), not full URLs' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Check if link exists and belongs to user
+    const link = await env.DB.prepare(
+      'SELECT * FROM links WHERE slug = ? AND user_id = ?'
+    ).bind(slug, userId).first();
+
+    if (!link) {
+      return new Response(
+        JSON.stringify({ error: 'Link not found or access denied' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Update link with referrer routing in KV
+    const kvData = await env.LINKS_KV.get(`slug:${slug}`);
+    if (kvData) {
+      const linkData = JSON.parse(kvData);
+      linkData.referrer_routing = routes;
+      await env.LINKS_KV.put(`slug:${slug}`, JSON.stringify(linkData));
+    }
+
+    return new Response(
+      JSON.stringify({
+        message: 'Referrer-based routing configured successfully',
+        slug,
+        referrer_routing: routes
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('Error setting referrer routing:', error);
+    return new Response(
+      JSON.stringify({ error: 'Failed to set referrer routing' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+/**
  * Get all routing configuration for a link
  * GET /api/links/:slug/routing
  */

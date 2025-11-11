@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { getLinks, deleteLink, updateLink, getUser, logout, getAccessToken, type Link as LinkType, setDeviceRouting, getRouting, deleteRouting, type DeviceRouting, type RoutingConfig, setGeoRouting, type GeoRouting } from '@/lib/api'
+import { getLinks, deleteLink, updateLink, getUser, logout, getAccessToken, type Link as LinkType, setDeviceRouting, getRouting, deleteRouting, type DeviceRouting, type RoutingConfig, setGeoRouting, type GeoRouting, setReferrerRouting, type ReferrerRouting } from '@/lib/api'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -38,6 +38,12 @@ export default function DashboardPage() {
   const [geoRoutingConfig, setGeoRoutingConfig] = useState<RoutingConfig | null>(null)
   const [geoRoutingLoading, setGeoRoutingLoading] = useState(false)
   const [geoRoutes, setGeoRoutes] = useState<Array<{ country: string; url: string }>>([])
+
+  // Referrer routing modal state
+  const [referrerRoutingLink, setReferrerRoutingLink] = useState<LinkType | null>(null)
+  const [referrerRoutingConfig, setReferrerRoutingConfig] = useState<RoutingConfig | null>(null)
+  const [referrerRoutingLoading, setReferrerRoutingLoading] = useState(false)
+  const [referrerRoutes, setReferrerRoutes] = useState<Array<{ domain: string; url: string }>>([])
 
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('')
@@ -557,6 +563,153 @@ export default function DashboardPage() {
     }
   }
 
+  // Referrer routing handlers
+  const openReferrerRoutingModal = async (link: LinkType) => {
+    if (!user) return
+
+    // Check if user is Pro
+    if (user.plan !== 'pro') {
+      alert('Referrer-based routing is a Pro feature. Upgrade to unlock this feature!')
+      return
+    }
+
+    setReferrerRoutingLink(link)
+    setReferrerRoutingLoading(true)
+    setReferrerRoutes([])
+
+    try {
+      // Load existing routing configuration
+      const config = await getRouting(link.slug)
+      setReferrerRoutingConfig(config)
+
+      // Pre-fill form with existing values
+      if (config.routing.referrer) {
+        const routes = Object.entries(config.routing.referrer).map(([domain, url]) => ({
+          domain,
+          url
+        }))
+        setReferrerRoutes(routes)
+      }
+    } catch (err) {
+      // If no routing config exists yet, that's okay
+      console.log('No existing referrer routing config:', err)
+      setReferrerRoutingConfig(null)
+    } finally {
+      setReferrerRoutingLoading(false)
+    }
+  }
+
+  const closeReferrerRoutingModal = () => {
+    setReferrerRoutingLink(null)
+    setReferrerRoutingConfig(null)
+    setReferrerRoutes([])
+    setReferrerRoutingLoading(false)
+  }
+
+  const addReferrerRoute = () => {
+    setReferrerRoutes([...referrerRoutes, { domain: '', url: '' }])
+  }
+
+  const removeReferrerRoute = (index: number) => {
+    setReferrerRoutes(referrerRoutes.filter((_, i) => i !== index))
+  }
+
+  const updateReferrerRoute = (index: number, field: 'domain' | 'url', value: string) => {
+    const updated = [...referrerRoutes]
+    updated[index] = { ...updated[index], [field]: value }
+    setReferrerRoutes(updated)
+  }
+
+  const handleSaveReferrerRouting = async () => {
+    if (!referrerRoutingLink) return
+
+    // Validate that at least one route is provided
+    if (referrerRoutes.length === 0) {
+      alert('Please add at least one referrer route')
+      return
+    }
+
+    // Validate routes
+    for (let i = 0; i < referrerRoutes.length; i++) {
+      const route = referrerRoutes[i]
+
+      if (!route.domain.trim()) {
+        alert(`Please enter a referrer domain for route ${i + 1}`)
+        return
+      }
+
+      if (!route.url.trim()) {
+        alert(`Please enter a URL for ${route.domain}`)
+        return
+      }
+
+      // Validate URL format
+      try {
+        new URL(route.url)
+      } catch {
+        alert(`URL for ${route.domain} is invalid. Please enter a valid URL.`)
+        return
+      }
+
+      // Check for redirect loop
+      if (route.url.includes(`/${referrerRoutingLink.slug}`)) {
+        alert(`⚠️ URL for ${route.domain} cannot contain your short link (/${referrerRoutingLink.slug}).\n\nThis would create a redirect loop!\n\nPlease use only destination URLs (e.g., https://example.com).`)
+        return
+      }
+
+      // Validate domain format (should not include protocol or path)
+      if (route.domain !== 'default' && (route.domain.includes('http://') || route.domain.includes('https://') || route.domain.includes('/'))) {
+        alert(`⚠️ Referrer domain should be just the domain name (e.g., "twitter.com"), not a full URL.\n\nFor ${route.domain}, use just the domain part.`)
+        return
+      }
+    }
+
+    // Check for duplicate domains
+    const domains = referrerRoutes.map(r => r.domain)
+    const duplicates = domains.filter((d, i) => domains.indexOf(d) !== i)
+    if (duplicates.length > 0) {
+      alert(`Duplicate referrer domains detected: ${duplicates.join(', ')}. Each domain can only have one route.`)
+      return
+    }
+
+    setReferrerRoutingLoading(true)
+    try {
+      const routing: ReferrerRouting = {}
+      referrerRoutes.forEach(route => {
+        if (route.domain.trim() && route.url.trim()) {
+          routing[route.domain.toLowerCase()] = route.url.trim()
+        }
+      })
+
+      await setReferrerRouting(referrerRoutingLink.slug, routing)
+      alert('Referrer-based routing configured successfully! ✅')
+      closeReferrerRoutingModal()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to save referrer-based routing')
+    } finally {
+      setReferrerRoutingLoading(false)
+    }
+  }
+
+  const handleDeleteReferrerRouting = async () => {
+    if (!referrerRoutingLink) return
+
+    if (!confirm('Are you sure you want to delete all referrer routing rules for this link?')) {
+      return
+    }
+
+    setReferrerRoutingLoading(true)
+    try {
+      await deleteRouting(referrerRoutingLink.slug)
+      alert('Referrer routing rules deleted successfully')
+      closeReferrerRoutingModal()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete referrer routing rules')
+    } finally {
+      setReferrerRoutingLoading(false)
+    }
+  }
+
   const copyToClipboard = (url: string, slug: string) => {
     navigator.clipboard.writeText(url)
     setCopied(slug)
@@ -815,6 +968,13 @@ export default function DashboardPage() {
                         {user?.plan === 'pro' ? '🌍 Geo' : '🔒 Geo'}
                       </button>
                       <button
+                        onClick={() => openReferrerRoutingModal(link)}
+                        className="btn-secondary text-sm"
+                        title={user?.plan !== 'pro' ? 'Referrer routing is a Pro feature' : 'Configure referrer-based routing'}
+                      >
+                        {user?.plan === 'pro' ? '🔗 Referrer' : '🔒 Referrer'}
+                      </button>
+                      <button
                         onClick={() => handleDelete(link.slug)}
                         className="btn-secondary text-sm text-error-500 hover:bg-error-500/10"
                       >
@@ -894,7 +1054,8 @@ export default function DashboardPage() {
                   <ul className="text-sm text-gray-400 space-y-1">
                     <li>✓ Geographic routing (country-based redirects)</li>
                     <li>✓ Device routing (mobile, tablet, desktop)</li>
-                    <li>✓ A/B testing & referrer routing</li>
+                    <li>✓ Referrer routing (source-based redirects)</li>
+                    <li>✓ A/B testing & time-based routing</li>
                     <li>✓ Password-protected links & QR codes</li>
                     <li>✓ Webhooks & advanced analytics</li>
                   </ul>
@@ -1562,6 +1723,183 @@ export default function DashboardPage() {
                       disabled={geoRoutingLoading || geoRoutes.length === 0}
                     >
                       {geoRoutingLoading ? 'Saving...' : 'Save Routing'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Referrer Routing Modal */}
+      {referrerRoutingLink && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-3xl w-full p-6 border border-gray-700 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-white">Referrer-Based Routing</h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  Route visitors to different URLs based on where they came from
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Link: <code className="text-primary-500">{getShortUrl(referrerRoutingLink)}</code>
+                </p>
+              </div>
+              <button
+                onClick={closeReferrerRoutingModal}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {referrerRoutingLoading && referrerRoutes.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+                <p className="text-gray-400">Loading referrer routing configuration...</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Info Banner */}
+                <div className="bg-primary-500/10 border border-primary-500/30 rounded-lg p-4">
+                  <p className="text-sm text-gray-300">
+                    <span className="font-semibold text-primary-400">How it works:</span> Visitors will be
+                    automatically redirected to different URLs based on the website they came from. This uses the HTTP
+                    Referer header to detect the source.
+                  </p>
+                </div>
+
+                {/* Warning Banner */}
+                <div className="bg-error-500/10 border border-error-500/30 rounded-lg p-4">
+                  <p className="text-sm text-gray-300">
+                    <span className="font-semibold text-error-400">⚠️ Important:</span> Enter domain names only (e.g., <code className="text-primary-400">twitter.com</code>), not full URLs.
+                    <br />
+                    <span className="text-xs text-gray-400 mt-1 inline-block">
+                      DO NOT use your short link (<code className="text-error-400">/{referrerRoutingLink.slug}</code>) as the destination - this would create a redirect loop!
+                    </span>
+                  </p>
+                </div>
+
+                {/* Referrer Routes */}
+                <div className="space-y-3">
+                  {referrerRoutes.map((route, index) => (
+                    <div key={index} className="flex gap-3 items-start">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Referrer Domain
+                        </label>
+                        <input
+                          type="text"
+                          value={route.domain}
+                          onChange={(e) => updateReferrerRoute(index, 'domain', e.target.value)}
+                          placeholder="e.g., twitter.com, linkedin.com, or 'default'"
+                          className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          disabled={referrerRoutingLoading}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Domain only (no http:// or paths). Use "default" for unmatched referrers.
+                        </p>
+                      </div>
+                      <div className="flex-[2]">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Destination URL
+                        </label>
+                        <input
+                          type="url"
+                          value={route.url}
+                          onChange={(e) => updateReferrerRoute(index, 'url', e.target.value)}
+                          placeholder="https://example.com"
+                          className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          disabled={referrerRoutingLoading}
+                        />
+                      </div>
+                      <div className="pt-8">
+                        <button
+                          onClick={() => removeReferrerRoute(index)}
+                          className="text-error-500 hover:text-error-400 text-sm px-3 py-2"
+                          disabled={referrerRoutingLoading}
+                          title="Remove this route"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Add Referrer Button */}
+                  <button
+                    onClick={addReferrerRoute}
+                    className="w-full px-4 py-3 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-gray-300 hover:text-white transition-colors disabled:opacity-50"
+                    disabled={referrerRoutingLoading}
+                  >
+                    + Add Referrer
+                  </button>
+                </div>
+
+                {/* Examples & Info */}
+                <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-white mb-2">Common Use Cases & Examples</h4>
+                  <div className="text-xs text-gray-400 space-y-2">
+                    <div>
+                      <span className="text-primary-400 font-medium">Social Media:</span>
+                      <ul className="ml-4 mt-1 space-y-0.5">
+                        <li>• twitter.com → Twitter-optimized landing page</li>
+                        <li>• linkedin.com → Professional B2B content</li>
+                        <li>• reddit.com → Detailed technical content</li>
+                        <li>• instagram.com → Visual-first page</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <span className="text-primary-400 font-medium">Tech Platforms:</span>
+                      <ul className="ml-4 mt-1 space-y-0.5">
+                        <li>• news.ycombinator.com → HackerNews-style content</li>
+                        <li>• producthunt.com → Product launch page</li>
+                        <li>• github.com → Developer documentation</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <span className="text-primary-400 font-medium">Fallback:</span>
+                      <ul className="ml-4 mt-1 space-y-0.5">
+                        <li>• "default" → Used for direct visits or unknown referrers</li>
+                      </ul>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-gray-600">
+                      <span className="text-primary-400">Detection:</span> Uses HTTP Referer header (note: some browsers/users may block this)
+                    </div>
+                    <div>
+                      <span className="text-primary-400">Priority:</span> Referrer routing has lower priority than device and geographic routing
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-between items-center pt-4 border-t border-gray-600">
+                  <div>
+                    {referrerRoutingConfig?.routing?.referrer && (
+                      <button
+                        onClick={handleDeleteReferrerRouting}
+                        className="text-sm text-error-500 hover:text-error-400 disabled:opacity-50"
+                        disabled={referrerRoutingLoading}
+                      >
+                        🗑️ Delete Referrer Routing
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={closeReferrerRoutingModal}
+                      className="btn-secondary"
+                      disabled={referrerRoutingLoading}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveReferrerRouting}
+                      className="btn-primary disabled:opacity-50"
+                      disabled={referrerRoutingLoading || referrerRoutes.length === 0}
+                    >
+                      {referrerRoutingLoading ? 'Saving...' : 'Save Routing'}
                     </button>
                   </div>
                 </div>
