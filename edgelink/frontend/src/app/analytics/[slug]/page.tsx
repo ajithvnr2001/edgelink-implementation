@@ -46,31 +46,55 @@ const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'
 export default function AnalyticsPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = use(params)
   const router = useRouter()
+  const [user, setUser] = useState<any>(null)
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [timeRange, setTimeRange] = useState<'7d' | '30d'>('7d')
+  const [realtimeMode, setRealtimeMode] = useState(false)
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
 
   useEffect(() => {
-    const user = getUser()
-    if (!user) {
+    const currentUser = getUser()
+    if (!currentUser) {
       router.push('/login')
       return
     }
+    setUser(currentUser)
 
     fetchAnalytics()
   }, [timeRange, resolvedParams.slug])
 
-  async function fetchAnalytics() {
+  // Real-time polling effect
+  useEffect(() => {
+    if (!realtimeMode) return
+
+    const interval = setInterval(() => {
+      fetchAnalytics(true) // Silent update
+    }, 2000)
+
+    return () => clearInterval(interval)
+  }, [realtimeMode, timeRange, resolvedParams.slug])
+
+  async function fetchAnalytics(silent = false) {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       const data = await getLinkAnalytics(resolvedParams.slug, timeRange) as AnalyticsData
       setAnalytics(data)
+      setLastUpdate(new Date())
     } catch (err: any) {
       setError(err.message)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
+  }
+
+  const toggleRealtimeMode = () => {
+    if (!user || user.plan !== 'pro') {
+      alert('Real-time analytics is a Pro feature. Upgrade to unlock live updates!')
+      return
+    }
+    setRealtimeMode(!realtimeMode)
   }
 
   if (loading) {
@@ -123,28 +147,62 @@ export default function AnalyticsPage({ params }: { params: Promise<{ slug: stri
             </div>
           </div>
 
-          {/* Time Range Selector */}
-          <div className="mt-6 flex gap-2">
-            <button
-              onClick={() => setTimeRange('7d')}
-              className={`px-4 py-2 rounded-lg ${
-                timeRange === '7d'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-              }`}
-            >
-              Last 7 Days
-            </button>
-            <button
-              onClick={() => setTimeRange('30d')}
-              className={`px-4 py-2 rounded-lg ${
-                timeRange === '30d'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-              }`}
-            >
-              Last 30 Days
-            </button>
+          {/* Time Range Selector & Real-time Toggle */}
+          <div className="mt-6 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setTimeRange('7d')}
+                className={`px-4 py-2 rounded-lg ${
+                  timeRange === '7d'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                }`}
+              >
+                Last 7 Days
+              </button>
+              <button
+                onClick={() => setTimeRange('30d')}
+                className={`px-4 py-2 rounded-lg ${
+                  timeRange === '30d'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                }`}
+              >
+                Last 30 Days
+              </button>
+            </div>
+
+            {/* Real-time Toggle */}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={toggleRealtimeMode}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+                  realtimeMode
+                    ? 'bg-green-600 text-white'
+                    : user?.plan === 'pro'
+                    ? 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                    : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                }`}
+                title={user?.plan !== 'pro' ? 'Real-time analytics is a Pro feature' : 'Toggle real-time updates'}
+              >
+                {realtimeMode ? (
+                  <>
+                    <span className="animate-pulse">🔴</span>
+                    <span>LIVE</span>
+                  </>
+                ) : (
+                  <>
+                    {user?.plan === 'pro' ? '▶️' : '🔒'}
+                    <span>Real-time</span>
+                  </>
+                )}
+              </button>
+              {realtimeMode && (
+                <div className="text-sm text-gray-400">
+                  Last update: {lastUpdate.toLocaleTimeString()}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -232,21 +290,85 @@ export default function AnalyticsPage({ params }: { params: Promise<{ slug: stri
         </div>
 
         {/* Geographic Distribution */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Geographic Distribution</h2>
+        <div className={`bg-gray-800 rounded-lg p-6 mb-6 ${realtimeMode ? 'ring-2 ring-green-500 ring-opacity-50' : ''}`}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Geographic Distribution</h2>
+            {realtimeMode && (
+              <span className="text-xs text-green-400 flex items-center gap-1">
+                <span className="animate-pulse">●</span>
+                Live Updates
+              </span>
+            )}
+          </div>
           <div className="bg-gray-900 rounded-lg p-4 mb-4 text-center">
             <p className="text-gray-400">🗺️ Interactive map coming soon with MapBox integration</p>
           </div>
-          <div className="space-y-2">
-            {analytics.analytics.geographic.map((geo) => (
-              <div key={geo.country} className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <span className="text-2xl mr-3">{getFlagEmoji(geo.country)}</span>
-                  <span>{geo.country_name}</span>
-                </div>
-                <span className="text-gray-400">{geo.clicks} clicks</span>
+
+          {/* Top 10 Countries Table */}
+          {user?.plan === 'pro' && analytics.analytics.geographic.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-lg font-medium mb-3 text-gray-300">Top 10 Countries</h3>
+              <div className="bg-gray-900 rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-950">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Rank</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Country</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Clicks</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Share</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {analytics.analytics.geographic.slice(0, 10).map((geo, index) => {
+                      const percentage = analytics.total_clicks > 0
+                        ? ((geo.clicks / analytics.total_clicks) * 100).toFixed(1)
+                        : '0.0';
+                      return (
+                        <tr key={geo.country} className={`hover:bg-gray-850 transition-colors ${realtimeMode ? 'animate-pulse-slow' : ''}`}>
+                          <td className="px-4 py-3 text-sm text-gray-400">#{index + 1}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center">
+                              <span className="text-2xl mr-3">{getFlagEmoji(geo.country)}</span>
+                              <span className="font-medium text-white">{geo.country_name}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <span className="text-lg font-semibold text-blue-400">{geo.clicks.toLocaleString()}</span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <div className="w-16 bg-gray-700 rounded-full h-2">
+                                <div
+                                  className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm text-gray-400 w-12 text-right">{percentage}%</span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            ))}
+            </div>
+          )}
+
+          {/* All Countries List */}
+          <div>
+            <h3 className="text-lg font-medium mb-3 text-gray-300">All Countries ({analytics.analytics.geographic.length})</h3>
+            <div className="space-y-2">
+              {analytics.analytics.geographic.map((geo) => (
+                <div key={geo.country} className="flex justify-between items-center py-2 border-b border-gray-700 hover:bg-gray-750 transition-colors">
+                  <div className="flex items-center">
+                    <span className="text-2xl mr-3">{getFlagEmoji(geo.country)}</span>
+                    <span>{geo.country_name}</span>
+                  </div>
+                  <span className="text-gray-400">{geo.clicks} clicks</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
