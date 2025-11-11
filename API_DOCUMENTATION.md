@@ -38,9 +38,15 @@ EdgeLink is a developer-first URL shortener built on Cloudflare Workers Edge. It
 
 ## Authentication
 
-EdgeLink uses JWT (JSON Web Tokens) for authentication with Bearer token format.
+EdgeLink supports two authentication methods:
+1. **JWT Tokens** - Short-lived (24 hours), for user sessions
+2. **API Keys** - Long-lived (up to 1 year), for programmatic access
 
-### Signup
+Both use the same `Authorization: Bearer <token>` header format.
+
+### Method 1: JWT Token Authentication
+
+#### Signup
 
 Create a new user account.
 
@@ -68,7 +74,7 @@ Create a new user account.
 }
 ```
 
-### Login
+#### Login
 
 Authenticate and receive JWT token.
 
@@ -94,13 +100,107 @@ Authenticate and receive JWT token.
 }
 ```
 
-### Using the Token
-
-Include the JWT token in the `Authorization` header for all authenticated requests:
-
+**Using JWT Tokens:**
 ```
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
+
+**Expiration:** JWT tokens expire after 24 hours. Use the `/auth/refresh` endpoint to get a new token.
+
+---
+
+### Method 2: API Key Authentication (Recommended for Scripts)
+
+API keys are ideal for:
+- Automation scripts
+- CI/CD pipelines
+- Long-running integrations
+- Server-to-server communication
+
+#### Generate API Key
+
+**Endpoint:** `POST /api/keys`
+
+**Authentication:** JWT token required
+
+**Request Body:**
+```json
+{
+  "name": "My Python Script",
+  "expires_in_days": 365
+}
+```
+
+**Response (201):**
+```json
+{
+  "key_id": "key_abc123xyz",
+  "api_key": "elk_98z7n3wCDv36mmyvuTpmqxRXaERJHulr",
+  "key_prefix": "elk_98z7n3w",
+  "name": "My Python Script",
+  "created_at": "2025-11-11T10:00:00.000Z",
+  "expires_at": "2026-11-11T10:00:00.000Z",
+  "warning": "Save this API key now. You will not be able to see it again!",
+  "usage": {
+    "header": "Authorization: Bearer elk_98z7n3wCDv36mmyvuTpmqxRXaERJHulr",
+    "example": "curl -H \"Authorization: Bearer elk_98z7n3wCDv36mmyvuTpmqxRXaERJHulr\" https://api.edgelink.io/api/shorten"
+  }
+}
+```
+
+**Important:** Save the `api_key` immediately - it will only be shown once!
+
+#### Using API Keys
+
+```
+Authorization: Bearer elk_98z7n3wCDv36mmyvuTpmqxRXaERJHulr
+```
+
+**Format:** API keys always start with `elk_` followed by 32 alphanumeric characters.
+
+**Example:**
+```bash
+curl -X GET https://edgelink-production.quoteviral.workers.dev/api/links \
+  -H "Authorization: Bearer elk_98z7n3wCDv36mmyvuTpmqxRXaERJHulr"
+```
+
+#### List API Keys
+
+**Endpoint:** `GET /api/keys`
+
+Shows all your API keys (only prefixes, not full keys):
+
+```json
+{
+  "keys": [
+    {
+      "key_id": "key_abc123xyz",
+      "key_prefix": "elk_98z7n3w",
+      "name": "My Python Script",
+      "last_used_at": "2025-11-11T10:00:00.000Z",
+      "created_at": "2025-11-10T10:00:00.000Z",
+      "expires_at": "2026-11-11T10:00:00.000Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+#### Revoke API Key
+
+**Endpoint:** `DELETE /api/keys/{key_id}`
+
+Immediately invalidates an API key.
+
+---
+
+### Authentication Priority
+
+When a request includes an `Authorization` header, the system checks in this order:
+
+1. **API Key** - If token starts with `elk_`, validate as API key
+2. **JWT Token** - If not an API key, validate as JWT
+3. **Anonymous** - If no header, treat as anonymous (limited access)
 
 ---
 
