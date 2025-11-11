@@ -3,7 +3,7 @@ name: Deploy Frontend to Cloudflare Pages
 on:
   push:
     branches:
-      - main
+      - master
       - claude/*
   workflow_dispatch:
 
@@ -34,5 +34,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy .vercel/output/static --project-name=edgelink-production --branch=${{ github.ref_name }}
+          command: pages deploy .vercel/output/static --project-name=edgelink-production --branch=${{ github.ref_name == 'master' && 'production' || github.ref_name }}
           workingDirectory: edgelink/frontend
