@@ -1,0 +1,42 @@
+name: Deploy Frontend to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+      - claude/*
+    paths:
+      - 'edgelink/frontend/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Cloudflare Pages
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: edgelink/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: edgelink/frontend
+        run: npm install --legacy-peer-deps
+
+      - name: Build with next-on-pages
+        working-directory: edgelink/frontend
+        run: npx @cloudflare/next-on-pages
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy .vercel/output/static --project-name=edgelink-production --branch=${{ github.ref_name }}
+          workingDirectory: edgelink/frontend
