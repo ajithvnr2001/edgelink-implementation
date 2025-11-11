@@ -940,12 +940,12 @@ export default function DashboardPage() {
                       >
                         ✏️ Edit
                       </button>
-                      <Link
-                        href={`/analytics/${link.slug}`}
+                      <button
+                        onClick={() => router.push(`/analytics/${link.slug}`)}
                         className="btn-secondary text-sm"
                       >
                         📊 Analytics
-                      </Link>
+                      </button>
                       <button
                         onClick={() => handleGenerateQR(link, 'svg')}
                         className="btn-secondary text-sm"
