@@ -3,8 +3,8 @@ name: Deploy Frontend to Cloudflare Pages
 on:
   push:
     branches:
-      - main
       - master
+      - claude/*
     paths:
       - 'edgelink/frontend/**'
       - '.github/workflows/deploy-frontend.yml'
