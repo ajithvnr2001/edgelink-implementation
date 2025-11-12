@@ -30,6 +30,9 @@ dataset = "edgelink_analytics"
 # Environment variables
 [vars]
 ENVIRONMENT = "development"
+FRONTEND_URL = "http://localhost:3000"
+ALLOW_REGISTRATION = "true"
+NODE_ENV = "development"
 # FALLBACK_URL = "https://example.com" # Optional: Proxy to this URL when slug not found (for root domain usage)
 
 # Secrets (set via: wrangler secret put <NAME>)
