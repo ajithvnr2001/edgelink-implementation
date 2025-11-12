@@ -95,7 +95,7 @@ wrangler deploy
 **Expected Output:**
 ```
 ✅ Uploaded edgelink-production
-✅ Deployed to: https://edgelink-production.quoteviral.workers.dev
+✅ Deployed to: https://go.shortedbro.xyz
 ✅ Version ID: f3ac765c-fc7f-4939-8229-119ca059900c
 ```
 
@@ -103,12 +103,12 @@ wrangler deploy
 
 ```bash
 # Test signup endpoint
-curl -X POST https://edgelink-production.quoteviral.workers.dev/auth/signup \
+curl -X POST https://go.shortedbro.xyz/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"TestPass123","name":"Test User"}'
 
 # Test login endpoint
-curl -X POST https://edgelink-production.quoteviral.workers.dev/auth/login \
+curl -X POST https://go.shortedbro.xyz/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"TestPass123"}'
 ```
@@ -126,10 +126,10 @@ cd frontend
 # Create .env.local for local development
 cat > .env.local << 'EOF'
 # Local Development Environment
-NEXT_PUBLIC_API_URL=https://edgelink-production.quoteviral.workers.dev
+NEXT_PUBLIC_API_URL=https://go.shortedbro.xyz
 NEXT_PUBLIC_ENVIRONMENT=development
 NEXT_PUBLIC_DEBUG=true
-NEXT_PUBLIC_SHORT_URL_DOMAIN=edgelink-production.quoteviral.workers.dev
+NEXT_PUBLIC_SHORT_URL_DOMAIN=go.shortedbro.xyz
 EOF
 
 # Verify .env.production exists
@@ -229,7 +229,7 @@ rm -rf .next/cache
 wrangler pages deploy .next --project-name=edgelink-production --commit-dirty=true
 
 # 3. Verification
-curl -X POST https://edgelink-production.quoteviral.workers.dev/auth/signup \
+curl -X POST https://go.shortedbro.xyz/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"verify@test.com","password":"Test123","name":"Verify User"}'
 ```
@@ -352,7 +352,7 @@ wrangler d1 execute edgelink-production --remote --file=schema.sql
 |---------|-----|
 | **Frontend (Production)** | https://edgelink-production.pages.dev |
 | **Frontend (Master Branch)** | https://master.edgelink-production.pages.dev |
-| **Backend API** | https://edgelink-production.quoteviral.workers.dev |
+| **Backend API** | https://go.shortedbro.xyz |
 | **Cloudflare Dashboard** | https://dash.cloudflare.com |
 | **GitHub Repository** | https://github.com/ajithvnr2001/edgelink-implementation |
 
@@ -362,12 +362,12 @@ wrangler d1 execute edgelink-production --remote --file=schema.sql
 
 ```bash
 # 1. Test signup
-curl -X POST https://edgelink-production.quoteviral.workers.dev/auth/signup \
+curl -X POST https://go.shortedbro.xyz/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"demo@example.com","password":"SecurePass123","name":"Demo User"}'
 
 # 2. Test login
-curl -X POST https://edgelink-production.quoteviral.workers.dev/auth/login \
+curl -X POST https://go.shortedbro.xyz/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"demo@example.com","password":"SecurePass123"}'
 

@@ -9,10 +9,10 @@
 
 From `error.txt`, the application was experiencing:
 
-1. **Login Error**: `POST https://edgelink-production.quoteviral.workers.dev/auth/login 500 (Internal Server Error)`
+1. **Login Error**: `POST https://go.shortedbro.xyz/auth/login 500 (Internal Server Error)`
 2. **Signup Errors**:
-   - `POST https://edgelink-production.quoteviral.workers.dev/auth/signup 409 (Conflict)` - Expected behavior
-   - `POST https://edgelink-production.quoteviral.workers.dev/auth/signup 500 (Internal Server Error)` - Critical error
+   - `POST https://go.shortedbro.xyz/auth/signup 409 (Conflict)` - Expected behavior
+   - `POST https://go.shortedbro.xyz/auth/signup 500 (Internal Server Error)` - Critical error
 
 ---
 
@@ -184,7 +184,7 @@ npm run deploy
 **Result**:
 ```
 ✅ Uploaded edgelink-production
-✅ Deployed to: https://edgelink-production.quoteviral.workers.dev
+✅ Deployed to: https://go.shortedbro.xyz
 ✅ Version ID: f3ac765c-fc7f-4939-8229-119ca059900c
 ```
 
@@ -196,7 +196,7 @@ npm run deploy
 
 **Command**:
 ```bash
-curl -X POST https://edgelink-production.quoteviral.workers.dev/auth/signup \
+curl -X POST https://go.shortedbro.xyz/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"demo@example.com","password":"SecurePass123","name":"Demo User"}'
 ```
@@ -220,7 +220,7 @@ curl -X POST https://edgelink-production.quoteviral.workers.dev/auth/signup \
 
 **Command**:
 ```bash
-curl -X POST https://edgelink-production.quoteviral.workers.dev/auth/login \
+curl -X POST https://go.shortedbro.xyz/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"demo@example.com","password":"SecurePass123"}'
 ```
@@ -244,7 +244,7 @@ curl -X POST https://edgelink-production.quoteviral.workers.dev/auth/login \
 
 **Command**:
 ```bash
-curl -X POST https://edgelink-production.quoteviral.workers.dev/auth/signup \
+curl -X POST https://go.shortedbro.xyz/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"demo@example.com","password":"AnotherPass123","name":"Another User"}' \
   -w "\nHTTP Status: %{http_code}\n"
@@ -303,7 +303,7 @@ HTTP Status: 409
 
 ## 🚀 Production Deployment
 
-**Live URL**: https://edgelink-production.quoteviral.workers.dev
+**Live URL**: https://go.shortedbro.xyz
 
 **Available Endpoints**:
 - `POST /auth/signup` - Create new account
@@ -314,7 +314,7 @@ HTTP Status: 409
 **Frontend Configuration**:
 The frontend is already configured correctly in `frontend/.env.production`:
 ```env
-NEXT_PUBLIC_API_URL=https://edgelink-production.quoteviral.workers.dev
+NEXT_PUBLIC_API_URL=https://go.shortedbro.xyz
 ```
 
 ---
@@ -369,7 +369,7 @@ wrangler tail edgelink-production
 
 ### Verify Deployment
 ```bash
-curl https://edgelink-production.quoteviral.workers.dev/health
+curl https://go.shortedbro.xyz/health
 ```
 
 ---
@@ -645,7 +645,7 @@ Redirect back to dashboard
 - **Frontend**: https://edgelink-production.pages.dev
 - **Latest Deployment**: https://d64dd5ff.edgelink-production.pages.dev
 - **Master Branch**: https://master.edgelink-production.pages.dev
-- **Backend API**: https://edgelink-production.quoteviral.workers.dev
+- **Backend API**: https://go.shortedbro.xyz
 
 **Deployment Details**:
 ```bash
@@ -667,7 +667,7 @@ cd frontend && wrangler pages deploy .next/standalone --project-name=edgelink-pr
 **Environment Configuration**:
 The frontend is configured to use the production backend API:
 ```
-NEXT_PUBLIC_API_URL=https://edgelink-production.quoteviral.workers.dev
+NEXT_PUBLIC_API_URL=https://go.shortedbro.xyz
 ```
 
 ---
@@ -702,7 +702,7 @@ To test the fix on production:
 |-----------|--------|-----|
 | Frontend (Production) | ✅ Live | https://edgelink-production.pages.dev |
 | Frontend (Master) | ✅ Live | https://master.edgelink-production.pages.dev |
-| Backend API | ✅ Live | https://edgelink-production.quoteviral.workers.dev |
+| Backend API | ✅ Live | https://go.shortedbro.xyz |
 | Database (D1) | ✅ Active | 14 tables, 0.25 MB |
 | KV Namespace | ✅ Active | production-LINKS_KV |
 | JWT Secret | ✅ Configured | Secure |
@@ -1230,7 +1230,7 @@ cd frontend && npm run build && rm -rf .next/cache && rm -rf .next/server/app/_n
 ### Local Development
 - `.env.local` - Used by `npm run dev`
 ```env
-NEXT_PUBLIC_API_URL=https://edgelink-production.quoteviral.workers.dev
+NEXT_PUBLIC_API_URL=https://go.shortedbro.xyz
 NEXT_PUBLIC_ENVIRONMENT=development
 NEXT_PUBLIC_DEBUG=true
 ```
@@ -1238,7 +1238,7 @@ NEXT_PUBLIC_DEBUG=true
 ### Production
 - `.env.production` - Used by `npm run build`
 ```env
-NEXT_PUBLIC_API_URL=https://edgelink-production.quoteviral.workers.dev
+NEXT_PUBLIC_API_URL=https://go.shortedbro.xyz
 NEXT_PUBLIC_ENVIRONMENT=production
 NEXT_PUBLIC_DEBUG=false
 ```
@@ -1259,7 +1259,7 @@ No environment variables needed in Cloudflare dashboard - all configured in `.en
 | Create Page | ✅ Working | https://edgelink-production.pages.dev/create | HTTP 200 |
 | Static JS Files | ✅ Working | `/_next/static/chunks/*.js` | application/javascript |
 | Static CSS Files | ✅ Working | `/_next/static/css/*.css` | text/css |
-| Backend API | ✅ Working | https://edgelink-production.quoteviral.workers.dev | HTTP 200 |
+| Backend API | ✅ Working | https://go.shortedbro.xyz | HTTP 200 |
 
 ---
 
@@ -1358,7 +1358,7 @@ EdgeLink has TWO separate deployments:
    - Routes: `/login`, `/signup`, `/dashboard`, `/create`, etc.
    - Static HTML, CSS, JavaScript files
 
-2. **Backend** (Cloudflare Workers): `https://edgelink-production.quoteviral.workers.dev`
+2. **Backend** (Cloudflare Workers): `https://go.shortedbro.xyz`
    - Handles API requests
    - Processes short URL redirects
    - Route: `/{slug}` → redirects to destination
@@ -1379,7 +1379,7 @@ Next.js shows homepage (fallback behavior)
 ### What Should Happen
 
 ```
-User clicks: https://edgelink-production.quoteviral.workers.dev/abc123
+User clicks: https://go.shortedbro.xyz/abc123
      ↓
 Goes to Backend (Cloudflare Worker)
      ↓
@@ -1424,7 +1424,7 @@ const response: ShortenResponse = {
 // After
 const response: ShortenResponse = {
   slug,
-  short_url: `https://edgelink-production.quoteviral.workers.dev/${slug}`,
+  short_url: `https://go.shortedbro.xyz/${slug}`,
   expires_in: 30 * 24 * 60 * 60
 };
 ```
@@ -1452,9 +1452,9 @@ const response: ShortenResponse = {
   slug,
   short_url: body.custom_domain
     ? `https://${body.custom_domain}/${slug}`
-    : `https://edgelink-production.quoteviral.workers.dev/${slug}`,
+    : `https://go.shortedbro.xyz/${slug}`,
   expires_in: linkData.expires_at ? Math.floor((linkData.expires_at - now) / 1000) : undefined,
-  qr_code_url: user.plan === 'pro' ? `https://edgelink-production.quoteviral.workers.dev/api/qr/${slug}` : undefined
+  qr_code_url: user.plan === 'pro' ? `https://go.shortedbro.xyz/api/qr/${slug}` : undefined
 };
 ```
 
@@ -1477,7 +1477,7 @@ result.imported_links.push({
 result.imported_links.push({
   slug,
   destination: row.destination,
-  short_url: `https://edgelink-production.quoteviral.workers.dev/${slug}`
+  short_url: `https://go.shortedbro.xyz/${slug}`
 });
 ```
 
@@ -1494,7 +1494,7 @@ const domain = link.custom_domain || 'edgelink-production.pages.dev';
 const shortUrl = `https://${domain}/${slug}`;
 
 // After
-const domain = link.custom_domain || 'edgelink-production.quoteviral.workers.dev';
+const domain = link.custom_domain || 'go.shortedbro.xyz';
 const shortUrl = `https://${domain}/${slug}`;
 ```
 
@@ -1517,10 +1517,10 @@ const shortUrl = `https://${domain}/${slug}`;
 
 // After
 <code className="text-primary-500 font-mono text-lg">
-  edgelink-production.quoteviral.workers.dev/{link.slug}
+  go.shortedbro.xyz/{link.slug}
 </code>
 <button
-  onClick={() => copyToClipboard(`https://edgelink-production.quoteviral.workers.dev/${link.slug}`, link.slug)}
+  onClick={() => copyToClipboard(`https://go.shortedbro.xyz/${link.slug}`, link.slug)}
   className="text-gray-400 hover:text-white text-sm"
 >
 ```
@@ -1540,10 +1540,10 @@ GET https://api.edgelink.io/api/links
 GET https://api.edgelink.io/api/analytics/{slug}
 
 // After
-curl -H "Authorization: Bearer {key}" https://edgelink-production.quoteviral.workers.dev/api/shorten
-POST https://edgelink-production.quoteviral.workers.dev/api/shorten
-GET https://edgelink-production.quoteviral.workers.dev/api/links
-GET https://edgelink-production.quoteviral.workers.dev/api/analytics/{slug}
+curl -H "Authorization: Bearer {key}" https://go.shortedbro.xyz/api/shorten
+POST https://go.shortedbro.xyz/api/shorten
+GET https://go.shortedbro.xyz/api/links
+GET https://go.shortedbro.xyz/api/analytics/{slug}
 ```
 
 ---
@@ -1559,7 +1559,7 @@ npm run deploy
 **Result**:
 ```
 ✅ Uploaded edgelink-production
-✅ Deployed to: https://edgelink-production.quoteviral.workers.dev
+✅ Deployed to: https://go.shortedbro.xyz
 ✅ Version ID: b1a1face-bdaf-414f-b7ba-804025081975
 ```
 
@@ -1592,7 +1592,7 @@ wrangler pages deploy .next/server/app --project-name=edgelink-production --bran
    - Destination URL: `https://google.com`
    - Click "Create Link"
 4. **Check response**:
-   - Should show: `https://edgelink-production.quoteviral.workers.dev/abc123`
+   - Should show: `https://go.shortedbro.xyz/abc123`
    - NOT: `https://edgelink-production.pages.dev/abc123`
 5. **Click the short URL**:
    - Should redirect to: `https://google.com`
@@ -1609,7 +1609,7 @@ wrangler pages deploy .next/server/app --project-name=edgelink-production --bran
 - ❌ No redirect happened
 
 ### After Fix
-- ✅ Short URLs: `https://edgelink-production.quoteviral.workers.dev/{slug}`
+- ✅ Short URLs: `https://go.shortedbro.xyz/{slug}`
 - ✅ Goes to Backend (Cloudflare Worker)
 - ✅ Redirect handler processes the request
 - ✅ 301 redirect to destination URL
@@ -1649,7 +1649,7 @@ Use this guide when you want to change the domain used for short URLs:
 │     └─ /analytics/[slug]    (Analytics page)            │
 │                                                          │
 │  BACKEND (Cloudflare Workers)                           │
-│  └─ https://edgelink-production.quoteviral.workers.dev  │
+│  └─ https://go.shortedbro.xyz  │
 │     ├─ /auth/login          (API: Login)                │
 │     ├─ /auth/signup         (API: Signup)               │
 │     ├─ /api/shorten         (API: Create short link)    │
@@ -1657,7 +1657,7 @@ Use this guide when you want to change the domain used for short URLs:
 │     └─ /{slug}              (🎯 REDIRECT HANDLER)       │
 │                                                          │
 │  SHORT URLS (Must use Backend domain!)                  │
-│  └─ https://edgelink-production.quoteviral.workers.dev/{slug}
+│  └─ https://go.shortedbro.xyz/{slug}
 │                                                          │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -1693,7 +1693,7 @@ Use this guide when you want to change the domain used for short URLs:
 
 ### Scenario 1: Using Current Worker Domain (Already Done)
 
-**Current short URLs**: `https://edgelink-production.quoteviral.workers.dev/{slug}`
+**Current short URLs**: `https://go.shortedbro.xyz/{slug}`
 
 This is what we just fixed. No further changes needed.
 
@@ -1707,12 +1707,12 @@ This is what we just fixed. No further changes needed.
 
 **Option A: Subdomain for short links** (Recommended)
 ```
-go.yourdomain.com → edgelink-production.quoteviral.workers.dev
+go.yourdomain.com → go.shortedbro.xyz
 ```
 
 **Option B: Root domain for short links**
 ```
-yourdomain.com → edgelink-production.quoteviral.workers.dev
+yourdomain.com → go.shortedbro.xyz
 ```
 
 **Steps**:
@@ -1736,7 +1736,7 @@ Use `grep` to find everywhere short URLs are generated:
 cd backend
 
 # Search for current domain
-grep -r "edgelink-production.quoteviral.workers.dev" src/
+grep -r "go.shortedbro.xyz" src/
 
 # You'll find references in these files:
 # - src/handlers/shorten.ts (2-3 locations)
@@ -1749,7 +1749,7 @@ grep -r "edgelink-production.quoteviral.workers.dev" src/
 cd frontend
 
 # Search for current domain
-grep -r "edgelink-production.quoteviral.workers.dev" src/
+grep -r "go.shortedbro.xyz" src/
 
 # You'll find references in:
 # - src/app/dashboard/page.tsx (2 locations)
@@ -1765,7 +1765,7 @@ grep -r "edgelink-production.quoteviral.workers.dev" src/
 **Find and replace** (Line 78):
 ```typescript
 // OLD
-short_url: `https://edgelink-production.quoteviral.workers.dev/${slug}`,
+short_url: `https://go.shortedbro.xyz/${slug}`,
 
 // NEW
 short_url: `https://go.yourdomain.com/${slug}`,
@@ -1776,7 +1776,7 @@ short_url: `https://go.yourdomain.com/${slug}`,
 // OLD
 short_url: body.custom_domain
   ? `https://${body.custom_domain}/${slug}`
-  : `https://edgelink-production.quoteviral.workers.dev/${slug}`,
+  : `https://go.shortedbro.xyz/${slug}`,
 
 // NEW
 short_url: body.custom_domain
@@ -1787,7 +1787,7 @@ short_url: body.custom_domain
 **Find and replace** (Line 187):
 ```typescript
 // OLD
-qr_code_url: user.plan === 'pro' ? `https://edgelink-production.quoteviral.workers.dev/api/qr/${slug}` : undefined
+qr_code_url: user.plan === 'pro' ? `https://go.shortedbro.xyz/api/qr/${slug}` : undefined
 
 // NEW
 qr_code_url: user.plan === 'pro' ? `https://go.yourdomain.com/api/qr/${slug}` : undefined
@@ -1800,7 +1800,7 @@ qr_code_url: user.plan === 'pro' ? `https://go.yourdomain.com/api/qr/${slug}` : 
 **Find and replace** (Line 360):
 ```typescript
 // OLD
-short_url: `https://edgelink-production.quoteviral.workers.dev/${slug}`
+short_url: `https://go.shortedbro.xyz/${slug}`
 
 // NEW
 short_url: `https://go.yourdomain.com/${slug}`
@@ -1813,7 +1813,7 @@ short_url: `https://go.yourdomain.com/${slug}`
 **Find and replace** (Line 336):
 ```typescript
 // OLD
-const domain = link.custom_domain || 'edgelink-production.quoteviral.workers.dev';
+const domain = link.custom_domain || 'go.shortedbro.xyz';
 
 // NEW
 const domain = link.custom_domain || 'go.yourdomain.com';
@@ -1829,10 +1829,10 @@ const domain = link.custom_domain || 'go.yourdomain.com';
 ```typescript
 // OLD
 <code className="text-primary-500 font-mono text-lg">
-  edgelink-production.quoteviral.workers.dev/{link.slug}
+  go.shortedbro.xyz/{link.slug}
 </code>
 <button
-  onClick={() => copyToClipboard(`https://edgelink-production.quoteviral.workers.dev/${link.slug}`, link.slug)}
+  onClick={() => copyToClipboard(`https://go.shortedbro.xyz/${link.slug}`, link.slug)}
 >
 
 // NEW
@@ -1851,9 +1851,9 @@ const domain = link.custom_domain || 'go.yourdomain.com';
 **Find and replace** (Lines 160, 241, 251, 259):
 ```typescript
 // OLD
-https://edgelink-production.quoteviral.workers.dev/api/shorten
-https://edgelink-production.quoteviral.workers.dev/api/links
-https://edgelink-production.quoteviral.workers.dev/api/analytics/{slug}
+https://go.shortedbro.xyz/api/shorten
+https://go.shortedbro.xyz/api/links
+https://go.shortedbro.xyz/api/analytics/{slug}
 
 // NEW
 https://go.yourdomain.com/api/shorten
@@ -1872,7 +1872,7 @@ npm run deploy
 
 **Wait for deployment to complete**:
 ```
-✅ Deployed to: https://edgelink-production.quoteviral.workers.dev
+✅ Deployed to: https://go.shortedbro.xyz
 ```
 
 **Verify backend works**:
@@ -1936,11 +1936,11 @@ wrangler pages deploy .next/server/app --project-name=edgelink-production --bran
 ```bash
 # Backend
 cd backend
-find src/handlers -type f -name "*.ts" -exec sed -i '' 's|edgelink-production.quoteviral.workers.dev|go.yourdomain.com|g' {} +
+find src/handlers -type f -name "*.ts" -exec sed -i '' 's|go.shortedbro.xyz|go.yourdomain.com|g' {} +
 
 # Frontend
 cd frontend
-find src/app -type f -name "*.tsx" -exec sed -i '' 's|edgelink-production.quoteviral.workers.dev|go.yourdomain.com|g' {} +
+find src/app -type f -name "*.tsx" -exec sed -i '' 's|go.shortedbro.xyz|go.yourdomain.com|g' {} +
 ```
 
 **Windows (PowerShell)**:
@@ -1948,13 +1948,13 @@ find src/app -type f -name "*.tsx" -exec sed -i '' 's|edgelink-production.quotev
 # Backend
 cd backend
 Get-ChildItem -Path src/handlers -Filter *.ts -Recurse | ForEach-Object {
-  (Get-Content $_.FullName) -replace 'edgelink-production.quoteviral.workers.dev', 'go.yourdomain.com' | Set-Content $_.FullName
+  (Get-Content $_.FullName) -replace 'go.shortedbro.xyz', 'go.yourdomain.com' | Set-Content $_.FullName
 }
 
 # Frontend
 cd frontend
 Get-ChildItem -Path src/app -Filter *.tsx -Recurse | ForEach-Object {
-  (Get-Content $_.FullName) -replace 'edgelink-production.quoteviral.workers.dev', 'go.yourdomain.com' | Set-Content $_.FullName
+  (Get-Content $_.FullName) -replace 'go.shortedbro.xyz', 'go.yourdomain.com' | Set-Content $_.FullName
 }
 ```
 
@@ -1964,7 +1964,7 @@ Get-ChildItem -Path src/app -Filter *.tsx -Recurse | ForEach-Object {
 
 1. Open VS Code in your project
 2. Press `Ctrl+Shift+H` (Windows) or `Cmd+Shift+H` (Mac)
-3. In "Search" box: `edgelink-production.quoteviral.workers.dev`
+3. In "Search" box: `go.shortedbro.xyz`
 4. In "Replace" box: `go.yourdomain.com`
 5. Click "Replace All" (or review each)
 6. Save all files (`Ctrl+K S` or `Cmd+K S`)
@@ -2080,7 +2080,7 @@ wrangler pages deploy .next/server/app --project-name=edgelink-production --bran
 ---
 
 **Fix Completed**: November 10, 2025
-**Current Short URL Domain**: `https://edgelink-production.quoteviral.workers.dev`
+**Current Short URL Domain**: `https://go.shortedbro.xyz`
 **Redirect Handler**: Working correctly
 **Status**: ✅ Short URLs now redirect to destination properly
 
@@ -2220,11 +2220,11 @@ cd edgelink/backend
 npx wrangler tail
 ```
 
-**Test**: Clicked short link `https://edgelink-production.quoteviral.workers.dev/wlhww9`
+**Test**: Clicked short link `https://go.shortedbro.xyz/wlhww9`
 
 **Log Output** (from wranglerlogs.txt):
 ```
-GET https://edgelink-production.quoteviral.workers.dev/wlhww9 - Ok @ 3:17:25 pm
+GET https://go.shortedbro.xyz/wlhww9 - Ok @ 3:17:25 pm
   (log) [incrementClickCount] Starting for slug: wlhww9, userId: usr_73c0ee56...
   (error) Analytics tracking failed: TypeError: Cannot read properties of undefined...
 ```
@@ -2542,7 +2542,7 @@ npm run deploy
 ```
 ✅ Uploaded edgelink-production (9.66 sec)
 ✅ Deployed edgelink-production triggers (1.47 sec)
-✅ https://edgelink-production.quoteviral.workers.dev
+✅ https://go.shortedbro.xyz
 ✅ Version ID: 9543f765-96ec-4612-93c4-26e7ee9db13c
 ```
 
@@ -2576,7 +2576,7 @@ npm run deploy
 ```
 ✅ Uploaded edgelink-production (10.26 sec)
 ✅ Deployed edgelink-production triggers (10.53 sec)
-✅ https://edgelink-production.quoteviral.workers.dev
+✅ https://go.shortedbro.xyz
 ✅ Version ID: b898f9dc-b976-4c81-a081-60b1511d4395
 ```
 
@@ -2590,7 +2590,7 @@ npm run deploy
 
 **First Test - Slug: 0bZ7bC** (Lines 12-17):
 ```
-GET https://edgelink-production.quoteviral.workers.dev/0bZ7bC - Ok @ 3:26:18 pm
+GET https://go.shortedbro.xyz/0bZ7bC - Ok @ 3:26:18 pm
   (warn) ANALYTICS_ENGINE not configured, skipping analytics tracking
   (log) [incrementClickCount] Starting for slug: 0bZ7bC, userId: usr_73c0ee56...
   (log) [incrementClickCount] Updated D1 database, rows affected: 2
@@ -2604,7 +2604,7 @@ GET https://edgelink-production.quoteviral.workers.dev/0bZ7bC - Ok @ 3:26:18 pm
 
 **Second Test - Slug: gemini (First Click)** (Lines 32-37):
 ```
-GET https://edgelink-production.quoteviral.workers.dev/gemini - Ok @ 3:28:37 pm
+GET https://go.shortedbro.xyz/gemini - Ok @ 3:28:37 pm
   (warn) ANALYTICS_ENGINE not configured, skipping analytics tracking
   (log) [incrementClickCount] Starting for slug: gemini, userId: usr_73c0ee56...
   (log) [incrementClickCount] Updated D1 database, rows affected: 2
@@ -2618,7 +2618,7 @@ GET https://edgelink-production.quoteviral.workers.dev/gemini - Ok @ 3:28:37 pm
 
 **Third Test - Slug: gemini (Second Click)** (Lines 42-47):
 ```
-GET https://edgelink-production.quoteviral.workers.dev/gemini - Ok @ 3:29:33 pm
+GET https://go.shortedbro.xyz/gemini - Ok @ 3:29:33 pm
   (log) [incrementClickCount] Starting for slug: gemini, userId: usr_73c0ee56...
   (log) [incrementClickCount] Updated D1 database, rows affected: 2
   (log) [incrementClickCount] Updated KV store: 1 -> 2  ⬅️ INCREMENTING!
@@ -2631,7 +2631,7 @@ GET https://edgelink-production.quoteviral.workers.dev/gemini - Ok @ 3:29:33 pm
 
 **Fourth Test - Slug: gemini (Third Click)** (Lines 50-55):
 ```
-GET https://edgelink-production.quoteviral.workers.dev/gemini - Ok @ 3:31:37 pm
+GET https://go.shortedbro.xyz/gemini - Ok @ 3:31:37 pm
   (log) [incrementClickCount] Starting for slug: gemini, userId: usr_73c0ee56...
   (log) [incrementClickCount] Updated D1 database, rows affected: 2
   (log) [incrementClickCount] Updated KV store: 2 -> 3  ⬅️ INCREMENTING!
@@ -2793,7 +2793,7 @@ npx wrangler tail
 ### Test Click Tracking
 ```bash
 # Click a short link
-curl -I https://edgelink-production.quoteviral.workers.dev/YOUR_SLUG
+curl -I https://go.shortedbro.xyz/YOUR_SLUG
 
 # Check logs - should see:
 # [incrementClickCount] Starting for slug: YOUR_SLUG
