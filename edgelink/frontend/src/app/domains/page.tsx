@@ -139,6 +139,36 @@ export default function DomainsPage() {
     setTimeout(() => setSuccess(''), 2000);
   };
 
+  // Helper function to parse domain and subdomain
+  const parseDomain = (domainName: string) => {
+    const parts = domainName.split('.');
+
+    // If it has more than 2 parts, it's likely a subdomain (e.g., go.quoteviral.online)
+    // Exception: domains like co.uk, com.au need special handling, but we'll keep it simple
+    if (parts.length > 2) {
+      const subdomain = parts[0];
+      const rootDomain = parts.slice(1).join('.');
+      return {
+        isSubdomain: true,
+        subdomain,
+        rootDomain,
+        txtRecordName: `_edgelink-verify.${subdomain}`,
+        cnameRecordName: subdomain,
+        displayType: 'Subdomain'
+      };
+    } else {
+      // Root domain (e.g., quoteviral.online)
+      return {
+        isSubdomain: false,
+        subdomain: null,
+        rootDomain: domainName,
+        txtRecordName: '_edgelink-verify',
+        cnameRecordName: '@',
+        displayType: 'Root Domain'
+      };
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
@@ -184,43 +214,97 @@ export default function DomainsPage() {
         )}
 
         {/* Verification Instructions */}
-        {verificationInfo && (
-          <div className="mb-6 p-6 bg-gray-800 rounded-lg border border-gray-700">
-            <h3 className="text-xl font-bold text-white mb-4">Domain Verification Required</h3>
-            <p className="text-gray-300 mb-4">Add the following DNS record to verify ownership:</p>
-
-            <div className="space-y-3 mb-4">
-              <div className="grid grid-cols-4 gap-4 text-sm">
-                <div className="text-gray-400">Type</div>
-                <div className="text-gray-400">Name</div>
-                <div className="text-gray-400 col-span-2">Value</div>
+        {verificationInfo && (() => {
+          const domainInfo = parseDomain(verificationInfo.domain_name);
+          return (
+            <div className="mb-6 p-6 bg-gray-800 rounded-lg border border-gray-700">
+              <div className="flex items-center gap-3 mb-4">
+                <h3 className="text-xl font-bold text-white">Domain Verification Required</h3>
+                <span className="px-3 py-1 bg-blue-900/50 text-blue-300 text-xs font-medium rounded-full border border-blue-700">
+                  {domainInfo.displayType}
+                </span>
               </div>
+              <p className="text-gray-300 mb-6">
+                Add these DNS records in Cloudflare (or your DNS provider) for <strong className="text-white">{verificationInfo.domain_name}</strong>:
+              </p>
 
-              <div className="grid grid-cols-4 gap-4 p-3 bg-gray-900 rounded border border-gray-700">
-                <div className="text-white font-mono">TXT</div>
-                <div className="text-white font-mono">_edgelink-verify</div>
-                <div className="text-white font-mono col-span-2 truncate">
-                  {verificationInfo.verification?.record?.value}
+              {/* Step 1: TXT Record */}
+              <div className="mb-6 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+                <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                  <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-xs">1</span>
+                  TXT Record (For Verification)
+                </h4>
+                <div className="space-y-2 mb-3">
+                  <div className="grid grid-cols-3 gap-3 text-xs">
+                    <div className="text-gray-500">Type</div>
+                    <div className="text-gray-500">Name</div>
+                    <div className="text-gray-500">Value</div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 p-3 bg-gray-800 rounded border border-gray-600">
+                    <div className="text-white font-mono text-sm">TXT</div>
+                    <div className="text-green-400 font-mono text-sm">{domainInfo.txtRecordName}</div>
+                    <div className="text-white font-mono text-xs truncate" title={verificationInfo.verification?.record?.value}>
+                      {verificationInfo.verification?.record?.value}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => copyToClipboard(verificationInfo.verification?.record?.value || '')}
+                    className="px-3 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors text-sm"
+                  >
+                    📋 Copy Token
+                  </button>
                 </div>
               </div>
-            </div>
 
-            <button
-              onClick={() => copyToClipboard(verificationInfo.verification?.record?.value || '')}
-              className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors text-sm"
-            >
-              📋 Copy Verification Token
-            </button>
+              {/* Step 2: CNAME Record */}
+              <div className="mb-6 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+                <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                  <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-xs">2</span>
+                  CNAME Record (For Routing)
+                </h4>
+                <div className="space-y-2 mb-3">
+                  <div className="grid grid-cols-3 gap-3 text-xs">
+                    <div className="text-gray-500">Type</div>
+                    <div className="text-gray-500">Name</div>
+                    <div className="text-gray-500">Target</div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 p-3 bg-gray-800 rounded border border-gray-600">
+                    <div className="text-white font-mono text-sm">CNAME</div>
+                    <div className="text-green-400 font-mono text-sm">{domainInfo.cnameRecordName}</div>
+                    <div className="text-white font-mono text-sm">edgelink-production.quoteviral.workers.dev</div>
+                  </div>
+                </div>
+                {!domainInfo.isSubdomain && (
+                  <div className="p-3 bg-yellow-900/20 border border-yellow-700/50 rounded text-xs text-yellow-200">
+                    ⚠️ For root domains, make sure to enable <strong>Cloudflare Proxy (Orange Cloud)</strong> on the CNAME record
+                  </div>
+                )}
+              </div>
 
-            <div className="mt-4 p-4 bg-blue-900/30 border border-blue-700 rounded">
-              <p className="text-blue-200 text-sm">
-                <strong>Alternative: CNAME Setup</strong>
-                <br />
-                Point your domain to: <code className="bg-gray-900 px-2 py-1 rounded">cname.edgelink.io</code>
-              </p>
+              {/* Quick Link to Cloudflare */}
+              <div className="flex items-center justify-between p-4 bg-blue-900/20 border border-blue-700 rounded">
+                <div className="text-sm text-blue-200">
+                  <strong>DNS Provider:</strong> Configure in {domainInfo.isSubdomain ? domainInfo.rootDomain : verificationInfo.domain_name}
+                </div>
+                <a
+                  href="https://dash.cloudflare.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  Open Cloudflare DNS →
+                </a>
+              </div>
+
+              {/* Important Note */}
+              <div className="mt-4 p-3 bg-gray-900/50 border border-gray-600 rounded text-xs text-gray-300">
+                💡 <strong>After adding both records:</strong> Wait 1-3 minutes for DNS propagation, then click "Verify Now" on your domain below.
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Domains List */}
         <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
@@ -279,52 +363,90 @@ export default function DomainsPage() {
                   </div>
 
                   {/* Show verification instructions for unverified domains */}
-                  {!domain.verified && domain.verification_token && (
-                    <div className="mt-4 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
-                      <h4 className="text-sm font-semibold text-white mb-3">DNS Verification Required</h4>
-                      <p className="text-xs text-gray-400 mb-3">
-                        Add this TXT record to your DNS in Cloudflare (or your DNS provider):
-                      </p>
-
-                      <div className="space-y-2 mb-3">
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                          <div className="text-gray-500">Type</div>
-                          <div className="text-gray-500">Name</div>
-                          <div className="text-gray-500">Value</div>
+                  {!domain.verified && domain.verification_token && (() => {
+                    const domainInfo = parseDomain(domain.domain_name);
+                    return (
+                      <div className="mt-4 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+                        <div className="flex items-center gap-2 mb-3">
+                          <h4 className="text-sm font-semibold text-white">DNS Setup Instructions</h4>
+                          <span className="px-2 py-0.5 bg-blue-900/50 text-blue-300 text-xs rounded border border-blue-700">
+                            {domainInfo.displayType}
+                          </span>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 p-2 bg-gray-800 rounded border border-gray-600">
-                          <div className="text-white font-mono text-xs">TXT</div>
-                          <div className="text-white font-mono text-xs">_edgelink-verify</div>
-                          <div className="text-white font-mono text-xs truncate" title={domain.verification_token}>
-                            {domain.verification_token}
+                        <p className="text-xs text-gray-400 mb-4">
+                          Add these 2 DNS records in Cloudflare for <strong className="text-white">{domainInfo.isSubdomain ? domainInfo.rootDomain : domain.domain_name}</strong>:
+                        </p>
+
+                        {/* Step 1: TXT Record */}
+                        <div className="mb-3 p-3 bg-gray-800/50 rounded border border-gray-600">
+                          <div className="text-xs font-semibold text-gray-300 mb-2">
+                            Step 1: TXT Record (Verification)
+                          </div>
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-3 gap-2 text-xs">
+                              <div className="text-gray-500">Type</div>
+                              <div className="text-gray-500">Name</div>
+                              <div className="text-gray-500">Value</div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 p-2 bg-gray-900 rounded border border-gray-600">
+                              <div className="text-white font-mono text-xs">TXT</div>
+                              <div className="text-green-400 font-mono text-xs">{domainInfo.txtRecordName}</div>
+                              <div className="text-white font-mono text-xs truncate" title={domain.verification_token}>
+                                {domain.verification_token}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => copyToClipboard(domain.verification_token!)}
-                          className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors text-xs"
-                        >
-                          Copy Token
-                        </button>
-                        <a
-                          href={`https://dash.cloudflare.com/`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3 py-1 bg-blue-600/20 text-blue-300 border border-blue-700 rounded hover:bg-blue-600/30 transition-colors text-xs"
-                        >
-                          Open Cloudflare DNS
-                        </a>
-                      </div>
+                        {/* Step 2: CNAME Record */}
+                        <div className="mb-3 p-3 bg-gray-800/50 rounded border border-gray-600">
+                          <div className="text-xs font-semibold text-gray-300 mb-2">
+                            Step 2: CNAME Record (Routing)
+                          </div>
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-3 gap-2 text-xs">
+                              <div className="text-gray-500">Type</div>
+                              <div className="text-gray-500">Name</div>
+                              <div className="text-gray-500">Target</div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 p-2 bg-gray-900 rounded border border-gray-600">
+                              <div className="text-white font-mono text-xs">CNAME</div>
+                              <div className="text-green-400 font-mono text-xs">{domainInfo.cnameRecordName}</div>
+                              <div className="text-white font-mono text-xs">edgelink-production.quoteviral.workers.dev</div>
+                            </div>
+                          </div>
+                          {!domainInfo.isSubdomain && (
+                            <div className="mt-2 p-2 bg-yellow-900/20 border border-yellow-700/50 rounded text-xs text-yellow-200">
+                              ⚠️ Enable Cloudflare Proxy (Orange Cloud) for root domains
+                            </div>
+                          )}
+                        </div>
 
-                      <div className="mt-3 p-2 bg-blue-900/20 border border-blue-700/50 rounded">
-                        <p className="text-xs text-blue-200">
-                          After adding the DNS record, click "Verify Now" button above. DNS propagation may take a few minutes.
-                        </p>
+                        <div className="flex gap-2 mb-3">
+                          <button
+                            onClick={() => copyToClipboard(domain.verification_token!)}
+                            className="px-3 py-1.5 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors text-xs font-medium"
+                          >
+                            📋 Copy Token
+                          </button>
+                          <a
+                            href="https://dash.cloudflare.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 bg-blue-600/20 text-blue-300 border border-blue-700 rounded hover:bg-blue-600/30 transition-colors text-xs font-medium"
+                          >
+                            Open Cloudflare DNS →
+                          </a>
+                        </div>
+
+                        <div className="p-2 bg-blue-900/20 border border-blue-700/50 rounded">
+                          <p className="text-xs text-blue-200">
+                            💡 After adding both DNS records, wait 1-3 minutes then click <strong>"Verify Now"</strong> above.
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               ))}
             </div>
@@ -343,8 +465,11 @@ export default function DomainsPage() {
       {/* Add Domain Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border border-gray-700">
-            <h3 className="text-xl font-bold text-white mb-4">Add Custom Domain</h3>
+          <div className="bg-gray-800 rounded-lg p-6 max-w-lg w-full border border-gray-700">
+            <h3 className="text-xl font-bold text-white mb-2">Add Custom Domain</h3>
+            <p className="text-sm text-gray-400 mb-6">
+              Connect your own domain to create branded short links
+            </p>
 
             <form onSubmit={handleAddDomain}>
               <div className="mb-4">
@@ -355,13 +480,39 @@ export default function DomainsPage() {
                   type="text"
                   value={newDomainName}
                   onChange={(e) => setNewDomainName(e.target.value)}
-                  placeholder="links.yourdomain.com"
+                  placeholder="go.yourdomain.com"
                   className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
                   required
                 />
-                <p className="mt-2 text-xs text-gray-400">
-                  Enter a subdomain (e.g., links.example.com) or root domain (e.g., example.com)
-                </p>
+              </div>
+
+              {/* Domain Type Examples */}
+              <div className="mb-6 space-y-2">
+                <div className="p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-xs font-semibold text-white">Subdomain (Recommended)</span>
+                  </div>
+                  <p className="text-xs text-gray-400 ml-4">
+                    <code className="text-green-400">go.yourdomain.com</code>, <code className="text-green-400">link.yourdomain.com</code>
+                  </p>
+                  <p className="text-xs text-gray-500 ml-4 mt-1">
+                    ✓ Keep your main website • ✓ Easy setup
+                  </p>
+                </div>
+
+                <div className="p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <span className="text-xs font-semibold text-white">Root Domain</span>
+                  </div>
+                  <p className="text-xs text-gray-400 ml-4">
+                    <code className="text-yellow-400">yourdomain.com</code>
+                  </p>
+                  <p className="text-xs text-gray-500 ml-4 mt-1">
+                    ⚠️ Replaces your website with link shortener
+                  </p>
+                </div>
               </div>
 
               <div className="flex gap-3">
