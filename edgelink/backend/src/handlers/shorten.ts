@@ -76,7 +76,7 @@ export async function handleShorten(
 
       const response: ShortenResponse = {
         slug,
-        short_url: `https://go.shortedbro.xyz/${slug}`,
+        short_url: `https://edgelink-production.quoteviral.workers.dev/${slug}`,
         expires_in: 30 * 24 * 60 * 60 // 30 days in seconds
       };
 
@@ -185,11 +185,11 @@ export async function handleShorten(
       slug,
       short_url: body.custom_domain
         ? `https://${body.custom_domain}/${slug}`
-        : `https://go.shortedbro.xyz/${slug}`,
+        : `https://edgelink-production.quoteviral.workers.dev/${slug}`,
       expires_in: linkData.expires_at
         ? Math.floor((linkData.expires_at - now) / 1000)
         : undefined,
-      qr_code_url: user.plan === 'pro' ? `https://go.shortedbro.xyz/api/qr/${slug}` : undefined
+      qr_code_url: user.plan === 'pro' ? `https://edgelink-production.quoteviral.workers.dev/api/qr/${slug}` : undefined
     };
 
     return new Response(JSON.stringify(response), {

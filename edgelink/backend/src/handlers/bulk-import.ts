@@ -357,7 +357,7 @@ async function importLinks(
       result.imported_links.push({
         slug,
         destination: row.destination,
-        short_url: `https://go.shortedbro.xyz/${slug}`
+        short_url: `https://edgelink-production.quoteviral.workers.dev/${slug}`
       });
 
     } catch (error) {

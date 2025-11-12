@@ -206,7 +206,7 @@ export default function DashboardPage() {
     setQrCodeData(null)
 
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz'
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://edgelink-production.quoteviral.workers.dev'
       const accessToken = getAccessToken()
 
       if (!accessToken) {
@@ -267,7 +267,7 @@ export default function DashboardPage() {
     if (!qrCodeLink) return
 
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz'
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://edgelink-production.quoteviral.workers.dev'
       const accessToken = getAccessToken()
 
       if (!accessToken) {
@@ -717,12 +717,12 @@ export default function DashboardPage() {
   }
 
   const getShortUrl = (link: LinkType) => {
-    const domain = link.custom_domain || 'go.shortedbro.xyz'
+    const domain = link.custom_domain || 'edgelink-production.quoteviral.workers.dev'
     return `https://${domain}/${link.slug}`
   }
 
   const getDisplayDomain = (link: LinkType) => {
-    return link.custom_domain || 'go.shortedbro.xyz'
+    return link.custom_domain || 'edgelink-production.quoteviral.workers.dev'
   }
 
   const formatDate = (dateStr: string) => {

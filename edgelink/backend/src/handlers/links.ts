@@ -564,7 +564,7 @@ export async function handleGenerateQR(
     }
 
     // Construct short URL
-    const domain = link.custom_domain || 'go.shortedbro.xyz';
+    const domain = link.custom_domain || 'edgelink-production.quoteviral.workers.dev';
     const shortUrl = `https://${domain}/${slug}`;
 
     // Generate QR code using inline generator

@@ -326,7 +326,7 @@ export default function CreateLinkPage() {
                 onChange={(e) => setCustomDomain(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
               >
-                <option value="">Default (go.shortedbro.xyz)</option>
+                <option value="">Default (edgelink-production.quoteviral.workers.dev)</option>
                 {domains.map((domain) => (
                   <option key={domain.domain_id} value={domain.domain_name}>
                     {domain.domain_name}
