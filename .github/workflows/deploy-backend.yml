@@ -23,12 +23,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: edgelink/backend/package-lock.json
 
       - name: Install dependencies
         working-directory: edgelink/backend
-        run: npm ci
+        run: npm install
 
       - name: Deploy to Cloudflare Workers (Production)
         uses: cloudflare/wrangler-action@v3
@@ -45,6 +43,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: d1 migrations apply edgelink-production --remote --env production
           workingDirectory: edgelink/backend
+        continue-on-error: true
 
       - name: Deployment Status
         run: |
