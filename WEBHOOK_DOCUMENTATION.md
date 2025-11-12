@@ -56,7 +56,7 @@ Before setting up webhooks, you need:
 
 ```bash
 # 1. Create a webhook
-curl -X POST https://edgelink-production.quoteviral.workers.dev/api/webhooks \
+curl -X POST https://go.shortedbro.xyz/api/webhooks \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -94,7 +94,7 @@ Triggered every time someone clicks a short link.
   "timestamp": "2025-11-11T10:30:45.123Z",
   "data": {
     "slug": "abc123",
-    "short_url": "https://edgelink.dev/abc123",
+    "short_url": "https://go.shortedbro.xyz/abc123",
     "destination": "https://example.com",
     "click_id": "clk_xyz789",
     "visitor": {
@@ -135,7 +135,7 @@ Triggered when a new short link is created.
   "timestamp": "2025-11-11T10:00:00.000Z",
   "data": {
     "slug": "abc123",
-    "short_url": "https://edgelink.dev/abc123",
+    "short_url": "https://go.shortedbro.xyz/abc123",
     "destination": "https://example.com",
     "created_by": "usr_123",
     "custom_domain": null,
@@ -172,7 +172,7 @@ Triggered when a link is modified (destination, routing, expiration, etc.).
   "timestamp": "2025-11-11T11:15:30.000Z",
   "data": {
     "slug": "abc123",
-    "short_url": "https://edgelink.dev/abc123",
+    "short_url": "https://go.shortedbro.xyz/abc123",
     "updated_by": "usr_123",
     "changes": {
       "destination": {
@@ -212,7 +212,7 @@ Triggered when a link is permanently deleted.
   "timestamp": "2025-11-11T12:00:00.000Z",
   "data": {
     "slug": "abc123",
-    "short_url": "https://edgelink.dev/abc123",
+    "short_url": "https://go.shortedbro.xyz/abc123",
     "deleted_by": "usr_123",
     "final_stats": {
       "total_clicks": 5432,
@@ -1046,7 +1046,7 @@ curl -X POST https://your-server.com/webhooks/edgelink \
     "delivery_id": "dlv_test_123",
     "data": {
       "slug": "test123",
-      "short_url": "https://edgelink.dev/test123",
+      "short_url": "https://go.shortedbro.xyz/test123",
       "destination": "https://example.com",
       "visitor": {
         "country": "US",

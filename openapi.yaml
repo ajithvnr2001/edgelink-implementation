@@ -68,7 +68,7 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://edgelink-production.quoteviral.workers.dev
+  - url: https://go.shortedbro.xyz
     description: Production API (Cloudflare Workers)
 
 tags:
@@ -1303,7 +1303,7 @@ components:
         short_url:
           type: string
           format: uri
-          example: https://edgelink-production.quoteviral.workers.dev/abc123
+          example: https://go.shortedbro.xyz/abc123
         expires_in:
           type: integer
           description: Seconds until expiration

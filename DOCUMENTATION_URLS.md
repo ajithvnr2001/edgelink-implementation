@@ -3,7 +3,7 @@
 ## 🔗 Live Documentation Links
 
 ### Main Documentation Hub
-**URL:** `https://edgelink-production.pages.dev/apikeys`
+**URL:** `https://shortedbro.xyz/apikeys`
 
 **What's There:**
 - API key management interface
@@ -17,7 +17,7 @@
 ---
 
 ### Interactive API Explorer (Swagger UI)
-**URL:** `https://edgelink-production.pages.dev/api-docs.html`
+**URL:** `https://shortedbro.xyz/api-docs.html`
 
 **Features:**
 - 🎨 Beautiful Swagger UI interface
@@ -147,11 +147,11 @@ client.set_device_routing("my-link",
 ## 🎯 Documentation Flow for Users
 
 ### For Developers Getting Started:
-1. **Start at:** `https://edgelink-production.pages.dev/apikeys`
+1. **Start at:** `https://shortedbro.xyz/apikeys`
    - Generate an API key
    - See quick examples
 
-2. **Explore APIs:** `https://edgelink-production.pages.dev/api-docs.html`
+2. **Explore APIs:** `https://shortedbro.xyz/api-docs.html`
    - Try endpoints in browser
    - Test authentication
    - Copy code examples
@@ -230,8 +230,8 @@ client.set_device_routing("my-link",
 
 | Resource | URL |
 |----------|-----|
-| **API Keys Page** | https://edgelink-production.pages.dev/apikeys |
-| **Interactive Docs** | https://edgelink-production.pages.dev/api-docs.html |
+| **API Keys Page** | https://shortedbro.xyz/apikeys |
+| **Interactive Docs** | https://shortedbro.xyz/api-docs.html |
 | **OpenAPI Spec** | https://raw.githubusercontent.com/.../openapi.yaml |
 | **Python SDK** | https://github.com/.../examples/python_api_client.py |
 | **Webhook Guide** | https://github.com/.../WEBHOOK_DOCUMENTATION.md |

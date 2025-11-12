@@ -1,7 +1,7 @@
 # EdgeLink API Documentation
 
 **Version:** 1.0.0
-**Base URL:** `https://edgelink-production.quoteviral.workers.dev`
+**Base URL:** `https://go.shortedbro.xyz`
 **Last Updated:** November 11, 2025
 
 ## Table of Contents
@@ -143,7 +143,7 @@ API keys are ideal for:
   "warning": "Save this API key now. You will not be able to see it again!",
   "usage": {
     "header": "Authorization: Bearer elk_98z7n3wCDv36mmyvuTpmqxRXaERJHulr",
-    "example": "curl -H \"Authorization: Bearer elk_98z7n3wCDv36mmyvuTpmqxRXaERJHulr\" https://api.edgelink.io/api/shorten"
+    "example": "curl -H \"Authorization: Bearer elk_98z7n3wCDv36mmyvuTpmqxRXaERJHulr\" https://go.shortedbro.xyz/api/shorten"
   }
 }
 ```
@@ -160,7 +160,7 @@ Authorization: Bearer elk_98z7n3wCDv36mmyvuTpmqxRXaERJHulr
 
 **Example:**
 ```bash
-curl -X GET https://edgelink-production.quoteviral.workers.dev/api/links \
+curl -X GET https://go.shortedbro.xyz/api/links \
   -H "Authorization: Bearer elk_98z7n3wCDv36mmyvuTpmqxRXaERJHulr"
 ```
 
@@ -276,9 +276,9 @@ Create a new shortened URL (anonymous or authenticated).
 ```json
 {
   "slug": "abc123",
-  "short_url": "https://edgelink-production.quoteviral.workers.dev/abc123",
+  "short_url": "https://go.shortedbro.xyz/abc123",
   "expires_in": 2592000,
-  "qr_code_url": "https://edgelink-production.quoteviral.workers.dev/api/links/abc123/qr"
+  "qr_code_url": "https://go.shortedbro.xyz/api/links/abc123/qr"
 }
 ```
 
@@ -479,7 +479,7 @@ Route users to different URLs based on their device type (mobile, tablet, or des
 
 **Example Request:**
 ```bash
-curl -X POST https://edgelink-production.quoteviral.workers.dev/api/links/abc123/routing/device \
+curl -X POST https://go.shortedbro.xyz/api/links/abc123/routing/device \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -564,7 +564,7 @@ Route users to different URLs based on their country.
 
 **Example Request:**
 ```bash
-curl -X POST https://edgelink-production.quoteviral.workers.dev/api/links/abc123/routing/geo \
+curl -X POST https://go.shortedbro.xyz/api/links/abc123/routing/geo \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -643,7 +643,7 @@ Route users to different URLs based on the HTTP Referrer header (traffic source)
 
 **Example Request:**
 ```bash
-curl -X POST https://edgelink-production.quoteviral.workers.dev/api/links/abc123/routing/referrer \
+curl -X POST https://go.shortedbro.xyz/api/links/abc123/routing/referrer \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -902,7 +902,7 @@ timestamp,device,country,city,referrer,browser,os
 
 ```javascript
 // Create short link
-const response = await fetch('https://edgelink-production.quoteviral.workers.dev/api/shorten', {
+const response = await fetch('https://go.shortedbro.xyz/api/shorten', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -916,7 +916,7 @@ const response = await fetch('https://edgelink-production.quoteviral.workers.dev
 
 const data = await response.json();
 console.log(data.short_url);
-// Output: https://edgelink-production.quoteviral.workers.dev/my-link
+// Output: https://go.shortedbro.xyz/my-link
 ```
 
 ### Python
@@ -925,7 +925,7 @@ console.log(data.short_url);
 import requests
 
 # Create short link with device routing
-url = "https://edgelink-production.quoteviral.workers.dev/api/shorten"
+url = "https://go.shortedbro.xyz/api/shorten"
 headers = {
     "Content-Type": "application/json",
     "Authorization": "Bearer YOUR_JWT_TOKEN"
@@ -940,7 +940,7 @@ data = response.json()
 
 # Configure device routing
 slug = data["slug"]
-routing_url = f"https://edgelink-production.quoteviral.workers.dev/api/links/{slug}/routing/device"
+routing_url = f"https://go.shortedbro.xyz/api/links/{slug}/routing/device"
 routing_payload = {
     "mobile": "https://m.example.com/product",
     "desktop": "https://www.example.com/product"
@@ -954,7 +954,7 @@ print(routing_response.json())
 
 ```bash
 # Create short link
-curl -X POST https://edgelink-production.quoteviral.workers.dev/api/shorten \
+curl -X POST https://go.shortedbro.xyz/api/shorten \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -963,7 +963,7 @@ curl -X POST https://edgelink-production.quoteviral.workers.dev/api/shorten \
   }'
 
 # Configure geographic routing
-curl -X POST https://edgelink-production.quoteviral.workers.dev/api/links/my-page/routing/geo \
+curl -X POST https://go.shortedbro.xyz/api/links/my-page/routing/geo \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -975,7 +975,7 @@ curl -X POST https://edgelink-production.quoteviral.workers.dev/api/links/my-pag
   }'
 
 # Get analytics
-curl -X GET "https://edgelink-production.quoteviral.workers.dev/api/analytics/my-page?range=30d" \
+curl -X GET "https://go.shortedbro.xyz/api/analytics/my-page?range=30d" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
@@ -985,7 +985,7 @@ curl -X GET "https://edgelink-production.quoteviral.workers.dev/api/analytics/my
 <?php
 
 // Create short link
-$url = 'https://edgelink-production.quoteviral.workers.dev/api/shorten';
+$url = 'https://go.shortedbro.xyz/api/shorten';
 $data = [
     'url' => 'https://example.com/article',
     'custom_slug' => 'article-2025'
@@ -1007,7 +1007,7 @@ $result = file_get_contents($url, false, $context);
 $response = json_decode($result, true);
 
 echo $response['short_url'];
-// Output: https://edgelink-production.quoteviral.workers.dev/article-2025
+// Output: https://go.shortedbro.xyz/article-2025
 ?>
 ```
 
@@ -1033,7 +1033,7 @@ func main() {
     jsonData, _ := json.Marshal(payload)
 
     req, _ := http.NewRequest("POST",
-        "https://edgelink-production.quoteviral.workers.dev/api/shorten",
+        "https://go.shortedbro.xyz/api/shorten",
         bytes.NewBuffer(jsonData))
 
     req.Header.Set("Content-Type", "application/json")
@@ -1062,7 +1062,7 @@ func main() {
 - `format` (optional): `svg` (default) or `png`
 
 ```bash
-curl -X GET "https://edgelink-production.quoteviral.workers.dev/api/links/abc123/qr?format=svg" \
+curl -X GET "https://go.shortedbro.xyz/api/links/abc123/qr?format=svg" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -o qrcode.svg
 ```

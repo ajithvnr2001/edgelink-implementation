@@ -14,7 +14,7 @@ headers = {
 }
 
 response = requests.get(
-    "https://edgelink-production.quoteviral.workers.dev/api/links",
+    "https://go.shortedbro.xyz/api/links",
     headers=headers
 )
 
@@ -65,7 +65,7 @@ import requests
 
 # Login
 response = requests.post(
-    "https://edgelink-production.quoteviral.workers.dev/auth/login",
+    "https://go.shortedbro.xyz/auth/login",
     json={
         "email": "your@email.com",
         "password": "yourpassword"
@@ -98,7 +98,7 @@ headers = {
 import requests
 
 response = requests.get(
-    "https://edgelink-production.quoteviral.workers.dev/api/keys",
+    "https://go.shortedbro.xyz/api/keys",
     headers={"Authorization": "Bearer YOUR_API_KEY"}
 )
 
@@ -122,13 +122,13 @@ else:
 **Solution:**
 1. Check if key is expired:
    ```bash
-   curl -X GET https://edgelink-production.quoteviral.workers.dev/api/keys \
+   curl -X GET https://go.shortedbro.xyz/api/keys \
      -H "Authorization: Bearer YOUR_JWT_TOKEN"
    ```
 
 2. Generate a new key if needed (requires JWT):
    ```bash
-   curl -X POST https://edgelink-production.quoteviral.workers.dev/api/keys \
+   curl -X POST https://go.shortedbro.xyz/api/keys \
      -H "Authorization: Bearer YOUR_JWT_TOKEN" \
      -H "Content-Type: application/json" \
      -d '{"name": "New API Key", "expires_in_days": 365}'
@@ -144,7 +144,7 @@ else:
 import requests
 
 response = requests.post(
-    "https://edgelink-production.quoteviral.workers.dev/auth/login",
+    "https://go.shortedbro.xyz/auth/login",
     json={
         "email": "your@email.com",
         "password": "yourpassword"
@@ -164,7 +164,7 @@ else:
 import requests
 
 response = requests.post(
-    "https://edgelink-production.quoteviral.workers.dev/auth/signup",
+    "https://go.shortedbro.xyz/auth/signup",
     json={
         "email": "new@email.com",
         "password": "securepassword",
@@ -186,7 +186,7 @@ import requests
 
 # Step 1: Login to get JWT
 jwt_response = requests.post(
-    "https://edgelink-production.quoteviral.workers.dev/auth/login",
+    "https://go.shortedbro.xyz/auth/login",
     json={"email": "your@email.com", "password": "yourpassword"}
 )
 
@@ -194,7 +194,7 @@ jwt_token = jwt_response.json()["token"]
 
 # Step 2: Generate API key
 api_key_response = requests.post(
-    "https://edgelink-production.quoteviral.workers.dev/api/keys",
+    "https://go.shortedbro.xyz/api/keys",
     headers={"Authorization": f"Bearer {jwt_token}"},
     json={"name": "My Python Script", "expires_in_days": 365}
 )
@@ -215,7 +215,7 @@ else:
 import requests
 
 # Configuration
-BASE_URL = "https://edgelink-production.quoteviral.workers.dev"
+BASE_URL = "https://go.shortedbro.xyz"
 API_KEY = "elk_YOUR_API_KEY_HERE"  # Replace with your actual API key
 
 # Headers
@@ -257,13 +257,13 @@ print(response.json())
 
 ### List all your API keys
 ```bash
-curl -X GET https://edgelink-production.quoteviral.workers.dev/api/keys \
+curl -X GET https://go.shortedbro.xyz/api/keys \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ### Generate a new API key
 ```bash
-curl -X POST https://edgelink-production.quoteviral.workers.dev/api/keys \
+curl -X POST https://go.shortedbro.xyz/api/keys \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -274,7 +274,7 @@ curl -X POST https://edgelink-production.quoteviral.workers.dev/api/keys \
 
 ### Revoke an API key
 ```bash
-curl -X DELETE https://edgelink-production.quoteviral.workers.dev/api/keys/key_abc123 \
+curl -X DELETE https://go.shortedbro.xyz/api/keys/key_abc123 \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 

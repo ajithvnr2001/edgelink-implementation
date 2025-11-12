@@ -318,7 +318,7 @@ Retry-After: 3600 (on 429)
 ```json
 {
   "slug": "abc123",
-  "short_url": "https://edgelink.dev/abc123",
+  "short_url": "https://go.shortedbro.xyz/abc123",
   "expires_in": 2592000
 }
 ```

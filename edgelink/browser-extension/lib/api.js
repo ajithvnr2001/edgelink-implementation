@@ -3,7 +3,7 @@
  * Handles all communication with the EdgeLink backend
  */
 
-const API_BASE_URL = 'https://edgelink.io'; // Change to your production URL
+const API_BASE_URL = 'https://go.shortedbro.xyz'; // Production URL
 const API_LOCAL_URL = 'http://localhost:8787'; // For development
 
 class EdgeLinkAPI {
