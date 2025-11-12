@@ -225,6 +225,20 @@ export async function handleVerifyDomain(
     const verificationResult = await verifyDNSRecord(domain.domain_name, domain.verification_token);
 
     if (verificationResult.verified) {
+      // Add custom hostname to Cloudflare via API
+      let hostnameAddedMessage = '';
+      if (env.CF_ZONE_ID && env.CF_API_TOKEN) {
+        try {
+          const hostnameResult = await addCustomHostname(env, domain.domain_name);
+          hostnameAddedMessage = hostnameResult.success
+            ? ' Domain registered with Cloudflare.'
+            : ` Note: ${hostnameResult.message}`;
+        } catch (error) {
+          console.error('Failed to add custom hostname:', error);
+          hostnameAddedMessage = ' Warning: Could not register with Cloudflare automatically.';
+        }
+      }
+
       // Update domain as verified
       await env.DB.prepare(`
         UPDATE custom_domains
@@ -235,7 +249,7 @@ export async function handleVerifyDomain(
       return new Response(
         JSON.stringify({
           verified: true,
-          message: 'Domain verified successfully',
+          message: 'Domain verified successfully!' + hostnameAddedMessage,
           domain_name: domain.domain_name,
           verified_at: new Date().toISOString()
         }),
@@ -505,6 +519,89 @@ async function verifyDNSRecord(domain: string, expectedToken: string): Promise<{
         expected_token: expectedToken,
         error: error instanceof Error ? error.message : 'Unknown error during DNS verification'
       }
+    };
+  }
+}
+
+/**
+ * Add custom hostname to Cloudflare via Custom Hostnames API
+ * This allows the custom domain to route to the Worker automatically
+ */
+async function addCustomHostname(
+  env: Env,
+  hostname: string
+): Promise<{ success: boolean; message: string }> {
+  if (!env.CF_ZONE_ID || !env.CF_API_TOKEN) {
+    return {
+      success: false,
+      message: 'Cloudflare API credentials not configured'
+    };
+  }
+
+  try {
+    // Check if hostname already exists
+    const checkUrl = `https://api.cloudflare.com/client/v4/zones/${env.CF_ZONE_ID}/custom_hostnames?hostname=${hostname}`;
+    const checkResponse = await fetch(checkUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${env.CF_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    const checkData = await checkResponse.json() as any;
+
+    // If hostname already exists, return success
+    if (checkData.success && checkData.result && checkData.result.length > 0) {
+      console.log(`Custom hostname ${hostname} already exists`);
+      return {
+        success: true,
+        message: 'Domain already registered'
+      };
+    }
+
+    // Add new custom hostname
+    const addUrl = `https://api.cloudflare.com/client/v4/zones/${env.CF_ZONE_ID}/custom_hostnames`;
+    const addResponse = await fetch(addUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.CF_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        hostname: hostname,
+        ssl: {
+          method: 'txt',
+          type: 'dv',
+          wildcard: false,
+          settings: {
+            min_tls_version: '1.2'
+          }
+        }
+      })
+    });
+
+    const addData = await addResponse.json() as any;
+
+    if (!addData.success) {
+      const errorMsg = addData.errors?.[0]?.message || 'Unknown error';
+      console.error('Failed to add custom hostname:', errorMsg);
+      return {
+        success: false,
+        message: errorMsg
+      };
+    }
+
+    console.log(`Custom hostname ${hostname} added successfully`);
+    return {
+      success: true,
+      message: 'Domain registered successfully'
+    };
+  } catch (error) {
+    console.error('Error adding custom hostname:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 }

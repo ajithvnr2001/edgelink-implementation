@@ -23,6 +23,11 @@ export interface Env {
   JWT_SECRET: string;
   ENVIRONMENT: string;
   FALLBACK_URL?: string; // Optional: URL to proxy requests when slug not found (e.g., your main website)
+
+  // Cloudflare API credentials for Custom Hostnames
+  CF_ACCOUNT_ID?: string;
+  CF_ZONE_ID?: string;
+  CF_API_TOKEN?: string;
 }
 
 export interface JWTPayload {

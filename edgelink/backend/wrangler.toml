@@ -38,6 +38,13 @@ NODE_ENV = "development"
 # Secrets (set via: wrangler secret put <NAME>)
 # JWT_SECRET - Secret key for JWT signing/verification
 # Run: wrangler secret put JWT_SECRET
+#
+# Cloudflare API Credentials for Custom Hostnames (required for automatic custom domain setup)
+# CF_ZONE_ID - Zone ID for shortedbro.xyz (found in Cloudflare Dashboard → shortedbro.xyz → Overview)
+# CF_API_TOKEN - API Token with "Zone.SSL and Certificates:Edit" + "Zone.Custom Hostnames:Edit" permissions
+# CF_ACCOUNT_ID - Account ID (optional, found in dashboard URL)
+# Run: wrangler secret put CF_ZONE_ID
+# Run: wrangler secret put CF_API_TOKEN
 
 # Rate Limiting
 [[unsafe.bindings]]
