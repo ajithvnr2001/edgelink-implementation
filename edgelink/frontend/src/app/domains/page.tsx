@@ -74,12 +74,34 @@ export default function DomainsPage() {
         setVerificationInfo(null);
         loadDomains();
       } else {
-        // More detailed error message
-        const errorMsg = result.message || 'Verification failed. Please check DNS records.';
-        const dnsInfo = result.dns_check ?
-          `\n\nExpected DNS Record:\nType: ${result.dns_check.record_type}\nName: ${result.dns_check.record_name}\nValue: ${result.dns_check.record_value}`
-          : '';
-        setError(errorMsg + dnsInfo);
+        // More detailed error message with debug info
+        let errorMsg = result.message || 'Verification failed. Please check DNS records.';
+
+        if (result.dns_check) {
+          errorMsg += `\n\nExpected DNS Record:\n`;
+          errorMsg += `Type: ${result.dns_check.record_type}\n`;
+          errorMsg += `Name: ${result.dns_check.record_name}\n`;
+          errorMsg += `Full Query: ${result.dns_check.full_query_name}\n`;
+          errorMsg += `Value: ${result.dns_check.record_value}`;
+        }
+
+        if (result.debug) {
+          errorMsg += `\n\nDebug Information:\n`;
+          if (result.debug.error) {
+            errorMsg += `Error: ${result.debug.error}\n`;
+          }
+          if (result.debug.dns_status !== undefined) {
+            errorMsg += `DNS Status: ${result.debug.dns_status}\n`;
+          }
+          if (result.debug.found_records && result.debug.found_records.length > 0) {
+            errorMsg += `Found TXT Records: ${result.debug.found_records.join(', ')}\n`;
+          } else {
+            errorMsg += `Found TXT Records: None\n`;
+          }
+          errorMsg += `Query URL: ${result.debug.query_url}`;
+        }
+
+        setError(errorMsg);
       }
     } catch (err: any) {
       // Parse the error response to show more details

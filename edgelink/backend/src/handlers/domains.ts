@@ -222,9 +222,9 @@ export async function handleVerifyDomain(
     }
 
     // Perform DNS TXT record verification (FR-4.4)
-    const isVerified = await verifyDNSRecord(domain.domain_name, domain.verification_token);
+    const verificationResult = await verifyDNSRecord(domain.domain_name, domain.verification_token);
 
-    if (isVerified) {
+    if (verificationResult.verified) {
       // Update domain as verified
       await env.DB.prepare(`
         UPDATE custom_domains
@@ -253,8 +253,10 @@ export async function handleVerifyDomain(
           dns_check: {
             record_type: 'TXT',
             record_name: '_edgelink-verify',
-            record_value: domain.verification_token
-          }
+            record_value: domain.verification_token,
+            full_query_name: `_edgelink-verify.${domain.domain_name}`
+          },
+          debug: verificationResult.debug
         }),
         {
           status: 400,
@@ -411,11 +413,20 @@ export async function handleDeleteDomain(
  *
  * Uses DNS over HTTPS (DoH) to check for verification token
  */
-async function verifyDNSRecord(domain: string, expectedToken: string): Promise<boolean> {
+async function verifyDNSRecord(domain: string, expectedToken: string): Promise<{
+  verified: boolean;
+  debug: {
+    query_url: string;
+    dns_status?: number;
+    found_records?: string[];
+    expected_token: string;
+    error?: string;
+  };
+}> {
+  const dohUrl = `https://cloudflare-dns.com/dns-query?name=_edgelink-verify.${domain}&type=TXT`;
+
   try {
     // Use Cloudflare DNS over HTTPS
-    const dohUrl = `https://cloudflare-dns.com/dns-query?name=_edgelink-verify.${domain}&type=TXT`;
-
     const response = await fetch(dohUrl, {
       headers: {
         'Accept': 'application/dns-json'
@@ -424,7 +435,14 @@ async function verifyDNSRecord(domain: string, expectedToken: string): Promise<b
 
     if (!response.ok) {
       console.error('DNS query failed:', response.status);
-      return false;
+      return {
+        verified: false,
+        debug: {
+          query_url: dohUrl,
+          expected_token: expectedToken,
+          error: `DNS query returned status ${response.status}`
+        }
+      };
     }
 
     const data = await response.json() as {
@@ -432,9 +450,23 @@ async function verifyDNSRecord(domain: string, expectedToken: string): Promise<b
       Answer?: Array<{ data: string }>;
     };
 
+    // Extract found TXT records for debugging
+    const foundRecords = data.Answer
+      ? data.Answer.map(answer => answer.data.replace(/"/g, ''))
+      : [];
+
     // Check if DNS record exists
     if (data.Status !== 0 || !data.Answer || data.Answer.length === 0) {
-      return false;
+      return {
+        verified: false,
+        debug: {
+          query_url: dohUrl,
+          dns_status: data.Status,
+          found_records: foundRecords,
+          expected_token: expectedToken,
+          error: data.Status === 3 ? 'DNS record not found (NXDOMAIN)' : `DNS status: ${data.Status}`
+        }
+      };
     }
 
     // Check if any TXT record matches the verification token
@@ -442,14 +474,38 @@ async function verifyDNSRecord(domain: string, expectedToken: string): Promise<b
       // Remove quotes from TXT record data
       const txtValue = answer.data.replace(/"/g, '');
       if (txtValue === expectedToken) {
-        return true;
+        return {
+          verified: true,
+          debug: {
+            query_url: dohUrl,
+            dns_status: data.Status,
+            found_records: foundRecords,
+            expected_token: expectedToken
+          }
+        };
       }
     }
 
-    return false;
+    return {
+      verified: false,
+      debug: {
+        query_url: dohUrl,
+        dns_status: data.Status,
+        found_records: foundRecords,
+        expected_token: expectedToken,
+        error: 'TXT record found but value does not match'
+      }
+    };
   } catch (error) {
     console.error('DNS verification error:', error);
-    return false;
+    return {
+      verified: false,
+      debug: {
+        query_url: dohUrl,
+        expected_token: expectedToken,
+        error: error instanceof Error ? error.message : 'Unknown error during DNS verification'
+      }
+    };
   }
 }
 
