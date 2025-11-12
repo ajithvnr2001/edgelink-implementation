@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Fast, powerful URL shortener. Shorten links instantly from any page. Built on Cloudflare's edge network.",
   "author": "EdgeLink Team",
-  "homepage_url": "https://edgelink.io",
+  "homepage_url": "https://shortedbro.xyz",
 
   "icons": {
     "16": "icons/icon-16.png",

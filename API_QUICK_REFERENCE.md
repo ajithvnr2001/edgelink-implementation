@@ -1,6 +1,6 @@
 # EdgeLink API Quick Reference
 
-**Base URL:** `https://edgelink-production.quoteviral.workers.dev`
+**Base URL:** `https://go.shortedbro.xyz`
 
 ## Authentication
 
@@ -47,14 +47,14 @@ Authorization: Bearer YOUR_JWT_TOKEN
 
 ### Create Link (Anonymous)
 ```bash
-curl -X POST https://edgelink-production.quoteviral.workers.dev/api/shorten \
+curl -X POST https://go.shortedbro.xyz/api/shorten \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com"}'
 ```
 
 ### Create Link (Authenticated)
 ```bash
-curl -X POST https://edgelink-production.quoteviral.workers.dev/api/shorten \
+curl -X POST https://go.shortedbro.xyz/api/shorten \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -66,7 +66,7 @@ curl -X POST https://edgelink-production.quoteviral.workers.dev/api/shorten \
 
 ### Device Routing (Pro)
 ```bash
-curl -X POST https://edgelink-production.quoteviral.workers.dev/api/links/my-slug/routing/device \
+curl -X POST https://go.shortedbro.xyz/api/links/my-slug/routing/device \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -78,7 +78,7 @@ curl -X POST https://edgelink-production.quoteviral.workers.dev/api/links/my-slu
 
 ### Geographic Routing (Pro)
 ```bash
-curl -X POST https://edgelink-production.quoteviral.workers.dev/api/links/my-slug/routing/geo \
+curl -X POST https://go.shortedbro.xyz/api/links/my-slug/routing/geo \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -93,7 +93,7 @@ curl -X POST https://edgelink-production.quoteviral.workers.dev/api/links/my-slu
 
 ### Referrer Routing (Pro)
 ```bash
-curl -X POST https://edgelink-production.quoteviral.workers.dev/api/links/my-slug/routing/referrer \
+curl -X POST https://go.shortedbro.xyz/api/links/my-slug/routing/referrer \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -108,13 +108,13 @@ curl -X POST https://edgelink-production.quoteviral.workers.dev/api/links/my-slu
 
 ### List Links with Pagination
 ```bash
-curl -X GET "https://edgelink-production.quoteviral.workers.dev/api/links?page=1&limit=20" \
+curl -X GET "https://go.shortedbro.xyz/api/links?page=1&limit=20" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ### Update Link
 ```bash
-curl -X PUT https://edgelink-production.quoteviral.workers.dev/api/links/my-slug \
+curl -X PUT https://go.shortedbro.xyz/api/links/my-slug \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -125,13 +125,13 @@ curl -X PUT https://edgelink-production.quoteviral.workers.dev/api/links/my-slug
 
 ### Delete Link
 ```bash
-curl -X DELETE https://edgelink-production.quoteviral.workers.dev/api/links/my-slug \
+curl -X DELETE https://go.shortedbro.xyz/api/links/my-slug \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ### Get Analytics
 ```bash
-curl -X GET "https://edgelink-production.quoteviral.workers.dev/api/analytics/my-slug?range=30d" \
+curl -X GET "https://go.shortedbro.xyz/api/analytics/my-slug?range=30d" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
@@ -141,7 +141,7 @@ curl -X GET "https://edgelink-production.quoteviral.workers.dev/api/analytics/my
 // Initialize client
 const edgelink = new EdgeLinkClient({
   apiKey: 'YOUR_JWT_TOKEN',
-  baseUrl: 'https://edgelink-production.quoteviral.workers.dev'
+  baseUrl: 'https://go.shortedbro.xyz'
 });
 
 // Create link
@@ -175,7 +175,7 @@ const analytics = await edgelink.getAnalytics('my-page', { range: '30d' });
 ```json
 {
   "slug": "abc123",
-  "short_url": "https://edgelink-production.quoteviral.workers.dev/abc123",
+  "short_url": "https://go.shortedbro.xyz/abc123",
   "expires_in": 2592000
 }
 ```

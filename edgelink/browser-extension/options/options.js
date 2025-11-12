@@ -54,7 +54,7 @@ function setupEventListeners() {
 
   // Auto-save on certain changes
   apiUrlInput.addEventListener('change', () => {
-    api.setBaseURL(apiUrlInput.value.trim() || 'https://edgelink.io');
+    api.setBaseURL(apiUrlInput.value.trim() || 'https://go.shortedbro.xyz');
   });
 }
 
@@ -72,7 +72,7 @@ async function loadSettings() {
     'linkLimit',
   ]);
 
-  apiUrlInput.value = settings.apiBaseUrl || 'https://edgelink.io';
+  apiUrlInput.value = settings.apiBaseUrl || 'https://go.shortedbro.xyz';
   autoShortenCheckbox.checked = settings.autoShorten || false;
   showInlineNotificationCheckbox.checked = settings.showInlineNotification !== false;
   autoCopyCheckbox.checked = settings.autoCopy !== false;
@@ -86,7 +86,7 @@ async function loadSettings() {
  */
 async function saveSettings() {
   const settings = {
-    apiBaseUrl: apiUrlInput.value.trim() || 'https://edgelink.io',
+    apiBaseUrl: apiUrlInput.value.trim() || 'https://go.shortedbro.xyz',
     autoShorten: autoShortenCheckbox.checked,
     showInlineNotification: showInlineNotificationCheckbox.checked,
     autoCopy: autoCopyCheckbox.checked,
@@ -113,7 +113,7 @@ async function resetSettings() {
   }
 
   const defaults = {
-    apiBaseUrl: 'https://edgelink.io',
+    apiBaseUrl: 'https://go.shortedbro.xyz',
     autoShorten: false,
     showInlineNotification: true,
     autoCopy: true,

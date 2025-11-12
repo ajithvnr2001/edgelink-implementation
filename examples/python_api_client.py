@@ -7,7 +7,7 @@ import requests
 import json
 
 # Configuration
-BASE_URL = "https://edgelink-production.quoteviral.workers.dev"
+BASE_URL = "https://go.shortedbro.xyz"
 
 class EdgeLinkClient:
     """EdgeLink API client with JWT and API key support"""

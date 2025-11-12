@@ -34,7 +34,7 @@ bucket_name = "edgelink-production-storage"
 ENVIRONMENT = "production"
 LOG_LEVEL = "error"
 # Set your production frontend URL
-FRONTEND_URL = "https://your-domain.com"
+FRONTEND_URL = "https://shortedbro.xyz"
 ALLOW_REGISTRATION = "true"
 NODE_ENV = "production"
 
