@@ -41,12 +41,12 @@ jobs:
         working-directory: edgelink/frontend
         run: npx @cloudflare/next-on-pages
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy to Cloudflare Pages (Production)
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy .vercel/output/static --project-name=edgelink-production --branch=production
+          command: pages deploy .vercel/output/static --project-name=edgelink-production --branch=main --commit-dirty=true
           workingDirectory: edgelink/frontend
 
       - name: Deployment Status
