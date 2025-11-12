@@ -3,14 +3,17 @@ name: Deploy Backend to Cloudflare Workers
 on:
   push:
     branches:
+      - main
       - master
-      - claude/*
+    paths:
+      - 'edgelink/backend/**'
+      - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy to Cloudflare Workers
+    name: Deploy to Cloudflare Workers Production
 
     steps:
       - name: Checkout
@@ -20,20 +23,31 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: edgelink/backend/package-lock.json
 
-      - name: Deploy to Cloudflare Workers
+      - name: Install dependencies
+        working-directory: edgelink/backend
+        run: npm ci
+
+      - name: Deploy to Cloudflare Workers (Production)
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
+          command: deploy --config wrangler.prod.toml --env production
           workingDirectory: edgelink/backend
 
-      - name: Run D1 Migrations (Production)
-        if: github.ref_name == 'master'
+      - name: Apply D1 Migrations (Production)
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: d1 migrations apply edgelink-production --remote
+          command: d1 migrations apply edgelink-production --remote --env production
           workingDirectory: edgelink/backend
+
+      - name: Deployment Status
+        run: |
+          echo "✅ Backend deployed successfully to production!"
+          echo "🌐 API URL: https://go.shortedbro.xyz"
+          echo "📊 Check health: https://go.shortedbro.xyz/health"

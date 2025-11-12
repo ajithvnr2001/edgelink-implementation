@@ -3,14 +3,17 @@ name: Deploy Frontend to Cloudflare Pages
 on:
   push:
     branches:
+      - main
       - master
-      - claude/*
+    paths:
+      - 'edgelink/frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy to Cloudflare Pages
+    name: Deploy to Cloudflare Pages Production
 
     steps:
       - name: Checkout
@@ -20,12 +23,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: edgelink/frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: edgelink/frontend
-        run: npm install --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
-      - name: Build with next-on-pages
+      - name: Build Next.js application
+        working-directory: edgelink/frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://go.shortedbro.xyz
+          NEXT_PUBLIC_FRONTEND_URL: https://shortedbro.xyz
+          NEXT_PUBLIC_SHORT_URL_DOMAIN: go.shortedbro.xyz
+          NEXT_PUBLIC_ENVIRONMENT: production
+
+      - name: Build with @cloudflare/next-on-pages
         working-directory: edgelink/frontend
         run: npx @cloudflare/next-on-pages
 
@@ -34,5 +48,11 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy .vercel/output/static --project-name=edgelink-production --branch=${{ github.ref_name }}
+          command: pages deploy .vercel/output/static --project-name=edgelink-production --branch=production
           workingDirectory: edgelink/frontend
+
+      - name: Deployment Status
+        run: |
+          echo "✅ Frontend deployed successfully to production!"
+          echo "🌐 Frontend URL: https://shortedbro.xyz"
+          echo "📱 Check deployment at: https://shortedbro.xyz"
