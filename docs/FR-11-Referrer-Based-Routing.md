@@ -406,26 +406,26 @@ POST /api/links/seo101/routing/referrer
 1. **Twitter Referrer Test**
    ```bash
    curl -H "Referer: https://twitter.com/user/status/123" \
-     https://edgelink-production.quoteviral.workers.dev/abc123
+     https://go.shortedbro.xyz/abc123
    # Should redirect to Twitter URL
    ```
 
 2. **LinkedIn Referrer Test**
    ```bash
    curl -H "Referer: https://www.linkedin.com/feed/" \
-     https://edgelink-production.quoteviral.workers.dev/abc123
+     https://go.shortedbro.xyz/abc123
    # Should redirect to LinkedIn URL
    ```
 
 3. **Direct Traffic Test**
    ```bash
-   curl https://edgelink-production.quoteviral.workers.dev/abc123
+   curl https://go.shortedbro.xyz/abc123
    # Should redirect to default URL (no referrer)
    ```
 
 4. **Free User Restriction Test**
    ```bash
-   curl -X POST https://edgelink-production.quoteviral.workers.dev/api/links/abc123/routing/referrer \
+   curl -X POST https://go.shortedbro.xyz/api/links/abc123/routing/referrer \
      -H "Authorization: Bearer <free_user_token>" \
      -d '{"routes": {"twitter.com": "https://example.com"}}'
    # Should return 403 Forbidden
@@ -433,7 +433,7 @@ POST /api/links/seo101/routing/referrer
 
 5. **Invalid Domain Format Test**
    ```bash
-   curl -X POST https://edgelink-production.quoteviral.workers.dev/api/links/abc123/routing/referrer \
+   curl -X POST https://go.shortedbro.xyz/api/links/abc123/routing/referrer \
      -H "Authorization: Bearer <pro_user_token>" \
      -d '{"routes": {"https://twitter.com": "https://example.com"}}'
    # Should return 400 Bad Request with domain format error

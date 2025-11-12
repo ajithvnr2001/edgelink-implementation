@@ -2,7 +2,7 @@
 ## ✅ All Implemented Features
 
 **Last Updated:** 2025-11-09
-**Production URL:** https://edgelink-production.quoteviral.workers.dev
+**Production URL:** https://go.shortedbro.xyz
 **Frontend URL:** https://6314e1f9.edgelink-production.pages.dev
 
 ---
@@ -298,7 +298,7 @@
 ### Production Environment
 
 **Backend (Cloudflare Workers)**
-- URL: https://edgelink-production.quoteviral.workers.dev
+- URL: https://go.shortedbro.xyz
 - Status: ✅ Live & Healthy
 - Version: 1.0.0
 - Resources:

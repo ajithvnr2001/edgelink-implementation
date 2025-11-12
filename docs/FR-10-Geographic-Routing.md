@@ -413,27 +413,27 @@ POST /api/links/promo2024/routing/geo
 1. **US Visitor Test**
    ```bash
    curl -H "cf-ipcountry: US" \
-     https://edgelink-production.quoteviral.workers.dev/abc123
+     https://go.shortedbro.xyz/abc123
    # Should redirect to US URL
    ```
 
 2. **UK Visitor Test**
    ```bash
    curl -H "cf-ipcountry: GB" \
-     https://edgelink-production.quoteviral.workers.dev/abc123
+     https://go.shortedbro.xyz/abc123
    # Should redirect to GB URL
    ```
 
 3. **Default Fallback Test**
    ```bash
    curl -H "cf-ipcountry: ZW" \
-     https://edgelink-production.quoteviral.workers.dev/abc123
+     https://go.shortedbro.xyz/abc123
    # Should redirect to default URL (if configured)
    ```
 
 4. **Free User Restriction Test**
    ```bash
-   curl -X POST https://edgelink-production.quoteviral.workers.dev/api/links/abc123/routing/geo \
+   curl -X POST https://go.shortedbro.xyz/api/links/abc123/routing/geo \
      -H "Authorization: Bearer <free_user_token>" \
      -d '{"routes": {"US": "https://us.example.com"}}'
    # Should return 403 Forbidden
@@ -444,7 +444,7 @@ POST /api/links/promo2024/routing/geo
    # Frontend modal should prevent this
    {
      "routes": {
-       "US": "https://edgelink-production.quoteviral.workers.dev/abc123"
+       "US": "https://go.shortedbro.xyz/abc123"
      }
    }
    # Should show error: "URL cannot contain your short link"
