@@ -273,7 +273,7 @@ export default function DomainsPage() {
                   <div className="grid grid-cols-3 gap-3 p-3 bg-gray-800 rounded border border-gray-600">
                     <div className="text-white font-mono text-sm">CNAME</div>
                     <div className="text-green-400 font-mono text-sm">{domainInfo.cnameRecordName}</div>
-                    <div className="text-white font-mono text-sm">go.shortedbro.xyz</div>
+                    <div className="text-white font-mono text-sm">edgelink-production.quoteviral.workers.dev</div>
                   </div>
                 </div>
                 {!domainInfo.isSubdomain && (
@@ -412,7 +412,7 @@ export default function DomainsPage() {
                             <div className="grid grid-cols-3 gap-2 p-2 bg-gray-900 rounded border border-gray-600">
                               <div className="text-white font-mono text-xs">CNAME</div>
                               <div className="text-green-400 font-mono text-xs">{domainInfo.cnameRecordName}</div>
-                              <div className="text-white font-mono text-xs">go.shortedbro.xyz</div>
+                              <div className="text-white font-mono text-xs">edgelink-production.quoteviral.workers.dev</div>
                             </div>
                           </div>
                           {!domainInfo.isSubdomain && (
