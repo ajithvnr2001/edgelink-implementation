@@ -23,12 +23,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: edgelink/frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: edgelink/frontend
-        run: npm ci --legacy-peer-deps
+        run: npm install --legacy-peer-deps
 
       - name: Build Next.js application
         working-directory: edgelink/frontend
