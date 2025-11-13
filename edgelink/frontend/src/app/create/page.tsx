@@ -7,7 +7,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { API_URL, getAuthHeaders, getUser, getDomains } from '@/lib/api';
+import { useAuth, useUser } from '@clerk/nextjs';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz';
 
 interface LinkPreview {
   url: string;
@@ -37,6 +39,9 @@ interface Domain {
 
 export default function CreateLinkPage() {
   const router = useRouter();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { user: clerkUser } = useUser();
+
   const [url, setUrl] = useState('');
   const [customSlug, setCustomSlug] = useState('');
   const [customDomain, setCustomDomain] = useState('');
@@ -60,20 +65,34 @@ export default function CreateLinkPage() {
 
   // Check authentication and load domains on mount
   useEffect(() => {
-    const currentUser = getUser();
-    if (!currentUser) {
-      router.push('/login');
+    if (!isLoaded) return;
+
+    if (!isSignedIn) {
+      router.push('/sign-in');
       return;
     }
-    loadDomains();
-  }, [router]);
+
+    if (clerkUser) {
+      loadDomains();
+    }
+  }, [isLoaded, isSignedIn, clerkUser, router]);
 
   const loadDomains = async () => {
     try {
-      const data = await getDomains() as any;
-      // Filter to only show verified domains
-      const verifiedDomains = (data.domains || []).filter((d: Domain) => d.verified);
-      setDomains(verifiedDomains);
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/api/domains`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Filter to only show verified domains
+        const verifiedDomains = (data.domains || []).filter((d: Domain) => d.verified);
+        setDomains(verifiedDomains);
+      }
     } catch (error) {
       console.error('Failed to load domains:', error);
     }
@@ -176,10 +195,11 @@ export default function CreateLinkPage() {
         password: password || undefined
       };
 
+      const token = await getToken();
       const response = await fetch(`${API_URL}/api/shorten`, {
         method: 'POST',
         headers: {
-          ...getAuthHeaders(),
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(body)

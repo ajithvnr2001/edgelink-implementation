@@ -8,7 +8,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAPIKeys, generateAPIKey, revokeAPIKey } from '@/lib/api';
+import { useAuth, useUser } from '@clerk/nextjs';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz';
 
 interface APIKey {
   key_id: string;
@@ -21,6 +23,9 @@ interface APIKey {
 
 export default function APIKeysPage() {
   const router = useRouter();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { user: clerkUser } = useUser();
+
   const [apiKeys, setAPIKeys] = useState<APIKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
@@ -30,18 +35,36 @@ export default function APIKeysPage() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    loadAPIKeys();
-  }, []);
+    if (!isLoaded) return;
+
+    if (!isSignedIn) {
+      router.push('/sign-in');
+      return;
+    }
+
+    if (clerkUser) {
+      loadAPIKeys();
+    }
+  }, [isLoaded, isSignedIn, clerkUser, router]);
 
   const loadAPIKeys = async () => {
     try {
-      const data = await getAPIKeys() as any;
-      setAPIKeys(data.keys || []);
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/api/keys`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAPIKeys(data.keys || []);
+      } else if (response.status === 401) {
+        router.push('/sign-in');
+      }
     } catch (err) {
       console.error('Failed to load API keys:', err);
-      if ((err as any).message?.includes('401')) {
-        router.push('/login');
-      }
     } finally {
       setLoading(false);
     }
@@ -53,7 +76,22 @@ export default function APIKeysPage() {
     setSuccess('');
 
     try {
-      const result = await generateAPIKey(keyName || 'API Key');
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/api/keys`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: keyName || 'API Key' })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to generate API key');
+      }
+
       setGeneratedKey(result);
       setKeyName('');
       loadAPIKeys();
@@ -71,7 +109,20 @@ export default function APIKeysPage() {
     setSuccess('');
 
     try {
-      await revokeAPIKey(keyId);
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/api/keys/${keyId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to revoke API key');
+      }
+
       setSuccess('API key revoked successfully!');
       loadAPIKeys();
     } catch (err: any) {

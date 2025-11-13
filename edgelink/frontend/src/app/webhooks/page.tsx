@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { getUser, logout } from '@/lib/api'
+import { useAuth, useUser } from '@clerk/nextjs'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz'
 
 interface Webhook {
   webhook_id: string
@@ -18,7 +20,16 @@ interface Webhook {
 
 export default function WebhooksPage() {
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
+  const { isLoaded, isSignedIn, getToken, signOut } = useAuth()
+  const { user: clerkUser } = useUser()
+
+  // Map Clerk user to expected format
+  const user = clerkUser ? {
+    email: clerkUser.primaryEmailAddress?.emailAddress || '',
+    plan: 'free' as 'free' | 'pro', // Default to free, should fetch from backend
+    user_id: clerkUser.id
+  } : null
+
   const [webhooks, setWebhooks] = useState<Webhook[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -38,22 +49,26 @@ export default function WebhooksPage() {
   ]
 
   useEffect(() => {
-    const currentUser = getUser()
-    if (!currentUser) {
-      router.push('/login')
+    if (!isLoaded) return
+
+    if (!isSignedIn) {
+      router.push('/sign-in')
       return
     }
-    setUser(currentUser)
-    loadWebhooks()
-  }, [router])
+
+    if (clerkUser) {
+      loadWebhooks()
+    }
+  }, [isLoaded, isSignedIn, clerkUser, router])
 
   const loadWebhooks = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('access_token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/webhooks`, {
+      const token = await getToken()
+      const response = await fetch(`${API_URL}/api/webhooks`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       })
 
@@ -70,8 +85,8 @@ export default function WebhooksPage() {
 
   const handleCreate = async () => {
     try {
-      const token = localStorage.getItem('access_token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/webhooks`, {
+      const token = await getToken()
+      const response = await fetch(`${API_URL}/api/webhooks`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -104,11 +119,12 @@ export default function WebhooksPage() {
     if (!confirm('Are you sure you want to delete this webhook?')) return
 
     try {
-      const token = localStorage.getItem('access_token')
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/webhooks/${webhookId}`, {
+      const token = await getToken()
+      await fetch(`${API_URL}/api/webhooks/${webhookId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       })
 
@@ -128,7 +144,7 @@ export default function WebhooksPage() {
   }
 
   const handleLogout = async () => {
-    await logout()
+    await signOut()
     router.push('/')
   }
 

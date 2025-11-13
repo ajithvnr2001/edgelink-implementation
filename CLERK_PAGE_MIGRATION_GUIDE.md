@@ -4,26 +4,90 @@ This guide explains how to complete the migration of all protected pages to use 
 
 ## ✅ What's Already Done
 
-I've updated the following:
-- ✅ `/login` → Redirects to `/sign-in`
-- ✅ `/signup` → Redirects to `/sign-up`
-- ✅ `/dashboard` → Partial Clerk integration (see below)
+### Frontend
+- ✅ **`/sign-in`** - New Clerk sign-in page (with Edge Runtime)
+- ✅ **`/sign-up`** - New Clerk sign-up page (with Edge Runtime)
+- ✅ **`/login`** - Redirects to `/sign-in` (backward compatibility)
+- ✅ **`/signup`** - Redirects to `/sign-up` (backward compatibility)
+- ✅ **`/dashboard`** - Partial Clerk integration:
+  - ✅ Uses `useAuth()` and `useUser()` hooks
+  - ✅ Clerk-based authentication check
+  - ✅ Clerk-based logout
+  - ✅ `loadLinks()` uses Clerk token
+  - ⚠️ Other API calls still use old `@/lib/api` functions
 
-##⚠️ What Still Needs To Be Done
+### Backend
+- ✅ **Clerk authentication middleware** (`clerk-auth.ts`)
+- ✅ **Clerk webhook handler** (`clerk-webhook.ts`) for user sync
+- ✅ **Webhook route** at `POST /webhooks/clerk`
+- ✅ **Database migration script** for Clerk support
+- ✅ **Backward compatibility** with API keys maintained
 
-The dashboard and other protected pages are very large (1900+ lines each) and need manual updates to fully integrate Clerk. Here's what you need to do:
+### Documentation
+- ✅ **CLERK_MIGRATION_GUIDE.md** - Initial setup guide
+- ✅ **SECRETS_SETUP.md** - Backend secrets configuration
+- ✅ **Environment variable templates** created
+
+## ⚠️ What Still Needs To Be Done
+
+### Dashboard API Calls (Priority 1)
+The dashboard still uses old API client functions. You need to update:
+- `handleDelete()` - Currently uses `deleteLink()` from `@/lib/api`
+- `handleEditSubmit()` - Currently uses `updateLink()` from `@/lib/api`
+- `handleGenerateQR()` - Uses `getAccessToken()` instead of `getToken()`
+- `openRoutingModal()` - Uses `getRouting()` from `@/lib/api`
+- `handleSaveRouting()` - Uses `setDeviceRouting()` from `@/lib/api`
+- `handleDeleteRouting()` - Uses `deleteRouting()` from `@/lib/api`
+- `openGeoRoutingModal()` - Uses `getRouting()` from `@/lib/api`
+- `handleSaveGeoRouting()` - Uses `setGeoRouting()` from `@/lib/api`
+- `openReferrerRoutingModal()` - Uses `getRouting()` from `@/lib/api`
+- `handleSaveReferrerRouting()` - Uses `setReferrerRouting()` from `@/lib/api`
+
+### Other Protected Pages (Priority 2)
+These pages need full Clerk migration:
+1. **`/create`** - Link creation page
+2. **`/import-export`** - Import/export functionality
+3. **`/domains`** - Custom domain management
+4. **`/apikeys`** - API key management
+5. **`/webhooks`** - Webhook management
+6. **`/analytics/[slug]`** - Analytics page
+
+### Backend Integration (Priority 3)
+- Update all backend routes to use `requireClerkAuth` instead of `requireAuth`
+- Test Clerk token verification in production
+- Set up Clerk webhook in production (currently only configured for dev)
 
 ---
 
-## 📋 Pages That Need Full Migration
+## 📋 Detailed Migration Status
 
-1. `/dashboard` - Partially migrated, needs API call updates
-2. `/create` - Link creation page
-3. `/import-export` - Import/export functionality
-4. `/domains` - Custom domain management
-5. `/apikeys` - API key management
-6. `/webhooks` - Webhook management
-7. `/analytics/[slug]` - Analytics page
+### Dashboard (`/dashboard`) - 30% Complete
+**What works:**
+- ✅ Clerk authentication check
+- ✅ User display (email, plan)
+- ✅ Logout functionality
+- ✅ Loading links list
+
+**What needs updating:**
+- ❌ Delete link function
+- ❌ Edit link function
+- ❌ QR code generation
+- ❌ Device routing
+- ❌ Geographic routing
+- ❌ Referrer routing
+- ❌ All modal functions
+
+**Estimated effort:** 2-3 hours
+
+### Other Pages - 0% Complete
+1. **`/create`** - Needs full migration (~30 min)
+2. **`/import-export`** - Needs full migration (~45 min)
+3. **`/domains`** - Needs full migration (~1 hour)
+4. **`/apikeys`** - Needs full migration (~30 min)
+5. **`/webhooks`** - Needs full migration (~30 min)
+6. **`/analytics/[slug]`** - Needs full migration (~45 min)
+
+**Total estimated effort:** 6-8 hours for complete migration
 
 ---
 
@@ -162,6 +226,195 @@ const handleDelete = async (slug: string) => {
   })
 
   if (!response.ok) throw new Error('Failed to delete link')
+}
+```
+
+---
+
+## 🔧 Dashboard API Call Updates
+
+### Example 1: Update handleDelete Function
+
+**Current Code (line ~125-133):**
+```typescript
+const handleDelete = async (slug: string) => {
+  if (!confirm('Are you sure you want to delete this link?')) {
+    return
+  }
+
+  try {
+    await deleteLink(slug) // ❌ Old API client
+    setLinks(links.filter(link => link.slug !== slug))
+  } catch (err) {
+    alert(err instanceof Error ? err.message : 'Failed to delete link')
+  }
+}
+```
+
+**Updated Code:**
+```typescript
+const handleDelete = async (slug: string) => {
+  if (!confirm('Are you sure you want to delete this link? This action cannot be undone.')) {
+    return
+  }
+
+  try {
+    const token = await getToken() // ✅ Get Clerk token
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz'
+
+    const response = await fetch(`${API_URL}/api/links/${slug}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to delete link')
+    }
+
+    setLinks(links.filter(link => link.slug !== slug))
+  } catch (err) {
+    alert(err instanceof Error ? err.message : 'Failed to delete link')
+  }
+}
+```
+
+### Example 2: Update handleEditSubmit Function
+
+**Find this section around line ~138-193:**
+```typescript
+const handleEditSubmit = async () => {
+  // ... validation code ...
+
+  try {
+    const response = await updateLink( // ❌ Old API client
+      editingLink.slug,
+      editDestination,
+      slugChanged ? editSlug : undefined
+    )
+    // ...
+  }
+}
+```
+
+**Update to:**
+```typescript
+const handleEditSubmit = async () => {
+  if (!editingLink || !editDestination.trim()) return
+
+  // Validation code remains the same...
+
+  setEditLoading(true)
+  try {
+    const token = await getToken() // ✅ Get Clerk token
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz'
+
+    const response = await fetch(`${API_URL}/api/links/${editingLink.slug}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        destination: editDestination,
+        new_slug: slugChanged ? editSlug : undefined
+      })
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to update link')
+    }
+
+    // Update local state...
+    setLinks(links.map(link =>
+      link.slug === editingLink.slug
+        ? { ...link, slug: slugChanged ? editSlug : link.slug, destination: editDestination }
+        : link
+    ))
+
+    closeEditModal()
+
+    if (slugChanged) {
+      alert(`Short code successfully changed from "${editingLink.slug}" to "${editSlug}"`)
+    }
+  } catch (err) {
+    alert(err instanceof Error ? err.message : 'Failed to update link')
+  } finally {
+    setEditLoading(false)
+  }
+}
+```
+
+### Example 3: Update handleGenerateQR Function
+
+The QR code function already uses fetch, but it uses `getAccessToken()` instead of Clerk's `getToken()`.
+
+**Find around line ~195-264:**
+```typescript
+const handleGenerateQR = async (link: LinkType, format: 'svg' | 'png' = 'svg') => {
+  // ...
+  const accessToken = getAccessToken() // ❌ Old token method
+
+  const headers: HeadersInit = {
+    'Authorization': `Bearer ${accessToken}`
+  }
+  // ...
+}
+```
+
+**Update to:**
+```typescript
+const handleGenerateQR = async (link: LinkType, format: 'svg' | 'png' = 'svg') => {
+  if (!user) return
+
+  if (user.plan !== 'pro') {
+    alert('QR code generation is a Pro feature. Upgrade to unlock this feature!')
+    return
+  }
+
+  setQrCodeLink(link)
+  setQrCodeLoading(true)
+  setQrCodeData(null)
+
+  try {
+    const token = await getToken() // ✅ Use Clerk token
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz'
+
+    if (!token) {
+      throw new Error('Not authenticated. Please log in again.')
+    }
+
+    const response = await fetch(`${API_URL}/api/links/${link.slug}/qr?format=${format}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to generate QR code')
+    }
+
+    if (format === 'svg') {
+      const svgText = await response.text()
+      setQrCodeData(svgText)
+    } else {
+      const blob = await response.blob()
+      const dataUrl = URL.createObjectURL(blob)
+      setQrCodeData(dataUrl)
+    }
+  } catch (err) {
+    console.error('QR Generation Error:', err)
+    alert(err instanceof Error ? err.message : 'Failed to generate QR code')
+    setQrCodeLink(null)
+  } finally {
+    setQrCodeLoading(false)
+  }
 }
 ```
 
@@ -366,22 +619,149 @@ const fetchUserPlan = async () => {
 
 ---
 
+## 🔍 Finding What Needs Updating
+
+### Quick Audit Commands
+
+**Find old API imports:**
+```bash
+cd edgelink/frontend/src
+grep -r "from '@/lib/api'" app/
+```
+
+**Find getAccessToken usage:**
+```bash
+grep -r "getAccessToken()" app/
+```
+
+**Find old API function calls in dashboard:**
+```bash
+grep -n "deleteLink\|updateLink\|getRouting\|setDeviceRouting\|setGeoRouting\|setReferrerRouting\|deleteRouting" app/dashboard/page.tsx
+```
+
+---
+
+## 🛠️ Backend Integration
+
+### Current State
+- ✅ Clerk middleware created at `backend/src/middleware/clerk-auth.ts`
+- ✅ Webhook handler created at `backend/src/handlers/clerk-webhook.ts`
+- ✅ Webhook route added to `backend/src/index.ts`
+- ❌ Most routes still use old `requireAuth` instead of `requireClerkAuth`
+
+### Next Steps for Backend
+
+1. **Update route handlers to use Clerk auth:**
+
+**Find:**
+```typescript
+import { requireAuth } from './middleware/auth'
+```
+
+**Replace with:**
+```typescript
+import { requireClerkAuth } from './middleware/clerk-auth'
+```
+
+2. **Update route logic:**
+
+**OLD:**
+```typescript
+const { user, error } = await requireAuth(request, env)
+if (error) return error
+// user.sub contains user_id
+```
+
+**NEW:**
+```typescript
+const { user, error } = await requireClerkAuth(request, env)
+if (error) return error
+// user.user_id contains user_id (different structure!)
+```
+
+3. **Update user object references:**
+
+Clerk auth returns a different user structure:
+```typescript
+// Old auth
+user.sub → user_id
+user.email → email
+user.plan → plan
+
+// Clerk auth
+user.user_id → user_id
+user.email → email
+user.plan → plan
+user.clerk_user_id → Clerk's ID
+```
+
+---
+
 ## 📚 Additional Resources
 
 - [Clerk Next.js Documentation](https://clerk.com/docs/quickstarts/nextjs)
 - [useAuth Hook Reference](https://clerk.com/docs/references/react/use-auth)
 - [useUser Hook Reference](https://clerk.com/docs/references/react/use-user)
+- [Clerk Backend SDK](https://clerk.com/docs/references/backend/overview)
+- [Clerk Webhooks Guide](https://clerk.com/docs/integrations/webhooks)
 
 ---
 
-## ✅ Migration Complete!
+## ✅ Migration Complete Checklist
 
-Once all pages are migrated:
-1. Test authentication flow thoroughly
-2. Test all features (create, edit, delete, analytics, etc.)
-3. Verify API calls work with Clerk tokens
-4. Check that logout works correctly
-5. Optional: Delete old `/lib/api.ts` file
-6. Optional: Delete old `/auth` handler files from backend
+### Frontend
+- [ ] `/dashboard` - All API calls updated
+- [ ] `/create` - Migrated to Clerk
+- [ ] `/import-export` - Migrated to Clerk
+- [ ] `/domains` - Migrated to Clerk
+- [ ] `/apikeys` - Migrated to Clerk
+- [ ] `/webhooks` - Migrated to Clerk
+- [ ] `/analytics/[slug]` - Migrated to Clerk
+
+### Backend
+- [ ] All routes using `requireClerkAuth`
+- [ ] Clerk webhook configured in production
+- [ ] Clerk secrets set in production
+- [ ] Database migration run in production
+
+### Testing
+- [ ] Sign up flow works
+- [ ] Sign in flow works
+- [ ] Dashboard loads correctly
+- [ ] Create link works
+- [ ] Edit link works
+- [ ] Delete link works
+- [ ] QR code generation works (Pro users)
+- [ ] Routing features work (Pro users)
+- [ ] Analytics page works
+- [ ] Domain management works
+- [ ] API keys management works
+- [ ] Webhooks management works
+- [ ] Logout works correctly
+- [ ] Session persists on page refresh
+- [ ] Clerk webhook syncs users correctly
+
+### Cleanup (Optional)
+- [ ] Remove old `/lib/api.ts` file
+- [ ] Remove old `/lib/api.ts` client functions
+- [ ] Remove old `/backend/src/handlers/auth.ts`
+- [ ] Remove old `/backend/src/middleware/auth.ts`
+- [ ] Remove JWT secret (keep for API keys backward compat)
+
+---
+
+## 📞 Need Help?
+
+If you get stuck:
+1. Check browser console for errors
+2. Check Network tab to see if tokens are being sent
+3. Check Clerk Dashboard for authentication errors
+4. Review the examples in this guide
+5. Check `CLERK_MIGRATION_GUIDE.md` for setup instructions
+6. Check `SECRETS_SETUP.md` for backend configuration
 
 Good luck with the migration! 🚀
+
+---
+
+**Last Updated:** Based on commit 258168c (Dashboard partial migration complete)
