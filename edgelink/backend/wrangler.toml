@@ -3,6 +3,20 @@ main = "src/index.ts"
 compatibility_date = "2024-11-07"
 workers_dev = true
 
+# Worker Routes - Critical for custom domain support
+# These routes determine which domains/paths trigger this Worker
+[[routes]]
+pattern = "*/*"  # Catch-all for custom domains (CRITICAL for Custom Hostnames)
+zone_name = "shortedbro.xyz"
+
+[[routes]]
+pattern = "*.shortedbro.xyz/*"  # All subdomains of shortedbro.xyz
+zone_name = "shortedbro.xyz"
+
+[[routes]]
+pattern = "go.shortedbro.xyz/*"  # Primary short link domain
+zone_name = "shortedbro.xyz"
+
 # KV Namespace for link storage (fast redirects)
 [[kv_namespaces]]
 binding = "LINKS_KV"
