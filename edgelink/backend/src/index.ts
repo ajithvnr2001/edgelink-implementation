@@ -50,9 +50,26 @@ export default {
       const path = url.pathname;
       const method = request.method;
 
+      // 🔍 DEEP LOGGING: Log all incoming requests with detailed info
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(`📥 INCOMING REQUEST`);
+      console.log(`   Method: ${method}`);
+      console.log(`   Full URL: ${request.url}`);
+      console.log(`   Hostname: ${url.hostname}`);
+      console.log(`   Path: ${path}`);
+      console.log(`   Query: ${url.search}`);
+      console.log(`   CF Ray: ${request.headers.get('cf-ray') || 'none'}`);
+      console.log(`   CF Connecting IP: ${request.headers.get('cf-connecting-ip') || 'none'}`);
+      console.log(`   CF Country: ${request.headers.get('cf-ipcountry') || 'none'}`);
+      console.log(`   User Agent: ${request.headers.get('user-agent')?.substring(0, 50) || 'none'}...`);
+      console.log(`   Referer: ${request.headers.get('referer') || 'none'}`);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
       // Route matching
       // Health check
       if (path === '/health' && method === 'GET') {
+        console.log('✅ Health check endpoint hit');
+
         return new Response(
           JSON.stringify({
             status: 'healthy',
@@ -602,15 +619,22 @@ export default {
       if (path.length > 1 && method === 'GET') {
         const slug = path.slice(1); // Remove leading slash
 
+        console.log(`🔄 REDIRECT HANDLER TRIGGERED`);
+        console.log(`   Slug: ${slug}`);
+        console.log(`   Hostname: ${url.hostname}`);
+
         // Skip if it looks like an API path
         if (slug.startsWith('api/') || slug.startsWith('auth/')) {
+          console.log(`⚠️  Skipping - looks like API path`);
           return new Response('Not found', {
             status: 404,
             headers: corsHeaders
           });
         }
 
+        console.log(`➡️  Calling handleRedirect for slug: ${slug}`);
         const response = await handleRedirect(request, env, slug, ctx);
+        console.log(`✅ Redirect response status: ${response.status}`);
         return addCorsHeaders(response, corsHeaders);
       }
 

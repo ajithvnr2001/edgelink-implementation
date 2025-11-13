@@ -22,18 +22,29 @@ export async function handleRedirect(
   ctx: ExecutionContext
 ): Promise<Response> {
   try {
+    const requestUrl = new URL(request.url);
+    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    console.log(`🔍 [handleRedirect] START`);
+    console.log(`   Request URL: ${request.url}`);
+    console.log(`   Hostname: ${requestUrl.hostname}`);
+    console.log(`   Slug: ${slug}`);
+    console.log(`   Method: ${request.method}`);
+
     // Get link data from KV (fast path)
+    console.log(`📦 [handleRedirect] Fetching KV data for slug: ${slug}`);
     const linkDataStr = await env.LINKS_KV.get(`slug:${slug}`);
 
-    console.log(`[handleRedirect] Fetching KV data for slug: ${slug}`);
-
     if (!linkDataStr) {
-      console.log(`[handleRedirect] KV data not found for slug: ${slug}`);
+      console.log(`❌ [handleRedirect] KV data NOT FOUND for slug: ${slug}`);
+      console.log(`🔧 [handleRedirect] Checking for FALLBACK_URL...`);
+      console.log(`   FALLBACK_URL configured: ${env.FALLBACK_URL ? 'YES - ' + env.FALLBACK_URL : 'NO'}`);
+
       // Link not found - check for fallback URL
       // If FALLBACK_URL is set, proxy the request to the original website
       if (env.FALLBACK_URL) {
         const url = new URL(request.url);
         const fallbackUrl = `${env.FALLBACK_URL}${url.pathname}${url.search}`;
+        console.log(`🔄 [handleRedirect] Proxying to fallback URL: ${fallbackUrl}`);
 
         // Proxy the request to the fallback URL
         try {
@@ -43,6 +54,9 @@ export async function handleRedirect(
             redirect: 'manual'
           });
 
+          console.log(`✅ [handleRedirect] Fallback response received: ${fallbackResponse.status} ${fallbackResponse.statusText}`);
+          console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+
           // Return the proxied response
           return new Response(fallbackResponse.body, {
             status: fallbackResponse.status,
@@ -50,7 +64,8 @@ export async function handleRedirect(
             headers: fallbackResponse.headers
           });
         } catch (error) {
-          console.error('Fallback URL fetch error:', error);
+          console.error(`❌ [handleRedirect] Fallback URL fetch error:`, error);
+          console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
           // If fallback fails, return 404
           return new Response('Link not found', {
             status: 404,
@@ -59,6 +74,8 @@ export async function handleRedirect(
         }
       }
 
+      console.log(`⚠️  [handleRedirect] No fallback configured, returning 404`);
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
       // No fallback configured - return 404
       return new Response('Link not found', {
         status: 404,
@@ -66,8 +83,15 @@ export async function handleRedirect(
       });
     }
 
+    console.log(`✅ [handleRedirect] KV data FOUND for slug: ${slug}`);
+
     const linkData: LinkKVValue = JSON.parse(linkDataStr);
-    console.log(`[handleRedirect] KV data loaded for slug: ${slug}, destination: ${linkData.destination}`);
+    console.log(`📋 [handleRedirect] Link data parsed:`);
+    console.log(`   Destination: ${linkData.destination}`);
+    console.log(`   User ID: ${linkData.user_id}`);
+    console.log(`   Click count: ${linkData.click_count || 0}`);
+    console.log(`   Has password: ${linkData.password_hash ? 'YES' : 'NO'}`);
+    console.log(`   Expires at: ${linkData.expires_at ? new Date(linkData.expires_at).toISOString() : 'NEVER'}`);
 
     // Check time-based expiration
     if (linkData.expires_at && Date.now() > linkData.expires_at) {
@@ -231,10 +255,20 @@ export async function handleRedirect(
     // Return redirect (FR-2.1: 302 temporary for editable links)
     // Using 302 instead of 301 to prevent aggressive browser caching
     // This allows users to edit destinations and see changes immediately
-    console.log(`[handleRedirect] Redirecting slug: ${slug} to destination: ${destination}`);
+    console.log(`🎯 [handleRedirect] FINAL REDIRECT DECISION:`);
+    console.log(`   Slug: ${slug}`);
+    console.log(`   Final destination: ${destination}`);
+    console.log(`   Redirect status: 302`);
+    console.log(`✅ [handleRedirect] SUCCESS - Returning redirect response`);
+    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
     return Response.redirect(destination, 302);
   } catch (error) {
-    console.error('Redirect error:', error);
+    console.error(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    console.error(`❌❌❌ [handleRedirect] CRITICAL ERROR`);
+    console.error(`   Slug: ${slug}`);
+    console.error(`   Error:`, error);
+    console.error(`   Error stack:`, (error as Error).stack);
+    console.error(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
     return new Response('Internal server error', {
       status: 500,
       headers: { 'Content-Type': 'text/plain' }
