@@ -7,6 +7,7 @@
 
 import type { Env } from './types';
 import { authenticate, requireAuth } from './middleware/auth';
+import { requireClerkAuth } from './middleware/clerk-auth';
 import { checkRateLimit, addRateLimitHeaders } from './middleware/ratelimit';
 import { handleShorten } from './handlers/shorten';
 import { handleRedirect } from './handlers/redirect';
@@ -86,7 +87,7 @@ export default {
 
       // Manual cleanup endpoint (for testing)
       if (path === '/api/cleanup/expired' && method === 'POST') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -183,7 +184,7 @@ export default {
 
       // Get user's links (authenticated)
       if (path === '/api/links' && method === 'GET') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -207,7 +208,7 @@ export default {
 
       // Update link (authenticated) - Week 4 Enhanced
       if (path.startsWith('/api/links/') && !path.includes('/qr') && method === 'PUT') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -219,7 +220,7 @@ export default {
 
       // Delete link (authenticated)
       if (path.startsWith('/api/links/') && !path.includes('/qr') && method === 'DELETE') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -231,7 +232,7 @@ export default {
 
       // Generate QR code (authenticated, Pro only) - Week 4
       if (path.startsWith('/api/links/') && path.endsWith('/qr') && method === 'GET') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -244,7 +245,7 @@ export default {
 
       // Get link stats (authenticated) - Legacy endpoint
       if (path.startsWith('/api/stats/') && method === 'GET') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -256,7 +257,7 @@ export default {
 
       // Get detailed analytics for a link (authenticated)
       if (path.startsWith('/api/analytics/') && path.split('/').length === 4 && method === 'GET') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -270,7 +271,7 @@ export default {
 
       // Get analytics summary (authenticated)
       if (path === '/api/analytics/summary' && method === 'GET') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -282,7 +283,7 @@ export default {
       // Custom Domains endpoints (Week 3)
       // POST /api/domains - Add a new custom domain
       if (path === '/api/domains' && method === 'POST') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -293,7 +294,7 @@ export default {
 
       // GET /api/domains - Get user's domains
       if (path === '/api/domains' && method === 'GET') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -304,7 +305,7 @@ export default {
 
       // POST /api/domains/:domainId/verify - Verify domain ownership
       if (path.startsWith('/api/domains/') && path.endsWith('/verify') && method === 'POST') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -316,7 +317,7 @@ export default {
 
       // DELETE /api/domains/:domainId - Delete domain
       if (path.startsWith('/api/domains/') && path.split('/').length === 4 && method === 'DELETE') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -329,7 +330,7 @@ export default {
       // API Keys endpoints (Week 3)
       // POST /api/keys - Generate new API key
       if (path === '/api/keys' && method === 'POST') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -340,7 +341,7 @@ export default {
 
       // GET /api/keys - Get user's API keys
       if (path === '/api/keys' && method === 'GET') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -351,7 +352,7 @@ export default {
 
       // DELETE /api/keys/:keyId - Revoke API key
       if (path.startsWith('/api/keys/') && method === 'DELETE') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -364,7 +365,7 @@ export default {
       // Webhooks endpoints (Week 4)
       // POST /api/webhooks - Create new webhook
       if (path === '/api/webhooks' && method === 'POST') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -375,7 +376,7 @@ export default {
 
       // GET /api/webhooks - Get user's webhooks
       if (path === '/api/webhooks' && method === 'GET') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -386,7 +387,7 @@ export default {
 
       // DELETE /api/webhooks/:webhookId - Delete webhook
       if (path.startsWith('/api/webhooks/') && method === 'DELETE') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -412,7 +413,7 @@ export default {
 
       // GET /api/export/analytics/:slug - Export analytics
       if (path.startsWith('/api/export/analytics/') && method === 'GET') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -426,7 +427,7 @@ export default {
 
       // GET /api/export/links - Export all user links
       if (path === '/api/export/links' && method === 'GET') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -438,7 +439,7 @@ export default {
 
       // POST /api/import/links - Bulk import links from CSV
       if (path === '/api/import/links' && method === 'POST') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -450,7 +451,7 @@ export default {
       // User Profile endpoints
       // GET /api/user/profile - Get user profile
       if (path === '/api/user/profile' && method === 'GET') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -461,7 +462,7 @@ export default {
 
       // PUT /api/user/profile - Update user profile
       if (path === '/api/user/profile' && method === 'PUT') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -472,7 +473,7 @@ export default {
 
       // POST /api/user/delete - Delete account (immediate)
       if (path === '/api/user/delete' && method === 'POST') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -483,7 +484,7 @@ export default {
 
       // POST /api/user/request-deletion - Request account deletion (30-day grace period)
       if (path === '/api/user/request-deletion' && method === 'POST') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -494,7 +495,7 @@ export default {
 
       // POST /api/user/cancel-deletion - Cancel account deletion request
       if (path === '/api/user/cancel-deletion' && method === 'POST') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -505,7 +506,7 @@ export default {
 
       // GET /api/user/export - Export user data (GDPR)
       if (path === '/api/user/export' && method === 'GET') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -517,7 +518,7 @@ export default {
       // A/B Testing endpoints
       // POST /api/links/:slug/ab-test - Create A/B test
       if (path.startsWith('/api/links/') && path.endsWith('/ab-test') && method === 'POST') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -528,7 +529,7 @@ export default {
 
       // GET /api/links/:slug/ab-test - Get A/B test results
       if (path.startsWith('/api/links/') && path.endsWith('/ab-test') && method === 'GET') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -539,7 +540,7 @@ export default {
 
       // DELETE /api/links/:slug/ab-test - Stop A/B test
       if (path.startsWith('/api/links/') && path.endsWith('/ab-test') && method === 'DELETE') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -551,7 +552,7 @@ export default {
       // Smart Routing endpoints
       // POST /api/links/:slug/routing/device - Set device routing
       if (path.startsWith('/api/links/') && path.includes('/routing/device') && method === 'POST') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -562,7 +563,7 @@ export default {
 
       // POST /api/links/:slug/routing/geo - Set geographic routing
       if (path.startsWith('/api/links/') && path.includes('/routing/geo') && method === 'POST') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -573,7 +574,7 @@ export default {
 
       // POST /api/links/:slug/routing/time - Set time-based routing
       if (path.startsWith('/api/links/') && path.includes('/routing/time') && method === 'POST') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -584,7 +585,7 @@ export default {
 
       // POST /api/links/:slug/routing/referrer - Set referrer-based routing
       if (path.startsWith('/api/links/') && path.includes('/routing/referrer') && method === 'POST') {
-        const { user, error} = await requireAuth(request, env);
+        const { user, error} = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -595,7 +596,7 @@ export default {
 
       // GET /api/links/:slug/routing - Get all routing config
       if (path.startsWith('/api/links/') && path.endsWith('/routing') && method === 'GET') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
@@ -606,7 +607,7 @@ export default {
 
       // DELETE /api/links/:slug/routing - Delete all routing
       if (path.startsWith('/api/links/') && path.endsWith('/routing') && method === 'DELETE') {
-        const { user, error } = await requireAuth(request, env);
+        const { user, error } = await requireClerkAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);
         }
