@@ -50,8 +50,14 @@ NODE_ENV = "development"
 # FALLBACK_URL = "https://example.com" # Optional: Proxy to this URL when slug not found (for root domain usage)
 
 # Secrets (set via: wrangler secret put <NAME>)
-# JWT_SECRET - Secret key for JWT signing/verification
+# JWT_SECRET - Secret key for JWT signing/verification (Legacy, maintained for API keys)
 # Run: wrangler secret put JWT_SECRET
+#
+# Clerk Authentication Secrets (REQUIRED for Clerk integration)
+# CLERK_SECRET_KEY - Clerk secret key from dashboard (starts with sk_test_ or sk_live_)
+# CLERK_WEBHOOK_SECRET - Clerk webhook signing secret from webhook endpoint (starts with whsec_)
+# Run: wrangler secret put CLERK_SECRET_KEY
+# Run: wrangler secret put CLERK_WEBHOOK_SECRET
 #
 # Cloudflare API Credentials for Custom Hostnames (required for automatic custom domain setup)
 # CF_ZONE_ID - Zone ID for shortedbro.xyz (found in Cloudflare Dashboard → shortedbro.xyz → Overview)
