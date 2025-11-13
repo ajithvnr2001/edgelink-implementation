@@ -9,7 +9,9 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@cloudflare/workers-types": "^4.20241127.0"
+    "@clerk/backend": "^2.22.0",
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "svix": "^1.81.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3",

@@ -60,10 +60,10 @@ export default function HomePage() {
             <h1 className="text-xl font-bold text-white">EdgeLink</h1>
           </div>
           <nav className="flex items-center space-x-4">
-            <Link href="/login" className="text-gray-300 hover:text-white">
-              Login
+            <Link href="/sign-in" className="text-gray-300 hover:text-white">
+              Sign In
             </Link>
-            <Link href="/signup" className="btn-primary">
+            <Link href="/sign-up" className="btn-primary">
               Sign Up
             </Link>
           </nav>
