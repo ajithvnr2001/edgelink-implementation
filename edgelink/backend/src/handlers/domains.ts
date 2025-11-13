@@ -571,7 +571,7 @@ async function addCustomHostname(
       body: JSON.stringify({
         hostname: hostname,
         ssl: {
-          method: 'txt',
+          method: 'http',
           type: 'dv',
           wildcard: false,
           settings: {
