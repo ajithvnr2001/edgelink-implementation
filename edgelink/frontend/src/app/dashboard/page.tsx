@@ -3,11 +3,22 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { getLinks, deleteLink, updateLink, getUser, logout, getAccessToken, type Link as LinkType, setDeviceRouting, getRouting, deleteRouting, type DeviceRouting, type RoutingConfig, setGeoRouting, type GeoRouting, setReferrerRouting, type ReferrerRouting } from '@/lib/api'
+import { useAuth, useUser } from '@clerk/nextjs'
+import { getLinks, deleteLink, updateLink, type Link as LinkType, setDeviceRouting, getRouting, deleteRouting, type DeviceRouting, type RoutingConfig, setGeoRouting, type GeoRouting, setReferrerRouting, type ReferrerRouting } from '@/lib/api'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
+  const { isLoaded, isSignedIn, getToken, signOut } = useAuth()
+  const { user: clerkUser } = useUser()
+
+  // Map Clerk user to expected format
+  // TODO: Fetch actual plan from backend API
+  const user = clerkUser ? {
+    email: clerkUser.primaryEmailAddress?.emailAddress || '',
+    plan: 'free' as 'free' | 'pro', // Default to free, should fetch from backend
+    user_id: clerkUser.id
+  } : null
+
   const [links, setLinks] = useState<LinkType[]>([])
   const [filteredLinks, setFilteredLinks] = useState<LinkType[]>([])
   const [loading, setLoading] = useState(true)
@@ -54,14 +65,20 @@ export default function DashboardPage() {
   const linksPerPage = 50
 
   useEffect(() => {
-    const currentUser = getUser()
-    if (!currentUser) {
-      router.push('/login')
+    // Wait for Clerk to load
+    if (!isLoaded) return
+
+    // Redirect to sign-in if not authenticated
+    if (!isSignedIn) {
+      router.push('/sign-in')
       return
     }
-    setUser(currentUser)
-    loadLinks()
-  }, [router])
+
+    // Load user data and links
+    if (clerkUser) {
+      loadLinks()
+    }
+  }, [isLoaded, isSignedIn, clerkUser, router])
 
   // Search and filter effect
   useEffect(() => {
@@ -94,7 +111,20 @@ export default function DashboardPage() {
   const loadLinks = async () => {
     try {
       setLoading(true)
-      const data = await getLinks()
+      const token = await getToken()
+
+      // Call API with Clerk token
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz'
+      const response = await fetch(`${API_URL}/api/links`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) throw new Error('Failed to load links')
+
+      const data = await response.json()
       setLinks(data.links)
       setFilteredLinks(data.links)
     } catch (err) {
@@ -105,7 +135,7 @@ export default function DashboardPage() {
   }
 
   const handleLogout = async () => {
-    await logout()
+    await signOut()
     router.push('/')
   }
 
