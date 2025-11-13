@@ -5,9 +5,11 @@
  * Bulk link management operations
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { API_URL, getAuthHeaders } from '@/lib/api';
+import { useAuth, useUser } from '@clerk/nextjs';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz';
 
 interface ImportResult {
   total: number;
@@ -29,6 +31,8 @@ interface ImportResult {
 export default function ImportExportPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { user: clerkUser } = useUser();
 
   const [activeTab, setActiveTab] = useState<'import' | 'export'>('import');
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -38,6 +42,15 @@ export default function ImportExportPage() {
 
   const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv');
   const [exportLoading, setExportLoading] = useState(false);
+
+  // Check authentication on mount
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (!isSignedIn) {
+      router.push('/sign-in');
+    }
+  }, [isLoaded, isSignedIn, router]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -61,9 +74,12 @@ export default function ImportExportPage() {
       const formData = new FormData();
       formData.append('file', importFile);
 
+      const token = await getToken();
       const response = await fetch(`${API_URL}/api/import/links`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData
       });
 
@@ -85,11 +101,15 @@ export default function ImportExportPage() {
     setExportLoading(true);
 
     try {
+      const token = await getToken();
       const response = await fetch(
         `${API_URL}/api/export/links?format=${exportFormat}`,
         {
           method: 'GET',
-          headers: getAuthHeaders()
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
       );
 

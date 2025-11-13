@@ -8,7 +8,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getDomains, addDomain, verifyDomain, deleteDomain } from '@/lib/api';
+import { useAuth, useUser } from '@clerk/nextjs';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz';
 
 interface Domain {
   domain_id: string;
@@ -21,6 +23,9 @@ interface Domain {
 
 export default function DomainsPage() {
   const router = useRouter();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { user: clerkUser } = useUser();
+
   const [domains, setDomains] = useState<Domain[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -30,18 +35,36 @@ export default function DomainsPage() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    loadDomains();
-  }, []);
+    if (!isLoaded) return;
+
+    if (!isSignedIn) {
+      router.push('/sign-in');
+      return;
+    }
+
+    if (clerkUser) {
+      loadDomains();
+    }
+  }, [isLoaded, isSignedIn, clerkUser, router]);
 
   const loadDomains = async () => {
     try {
-      const data = await getDomains() as any;
-      setDomains(data.domains || []);
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/api/domains`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDomains(data.domains || []);
+      } else if (response.status === 401) {
+        router.push('/sign-in');
+      }
     } catch (err) {
       console.error('Failed to load domains:', err);
-      if ((err as any).message?.includes('401')) {
-        router.push('/login');
-      }
     } finally {
       setLoading(false);
     }
@@ -53,7 +76,22 @@ export default function DomainsPage() {
     setSuccess('');
 
     try {
-      const result = await addDomain(newDomainName);
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/api/domains`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ domain_name: newDomainName })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to add domain');
+      }
+
       setVerificationInfo(result);
       setSuccess('Domain added! Please verify ownership.');
       setNewDomainName('');
@@ -68,7 +106,21 @@ export default function DomainsPage() {
     setSuccess('');
 
     try {
-      const result = await verifyDomain(domainId) as any;
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/api/domains/${domainId}/verify`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to verify domain');
+      }
+
       if (result.verified) {
         setSuccess('Domain verified successfully!');
         setVerificationInfo(null);
@@ -125,7 +177,20 @@ export default function DomainsPage() {
     setSuccess('');
 
     try {
-      await deleteDomain(domainId);
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/api/domains/${domainId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete domain');
+      }
+
       setSuccess('Domain deleted successfully!');
       loadDomains();
     } catch (err: any) {
