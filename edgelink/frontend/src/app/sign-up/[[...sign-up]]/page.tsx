@@ -1,6 +1,9 @@
 import { SignUp } from '@clerk/nextjs'
 import Link from 'next/link'
 
+// Configure this page to run on Edge Runtime (required for Cloudflare Pages)
+export const runtime = 'edge'
+
 export default function SignUpPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4">
