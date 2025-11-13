@@ -23,6 +23,7 @@ import { handleExportAnalytics, handleExportLinks } from './handlers/export';
 import { handleBulkImport } from './handlers/bulk-import';
 import { handleCreateABTest, handleGetABTestResults, handleDeleteABTest } from './handlers/ab-testing';
 import { handleSetDeviceRouting, handleSetGeoRouting, handleSetTimeRouting, handleSetReferrerRouting, handleGetRouting, handleDeleteRouting } from './handlers/routing';
+import { handleClerkWebhook } from './handlers/clerk-webhook';
 
 /**
  * Main worker fetch handler
@@ -611,6 +612,13 @@ export default {
         }
 
         const response = await handleDeleteRouting(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Clerk Webhook endpoint (public, signature-verified)
+      // POST /webhooks/clerk - Sync user events from Clerk
+      if (path === '/webhooks/clerk' && method === 'POST') {
+        const response = await handleClerkWebhook(request, env);
         return addCorsHeaders(response, corsHeaders);
       }
 
