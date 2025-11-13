@@ -19,6 +19,7 @@ export default function SignUpPage() {
         {/* Clerk Sign Up Component */}
         <div className="flex justify-center">
           <SignUp
+            fallbackRedirectUrl="/dashboard"
             appearance={{
               elements: {
                 rootBox: 'mx-auto',
