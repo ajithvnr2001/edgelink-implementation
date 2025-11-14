@@ -92,6 +92,10 @@ export async function handleShorten(
       linkData.expires_at = new Date(body.expires_at).getTime();
     }
 
+    if (body.timezone) {
+      linkData.timezone = body.timezone;
+    }
+
     if (body.max_clicks) {
       linkData.max_clicks = body.max_clicks;
     }
@@ -166,15 +170,16 @@ export async function handleShorten(
     await env.DB.prepare(`
       INSERT INTO links (
         slug, user_id, destination, custom_domain,
-        created_at, updated_at, expires_at, max_clicks, click_count
+        created_at, updated_at, expires_at, timezone, max_clicks, click_count
       )
-      VALUES (?, ?, ?, ?, datetime('now'), datetime('now'), ?, ?, 0)
+      VALUES (?, ?, ?, ?, datetime('now'), datetime('now'), ?, ?, ?, 0)
     `).bind(
       slug,
       user.sub,
       body.url,
       body.custom_domain || null,
       body.expires_at || null,
+      body.timezone || 'UTC',
       body.max_clicks || null
     ).run();
 

@@ -331,6 +331,7 @@ export async function handleUpdateLink(
         SET
           destination = ?,
           expires_at = ?,
+          timezone = ?,
           max_clicks = ?,
           password_hash = ?,
           device_routing = ?,
@@ -343,6 +344,7 @@ export async function handleUpdateLink(
       `).bind(
         body.destination,
         body.expires_at || null,
+        body.timezone || 'UTC',
         body.max_clicks || null,
         passwordHash,
         body.device_routing ? JSON.stringify(body.device_routing) : null,
@@ -360,7 +362,7 @@ export async function handleUpdateLink(
     const updatedLink = await env.DB.prepare(`
       SELECT
         slug, user_id, destination, custom_domain, click_count,
-        expires_at, max_clicks, password_hash,
+        expires_at, timezone, max_clicks, password_hash,
         device_routing, geo_routing, referrer_routing, ab_testing, utm_params
       FROM links
       WHERE slug = ? AND user_id = ?

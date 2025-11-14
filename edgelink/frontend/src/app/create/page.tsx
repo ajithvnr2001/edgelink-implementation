@@ -54,6 +54,7 @@ export default function CreateLinkPage() {
     campaign: ''
   });
   const [expiresAt, setExpiresAt] = useState('');
+  const [timezone, setTimezone] = useState('UTC');
   const [maxClicks, setMaxClicks] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -75,6 +76,12 @@ export default function CreateLinkPage() {
       loadDomains();
     }
   }, [isLoaded, isSignedIn, user, router]);
+
+  // Auto-detect user's timezone
+  useEffect(() => {
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    setTimezone(userTimezone);
+  }, []);
 
   const loadDomains = async () => {
     try {
@@ -190,6 +197,7 @@ export default function CreateLinkPage() {
         custom_slug: customSlug || undefined,
         custom_domain: customDomain || undefined,
         expires_at: expiresAt || undefined,
+        timezone: timezone || undefined,
         max_clicks: maxClicks ? parseInt(maxClicks) : undefined,
         password: password || undefined
       };
@@ -428,6 +436,48 @@ export default function CreateLinkPage() {
                     onChange={(e) => setExpiresAt(e.target.value)}
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Timezone</label>
+                  <select
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="UTC">UTC</option>
+                    <optgroup label="Americas">
+                      <option value="America/New_York">Eastern Time (ET)</option>
+                      <option value="America/Chicago">Central Time (CT)</option>
+                      <option value="America/Denver">Mountain Time (MT)</option>
+                      <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                      <option value="America/Toronto">Toronto</option>
+                      <option value="America/Sao_Paulo">São Paulo</option>
+                    </optgroup>
+                    <optgroup label="Europe">
+                      <option value="Europe/London">London (GMT/BST)</option>
+                      <option value="Europe/Paris">Paris (CET/CEST)</option>
+                      <option value="Europe/Berlin">Berlin (CET/CEST)</option>
+                      <option value="Europe/Rome">Rome (CET/CEST)</option>
+                      <option value="Europe/Moscow">Moscow (MSK)</option>
+                    </optgroup>
+                    <optgroup label="Asia">
+                      <option value="Asia/Kolkata">India (IST)</option>
+                      <option value="Asia/Dubai">Dubai (GST)</option>
+                      <option value="Asia/Shanghai">China (CST)</option>
+                      <option value="Asia/Tokyo">Japan (JST)</option>
+                      <option value="Asia/Singapore">Singapore (SGT)</option>
+                      <option value="Asia/Hong_Kong">Hong Kong (HKT)</option>
+                      <option value="Asia/Seoul">Seoul (KST)</option>
+                    </optgroup>
+                    <optgroup label="Australia & Pacific">
+                      <option value="Australia/Sydney">Sydney (AEDT/AEST)</option>
+                      <option value="Australia/Melbourne">Melbourne (AEDT/AEST)</option>
+                      <option value="Pacific/Auckland">Auckland (NZDT/NZST)</option>
+                    </optgroup>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Expiration time will be interpreted in this timezone
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Max Clicks</label>

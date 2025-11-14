@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS links (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   expires_at TIMESTAMP,
+  timezone TEXT DEFAULT 'UTC', -- User's timezone for expiration display (e.g., 'Asia/Kolkata', 'America/New_York')
   max_clicks INTEGER,
   click_count INTEGER DEFAULT 0,
   password_hash TEXT,
