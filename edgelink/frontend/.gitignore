@@ -1,3 +1,37 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
 
-# clerk configuration (can include secrets)
+# Testing
+/coverage
+
+# Next.js build outputs
+/.next/
+/out/
+
+# Vercel/Cloudflare Pages build
+/.vercel/
+
+# Production
+/build
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env*.local
+.env.local
+
+# Clerk configuration (can include secrets)
 /.clerk/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
