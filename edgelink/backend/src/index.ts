@@ -175,7 +175,7 @@ export default {
         const { success, info, error: rateLimitError } = await checkRateLimit(
           request,
           env,
-          user?.user_id
+          user
         );
 
         if (!success && rateLimitError) {
