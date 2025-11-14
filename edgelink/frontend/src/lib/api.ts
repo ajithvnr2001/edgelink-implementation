@@ -2,6 +2,8 @@
  * API Client Utilities
  */
 
+import { triggerAuthChange } from './auth'
+
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
 
 export interface AuthResponse {
@@ -38,7 +40,7 @@ export interface ShortenRequest {
  */
 export function getAccessToken(): string | null {
   if (typeof window === 'undefined') return null
-  return localStorage.getItem('access_token')
+  return localStorage.getItem('accessToken')
 }
 
 /**
@@ -46,7 +48,7 @@ export function getAccessToken(): string | null {
  */
 export function getRefreshToken(): string | null {
   if (typeof window === 'undefined') return null
-  return localStorage.getItem('refresh_token')
+  return localStorage.getItem('refreshToken')
 }
 
 /**
@@ -54,8 +56,9 @@ export function getRefreshToken(): string | null {
  */
 export function storeTokens(accessToken: string, refreshToken: string) {
   if (typeof window === 'undefined') return
-  localStorage.setItem('access_token', accessToken)
-  localStorage.setItem('refresh_token', refreshToken)
+  localStorage.setItem('accessToken', accessToken)
+  localStorage.setItem('refreshToken', refreshToken)
+  triggerAuthChange()
 }
 
 /**
@@ -63,9 +66,10 @@ export function storeTokens(accessToken: string, refreshToken: string) {
  */
 export function clearTokens() {
   if (typeof window === 'undefined') return
-  localStorage.removeItem('access_token')
-  localStorage.removeItem('refresh_token')
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
   localStorage.removeItem('user')
+  triggerAuthChange()
 }
 
 /**
@@ -94,6 +98,7 @@ export function getUser() {
 export function storeUser(user: any) {
   if (typeof window === 'undefined') return
   localStorage.setItem('user', JSON.stringify(user))
+  triggerAuthChange()
 }
 
 /**
