@@ -1,0 +1,6 @@
+# Clerk authentication routes - handle all nested paths
+/sign-in/* /sign-in 200
+/sign-up/* /sign-up 200
+
+# Fallback for all other routes
+/* /index.html 200
