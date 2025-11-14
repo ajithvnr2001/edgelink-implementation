@@ -88,15 +88,39 @@ async function handleUserCreated(data: any, env: Env) {
   const email = data.email_addresses?.[0]?.email_address || ''
   const firstName = data.first_name || data.username || null
 
-  // Check if user already exists
-  const existingUser = await env.DB.prepare(`
+  // Check if user already exists by clerk_user_id
+  const existingUserByClerkId = await env.DB.prepare(`
     SELECT user_id FROM users WHERE clerk_user_id = ?
   `)
     .bind(clerkUserId)
     .first()
 
-  if (existingUser) {
-    console.log(`User ${clerkUserId} already exists`)
+  if (existingUserByClerkId) {
+    console.log(`User with Clerk ID ${clerkUserId} already exists`)
+    return
+  }
+
+  // Check if user exists by email (legacy user or partial creation)
+  const existingUserByEmail = await env.DB.prepare(`
+    SELECT user_id, clerk_user_id FROM users WHERE email = ?
+  `)
+    .bind(email)
+    .first<{ user_id: string; clerk_user_id: string | null }>()
+
+  if (existingUserByEmail) {
+    // User exists with this email - link them to Clerk
+    await env.DB.prepare(`
+      UPDATE users
+      SET clerk_user_id = ?,
+          name = COALESCE(?, name),
+          email_verified = TRUE,
+          updated_at = datetime('now')
+      WHERE user_id = ?
+    `)
+      .bind(clerkUserId, firstName, existingUserByEmail.user_id)
+      .run()
+
+    console.log(`Linked existing user ${existingUserByEmail.user_id} to Clerk user ${clerkUserId}`)
     return
   }
 
