@@ -36,10 +36,27 @@ jobs:
           NEXT_PUBLIC_FRONTEND_URL: https://shortedbro.xyz
           NEXT_PUBLIC_SHORT_URL_DOMAIN: go.shortedbro.xyz
           NEXT_PUBLIC_ENVIRONMENT: production
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          NEXT_PUBLIC_CLERK_SIGN_IN_URL: /sign-in
+          NEXT_PUBLIC_CLERK_SIGN_UP_URL: /sign-up
+          NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL: /dashboard
+          NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL: /dashboard
 
       - name: Build with @cloudflare/next-on-pages
         working-directory: edgelink/frontend
         run: npx @cloudflare/next-on-pages
+        env:
+          NEXT_PUBLIC_API_URL: https://go.shortedbro.xyz
+          NEXT_PUBLIC_FRONTEND_URL: https://shortedbro.xyz
+          NEXT_PUBLIC_SHORT_URL_DOMAIN: go.shortedbro.xyz
+          NEXT_PUBLIC_ENVIRONMENT: production
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          NEXT_PUBLIC_CLERK_SIGN_IN_URL: /sign-in
+          NEXT_PUBLIC_CLERK_SIGN_UP_URL: /sign-up
+          NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL: /dashboard
+          NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL: /dashboard
 
       - name: Deploy to Cloudflare Pages (Production)
         uses: cloudflare/wrangler-action@v3

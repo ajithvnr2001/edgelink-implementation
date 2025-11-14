@@ -8,9 +8,9 @@
     "dev:backend": "cd edgelink/backend && npm run dev",
     "dev:frontend": "cd edgelink/frontend && npm run dev",
     "install:all": "npm install && cd edgelink/backend && npm install && cd ../frontend && npm install",
-    "build": "cd edgelink/frontend && npm run build",
+    "build": "cd edgelink/frontend && npm run pages:build",
     "deploy:backend": "cd edgelink/backend && wrangler deploy --config wrangler.prod.toml --env production",
-    "deploy:frontend": "cd edgelink/frontend && npm run build && wrangler pages deploy .next --project-name=edgelink-production"
+    "deploy:frontend": "cd edgelink/frontend && npm run pages:build && wrangler pages deploy .vercel/output/static --project-name=edgelink-production"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
