@@ -67,9 +67,9 @@ export async function handleRedirect(
           console.error(`❌ [handleRedirect] Fallback URL fetch error:`, error);
           console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
           // If fallback fails, return 404
-          return new Response('Link not found', {
+          return new Response(generateNotFoundPage(), {
             status: 404,
-            headers: { 'Content-Type': 'text/plain' }
+            headers: { 'Content-Type': 'text/html' }
           });
         }
       }
@@ -77,9 +77,9 @@ export async function handleRedirect(
       console.log(`⚠️  [handleRedirect] No fallback configured, returning 404`);
       console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
       // No fallback configured - return 404
-      return new Response('Link not found', {
+      return new Response(generateNotFoundPage(), {
         status: 404,
-        headers: { 'Content-Type': 'text/plain' }
+        headers: { 'Content-Type': 'text/html' }
       });
     }
 
@@ -95,17 +95,17 @@ export async function handleRedirect(
 
     // Check time-based expiration
     if (linkData.expires_at && Date.now() > linkData.expires_at) {
-      return new Response('Link expired', {
+      return new Response(generateExpiredPage('time'), {
         status: 410,
-        headers: { 'Content-Type': 'text/plain' }
+        headers: { 'Content-Type': 'text/html' }
       });
     }
 
     // Check click-count expiration (max_clicks)
     if (linkData.max_clicks && linkData.click_count >= linkData.max_clicks) {
-      return new Response('Link has reached maximum click limit', {
+      return new Response(generateExpiredPage('clicks'), {
         status: 410,
-        headers: { 'Content-Type': 'text/plain' }
+        headers: { 'Content-Type': 'text/html' }
       });
     }
 
@@ -572,6 +572,200 @@ function generatePasswordPage(slug: string): string {
       window.location.href = url.toString();
     });
   </script>
+</body>
+</html>`;
+}
+
+/**
+ * Generate HTML not found page
+ */
+function generateNotFoundPage(): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Link Not Found - EdgeLink</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 40px;
+    }
+    h1 {
+      font-size: 28px;
+      color: #1a202c;
+      margin-bottom: 16px;
+    }
+    p {
+      color: #718096;
+      margin-bottom: 32px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .btn {
+      display: inline-block;
+      padding: 14px 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+    .info {
+      margin-top: 24px;
+      padding: 16px;
+      background: #f7fafc;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #4a5568;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">🔍</div>
+    <h1>Link Not Found</h1>
+    <p>This link doesn't exist or may have been deleted.</p>
+    <a href="/" class="btn">Go to EdgeLink</a>
+    <div class="info">
+      Double-check the URL or contact the person who shared this link.
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+/**
+ * Generate HTML expired link page
+ */
+function generateExpiredPage(reason: 'time' | 'clicks'): string {
+  const title = reason === 'time' ? 'Link Expired' : 'Link Unavailable';
+  const message = reason === 'time'
+    ? 'This link has expired and is no longer available.'
+    : 'This link has reached its maximum click limit and is no longer available.';
+  const icon = reason === 'time' ? '⏰' : '🚫';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title} - EdgeLink</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 40px;
+    }
+    h1 {
+      font-size: 28px;
+      color: #1a202c;
+      margin-bottom: 16px;
+    }
+    p {
+      color: #718096;
+      margin-bottom: 32px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .btn {
+      display: inline-block;
+      padding: 14px 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+    .info {
+      margin-top: 24px;
+      padding: 16px;
+      background: #f7fafc;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #4a5568;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">${icon}</div>
+    <h1>${title}</h1>
+    <p>${message}</p>
+    <a href="/" class="btn">Go to EdgeLink</a>
+    <div class="info">
+      If you believe this is an error, please contact the link owner.
+    </div>
+  </div>
 </body>
 </html>`;
 }
