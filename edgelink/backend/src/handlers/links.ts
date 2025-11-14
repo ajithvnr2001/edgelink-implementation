@@ -136,6 +136,7 @@ export async function handleUpdateLink(
       destination?: string;
       new_slug?: string;
       expires_at?: string;
+      timezone?: string;
       max_clicks?: number;
       password?: string;
       device_routing?: any;
@@ -156,6 +157,14 @@ export async function handleUpdateLink(
           headers: { 'Content-Type': 'application/json' }
         }
       );
+    }
+
+    // Convert expires_at from user's timezone to UTC timestamp string
+    let expiresAtUTC: string | null = null;
+    if (body.expires_at) {
+      const timezone = body.timezone || 'UTC';
+      const utcTimestamp = convertToUTC(body.expires_at, timezone);
+      expiresAtUTC = new Date(utcTimestamp).toISOString();
     }
 
     // Verify ownership and get full link data
@@ -268,7 +277,7 @@ export async function handleUpdateLink(
     // If slug is changing, we need to delete old and insert new (since slug is PRIMARY KEY)
     if (finalSlug !== slug) {
       // Preserve existing values if not provided in body
-      const preservedExpires = body.expires_at !== undefined ? body.expires_at : link.expires_at;
+      const preservedExpires = body.expires_at !== undefined ? expiresAtUTC : link.expires_at;
       const preservedMaxClicks = body.max_clicks !== undefined ? body.max_clicks : link.max_clicks;
       const preservedPasswordHash = passwordHash !== null ? passwordHash : link.password_hash;
       const preservedDeviceRouting = body.device_routing !== undefined
@@ -343,7 +352,7 @@ export async function handleUpdateLink(
         WHERE slug = ? AND user_id = ?
       `).bind(
         body.destination,
-        body.expires_at || null,
+        expiresAtUTC,
         body.timezone || 'UTC',
         body.max_clicks || null,
         passwordHash,
@@ -621,3 +630,61 @@ export async function handleGenerateQR(
   }
 }
 
+
+/**
+ * Convert datetime from user's timezone to UTC timestamp
+ * @param datetimeLocal - Datetime string from datetime-local input (e.g., "2025-11-15T04:39")
+ * @param timezone - IANA timezone identifier (e.g., "Asia/Kolkata")
+ * @returns UTC timestamp in milliseconds
+ */
+function convertToUTC(datetimeLocal: string, timezone: string): number {
+  // Parse the datetime-local value (e.g., "2025-11-15T04:39")
+  // This gives us year, month, day, hour, minute in the user's timezone
+
+  // Create a date string in ISO format
+  // The datetime-local input gives us "YYYY-MM-DDTHH:mm" format
+  const dateStr = datetimeLocal.includes('T') ? datetimeLocal : `${datetimeLocal}T00:00`;
+
+  // Use Intl.DateTimeFormat to parse the date in the user's timezone
+  // We need to create a UTC date that represents the same wall-clock time in the user's timezone
+
+  // Parse the components
+  const [datePart, timePart = '00:00'] = dateStr.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour, minute] = timePart.split(':').map(Number);
+
+  // Create a formatter for the user's timezone
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+
+  // Create a date object in UTC with the wall-clock time
+  // We'll use a binary search approach to find the UTC time that produces
+  // the desired local time in the target timezone
+
+  // Start with a naive UTC date
+  const naiveDate = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+
+  // Get what this UTC time looks like in the target timezone
+  const parts = formatter.formatToParts(naiveDate);
+  const localYear = parseInt(parts.find(p => p.type === 'year')?.value || '0');
+  const localMonth = parseInt(parts.find(p => p.type === 'month')?.value || '0');
+  const localDay = parseInt(parts.find(p => p.type === 'day')?.value || '0');
+  const localHour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
+  const localMinute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
+
+  // Calculate the offset (difference between what we got and what we wanted)
+  const targetTime = new Date(year, month - 1, day, hour, minute, 0).getTime();
+  const actualTime = new Date(localYear, localMonth - 1, localDay, localHour, localMinute, 0).getTime();
+  const offset = targetTime - actualTime;
+
+  // Apply the offset to get the correct UTC time
+  return naiveDate.getTime() + offset;
+}
