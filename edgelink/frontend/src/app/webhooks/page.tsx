@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
+import { clearTokens } from '@/lib/api'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz'
 
@@ -136,9 +137,7 @@ export default function WebhooksPage() {
   }
 
   const handleLogout = async () => {
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
-    localStorage.removeItem('user')
+    clearTokens()
     router.push('/')
   }
 
