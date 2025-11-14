@@ -6,12 +6,10 @@
  */
 
 import type { Env } from './types';
-import { authenticate, requireAuth } from './middleware/auth';
 import { requireClerkAuth } from './middleware/clerk-auth';
 import { checkRateLimit, addRateLimitHeaders } from './middleware/ratelimit';
 import { handleShorten } from './handlers/shorten';
 import { handleRedirect } from './handlers/redirect';
-import { handleSignup, handleLogin, handleRefresh, handleLogout } from './handlers/auth';
 import { handleGetProfile, handleUpdateProfile, handleDeleteAccount, handleRequestAccountDeletion, handleCancelAccountDeletion, handleExportUserData } from './handlers/user';
 import { handleGetAnalytics, handleGetAnalyticsSummary } from './handlers/analytics';
 import { handleAddDomain, handleVerifyDomain, handleGetDomains, handleDeleteDomain } from './handlers/domains';
@@ -134,27 +132,6 @@ export default {
             }
           );
         }
-      }
-
-      // Authentication endpoints (no auth required)
-      if (path === '/auth/signup' && method === 'POST') {
-        const response = await handleSignup(request, env);
-        return addCorsHeaders(response, corsHeaders);
-      }
-
-      if (path === '/auth/login' && method === 'POST') {
-        const response = await handleLogin(request, env);
-        return addCorsHeaders(response, corsHeaders);
-      }
-
-      if (path === '/auth/refresh' && method === 'POST') {
-        const response = await handleRefresh(request, env);
-        return addCorsHeaders(response, corsHeaders);
-      }
-
-      if (path === '/auth/logout' && method === 'POST') {
-        const response = await handleLogout(request, env);
-        return addCorsHeaders(response, corsHeaders);
       }
 
       // URL shortening endpoint (anonymous or authenticated)
