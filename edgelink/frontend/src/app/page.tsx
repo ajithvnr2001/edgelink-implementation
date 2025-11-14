@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/lib/auth'
 
 export default function HomePage() {
   const [url, setUrl] = useState('')
@@ -10,6 +11,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const { isSignedIn, isLoaded } = useAuth()
 
   const handleShorten = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -60,12 +62,20 @@ export default function HomePage() {
             <h1 className="text-xl font-bold text-white">EdgeLink</h1>
           </div>
           <nav className="flex items-center space-x-4">
-            <Link href="/login" className="text-gray-300 hover:text-white">
-              Sign In
-            </Link>
-            <Link href="/signup" className="btn-primary">
-              Sign Up
-            </Link>
+            {isLoaded && isSignedIn ? (
+              <Link href="/dashboard" className="btn-primary">
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="text-gray-300 hover:text-white">
+                  Sign In
+                </Link>
+                <Link href="/signup" className="btn-primary">
+                  Sign Up
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
