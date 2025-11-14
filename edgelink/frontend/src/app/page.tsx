@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth'
+import { getAuthHeaders } from '@/lib/api'
 
 export default function HomePage() {
   const [url, setUrl] = useState('')
@@ -23,9 +24,7 @@ export default function HomePage() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
       const response = await fetch(`${apiUrl}/api/shorten`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           url,
           custom_slug: customSlug || undefined,
@@ -148,7 +147,9 @@ export default function HomePage() {
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    Anonymous link expires in 30 days. Sign up for analytics and more features!
+                    {isSignedIn
+                      ? 'Link saved to your account. View analytics in your dashboard!'
+                      : 'Anonymous link expires in 30 days. Sign up for analytics and more features!'}
                   </p>
                 </div>
               )}
@@ -162,9 +163,11 @@ export default function HomePage() {
               </button>
             </form>
 
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-              No signup required for anonymous links. Sign up for analytics, QR codes, and more!
-            </p>
+            {!isSignedIn && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                No signup required for anonymous links. Sign up for analytics, QR codes, and more!
+              </p>
+            )}
           </div>
 
           {/* Features */}
