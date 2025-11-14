@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
 
   // For Cloudflare Pages with @cloudflare/next-on-pages
   // DO NOT set 'output' - next-on-pages handles this
@@ -16,6 +15,11 @@ const nextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true,
+  },
+
+  // Make font loading more resilient
+  experimental: {
+    optimizePackageImports: ['@clerk/nextjs'],
   },
 
   // Environment variables
