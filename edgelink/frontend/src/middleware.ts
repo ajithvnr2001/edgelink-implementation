@@ -6,9 +6,22 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/public(.*)',
+  '/api/debug(.*)',
 ])
 
 export default clerkMiddleware(async (auth, request) => {
+  const url = new URL(request.url)
+
+  // Debug logging (only in production if DEBUG flag is set)
+  if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+    console.log('[Middleware]', {
+      method: request.method,
+      pathname: url.pathname,
+      isPublic: isPublicRoute(request),
+      headers: Object.fromEntries(request.headers.entries()),
+    })
+  }
+
   // Protect all routes except public ones
   if (!isPublicRoute(request)) {
     await auth.protect()
