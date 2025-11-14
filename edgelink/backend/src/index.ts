@@ -201,7 +201,7 @@ export default {
         }
 
         // Pass search parameters for pagination and filtering
-        const response = await handleGetLinks(env, user.sub, url.searchParams);
+        const response = await handleGetLinks(env, user.user_id, url.searchParams);
         const finalResponse = addRateLimitHeaders(response, info);
         return addCorsHeaders(finalResponse, corsHeaders);
       }
@@ -214,7 +214,7 @@ export default {
         }
 
         const slug = path.split('/')[3];
-        const response = await handleUpdateLink(request, env, user.sub, slug, user.plan);
+        const response = await handleUpdateLink(request, env, user.user_id, slug, user.plan);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -226,7 +226,7 @@ export default {
         }
 
         const slug = path.split('/')[3];
-        const response = await handleDeleteLink(env, user.sub, slug);
+        const response = await handleDeleteLink(env, user.user_id, slug);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -239,7 +239,7 @@ export default {
 
         const slug = path.split('/')[3];
         const format = (url.searchParams.get('format') as 'svg' | 'png') || 'svg';
-        const response = await handleGenerateQR(env, user.sub, slug, user.plan, format);
+        const response = await handleGenerateQR(env, user.user_id, slug, user.plan, format);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -251,7 +251,7 @@ export default {
         }
 
         const slug = path.split('/')[3];
-        const response = await handleGetStats(env, user.sub, slug);
+        const response = await handleGetStats(env, user.user_id, slug);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -265,7 +265,7 @@ export default {
         const slug = path.split('/')[3];
         const url = new URL(request.url);
         const timeRange = (url.searchParams.get('range') as '7d' | '30d') || '7d';
-        const response = await handleGetAnalytics(env, user.sub, slug, timeRange);
+        const response = await handleGetAnalytics(env, user.user_id, slug, timeRange);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -276,7 +276,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleGetAnalyticsSummary(env, user.sub);
+        const response = await handleGetAnalyticsSummary(env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -288,7 +288,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleAddDomain(request, env, user.sub, user.plan);
+        const response = await handleAddDomain(request, env, user.user_id, user.plan);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -299,7 +299,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleGetDomains(env, user.sub);
+        const response = await handleGetDomains(env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -311,7 +311,7 @@ export default {
         }
 
         const domainId = path.split('/')[3];
-        const response = await handleVerifyDomain(env, user.sub, domainId);
+        const response = await handleVerifyDomain(env, user.user_id, domainId);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -323,7 +323,7 @@ export default {
         }
 
         const domainId = path.split('/')[3];
-        const response = await handleDeleteDomain(env, user.sub, domainId);
+        const response = await handleDeleteDomain(env, user.user_id, domainId);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -335,7 +335,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleGenerateAPIKey(request, env, user.sub);
+        const response = await handleGenerateAPIKey(request, env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -346,7 +346,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleGetAPIKeys(env, user.sub);
+        const response = await handleGetAPIKeys(env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -358,7 +358,7 @@ export default {
         }
 
         const keyId = path.split('/')[3];
-        const response = await handleRevokeAPIKey(env, user.sub, keyId);
+        const response = await handleRevokeAPIKey(env, user.user_id, keyId);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -370,7 +370,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleCreateWebhook(request, env, user.sub, user.plan);
+        const response = await handleCreateWebhook(request, env, user.user_id, user.plan);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -381,7 +381,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleGetWebhooks(env, user.sub);
+        const response = await handleGetWebhooks(env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -393,7 +393,7 @@ export default {
         }
 
         const webhookId = path.split('/')[3];
-        const response = await handleDeleteWebhook(env, user.sub, webhookId);
+        const response = await handleDeleteWebhook(env, user.user_id, webhookId);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -421,7 +421,7 @@ export default {
         const slug = path.split('/')[4];
         const format = (url.searchParams.get('format') as 'csv' | 'json') || 'json';
         const timeRange = (url.searchParams.get('range') as '7d' | '30d' | '90d' | 'all') || '30d';
-        const response = await handleExportAnalytics(env, user.sub, slug, format, timeRange);
+        const response = await handleExportAnalytics(env, user.user_id, slug, format, timeRange);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -433,7 +433,7 @@ export default {
         }
 
         const format = (url.searchParams.get('format') as 'csv' | 'json') || 'json';
-        const response = await handleExportLinks(env, user.sub, format);
+        const response = await handleExportLinks(env, user.user_id, format);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -444,7 +444,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleBulkImport(request, env, user.sub, user.plan);
+        const response = await handleBulkImport(request, env, user.user_id, user.plan);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -456,7 +456,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleGetProfile(request, env, user.sub);
+        const response = await handleGetProfile(request, env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -467,7 +467,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleUpdateProfile(request, env, user.sub);
+        const response = await handleUpdateProfile(request, env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -478,7 +478,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleDeleteAccount(request, env, user.sub);
+        const response = await handleDeleteAccount(request, env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -489,7 +489,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleRequestAccountDeletion(request, env, user.sub);
+        const response = await handleRequestAccountDeletion(request, env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -500,7 +500,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleCancelAccountDeletion(request, env, user.sub);
+        const response = await handleCancelAccountDeletion(request, env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -511,7 +511,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleExportUserData(request, env, user.sub);
+        const response = await handleExportUserData(request, env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -523,7 +523,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleCreateABTest(request, env, user.sub, user.plan || 'free');
+        const response = await handleCreateABTest(request, env, user.user_id, user.plan || 'free');
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -534,7 +534,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleGetABTestResults(request, env, user.sub);
+        const response = await handleGetABTestResults(request, env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -545,7 +545,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleDeleteABTest(request, env, user.sub);
+        const response = await handleDeleteABTest(request, env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -557,7 +557,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleSetDeviceRouting(request, env, user.sub);
+        const response = await handleSetDeviceRouting(request, env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -568,7 +568,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleSetGeoRouting(request, env, user.sub);
+        const response = await handleSetGeoRouting(request, env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -579,7 +579,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleSetTimeRouting(request, env, user.sub);
+        const response = await handleSetTimeRouting(request, env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -590,7 +590,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleSetReferrerRouting(request, env, user.sub);
+        const response = await handleSetReferrerRouting(request, env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -601,7 +601,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleGetRouting(request, env, user.sub);
+        const response = await handleGetRouting(request, env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -612,7 +612,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleDeleteRouting(request, env, user.sub);
+        const response = await handleDeleteRouting(request, env, user.user_id);
         return addCorsHeaders(response, corsHeaders);
       }
 

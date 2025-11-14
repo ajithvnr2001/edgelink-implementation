@@ -171,7 +171,7 @@ export async function handleShorten(
       VALUES (?, ?, ?, ?, datetime('now'), datetime('now'), ?, ?, 0)
     `).bind(
       slug,
-      user.sub,
+      user.user_id,
       body.url,
       body.custom_domain || null,
       body.expires_at || null,
@@ -179,7 +179,7 @@ export async function handleShorten(
     ).run();
 
     // Update usage tracking
-    await trackUsage(env, user.sub, 'links_created');
+    await trackUsage(env, user.user_id, 'links_created');
 
     const response: ShortenResponse = {
       slug,

@@ -33,7 +33,7 @@ export async function checkRateLimit(
 
   if (user) {
     plan = user.plan;
-    userId = user.sub;
+    userId = user.user_id;
   } else {
     // For anonymous, use IP address as identifier
     const ip = request.headers.get('cf-connecting-ip') || 'unknown';
