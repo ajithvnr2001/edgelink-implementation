@@ -3,7 +3,8 @@
  * Based on PRD FR-7.6: Rate limits 1k/day free, 10k/day pro
  */
 
-import type { Env, JWTPayload, RateLimitInfo } from '../types';
+import type { Env, RateLimitInfo } from '../types';
+import type { ClerkUser } from './clerk-auth';
 
 /**
  * Rate limit configuration by plan
@@ -19,13 +20,13 @@ const RATE_LIMITS = {
  *
  * @param request - Incoming request
  * @param env - Environment bindings
- * @param user - Authenticated user (or null for anonymous)
+ * @param user - Authenticated Clerk user (or null for anonymous)
  * @returns Rate limit info or error response
  */
 export async function checkRateLimit(
   request: Request,
   env: Env,
-  user: JWTPayload | null
+  user: ClerkUser | null
 ): Promise<{ success: boolean; info: RateLimitInfo; error?: Response }> {
   // Determine rate limit based on user plan
   let plan: 'anonymous' | 'free' | 'pro' = 'anonymous';
