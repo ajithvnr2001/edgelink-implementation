@@ -1,8 +1,1 @@
-{
-  "version": 1,
-  "description": "Cloudflare Pages routing for Next.js with Clerk authentication",
-  "include": [
-    "/*"
-  ],
-  "exclude": []
-}
+{"version":1,"description":"Built with @cloudflare/next-on-pages@1.13.16.","include":["/*"],"exclude":["/_next/static/*"]}

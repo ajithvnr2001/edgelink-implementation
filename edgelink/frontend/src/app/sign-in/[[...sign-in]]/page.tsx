@@ -19,6 +19,8 @@ export default function SignInPage() {
         {/* Clerk Sign In Component */}
         <div className="flex justify-center">
           <SignIn
+            routing="path"
+            path="/sign-in"
             fallbackRedirectUrl="/dashboard"
             appearance={{
               elements: {
