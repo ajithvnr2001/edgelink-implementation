@@ -3,7 +3,7 @@
  * Validates Clerk session tokens and syncs user data
  */
 
-import { createClerkClient } from '@clerk/backend'
+import { createClerkClient, verifyToken } from '@clerk/backend'
 import type { Env } from '../types'
 
 export interface ClerkUser {
@@ -22,21 +22,16 @@ export interface AuthenticatedRequest extends Request {
  */
 async function verifyClerkToken(token: string, env: Env): Promise<ClerkUser | null> {
   try {
-    // Create Clerk client
-    const clerkClient = createClerkClient({
+    // Verify the token using the standalone verifyToken function
+    const payload = await verifyToken(token, {
       secretKey: env.CLERK_SECRET_KEY,
     })
 
-    // Verify the token
-    const sessionClaims = await clerkClient.verifyToken(token, {
-      // You can add additional verification options here
-    })
-
-    if (!sessionClaims || !sessionClaims.sub) {
+    if (!payload || !payload.sub) {
       return null
     }
 
-    const clerkUserId = sessionClaims.sub
+    const clerkUserId = payload.sub
 
     // Get or create user in database
     let user = await env.DB.prepare(`
@@ -48,6 +43,11 @@ async function verifyClerkToken(token: string, env: Env): Promise<ClerkUser | nu
       .first<ClerkUser>()
 
     if (!user) {
+      // Create Clerk client to fetch user details
+      const clerkClient = createClerkClient({
+        secretKey: env.CLERK_SECRET_KEY,
+      })
+
       // Fetch full user details from Clerk
       const clerkUser = await clerkClient.users.getUser(clerkUserId)
       const email = clerkUser.emailAddresses[0]?.emailAddress || ''
