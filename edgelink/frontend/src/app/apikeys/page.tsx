@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useUser } from '@clerk/nextjs';
+import { useAuth } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz';
 
@@ -23,8 +23,7 @@ interface APIKey {
 
 export default function APIKeysPage() {
   const router = useRouter();
-  const { isLoaded, isSignedIn, getToken } = useAuth();
-  const { user: clerkUser } = useUser();
+  const { isLoaded, isSignedIn, getToken, user } = useAuth();
 
   const [apiKeys, setAPIKeys] = useState<APIKey[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,14 +37,14 @@ export default function APIKeysPage() {
     if (!isLoaded) return;
 
     if (!isSignedIn) {
-      router.push('/sign-in');
+      router.push('/login');
       return;
     }
 
-    if (clerkUser) {
+    if (user) {
       loadAPIKeys();
     }
-  }, [isLoaded, isSignedIn, clerkUser, router]);
+  }, [isLoaded, isSignedIn, user, router]);
 
   const loadAPIKeys = async () => {
     try {
@@ -61,7 +60,7 @@ export default function APIKeysPage() {
         const data = await response.json();
         setAPIKeys(data.keys || []);
       } else if (response.status === 401) {
-        router.push('/sign-in');
+        router.push('/login');
       }
     } catch (err) {
       console.error('Failed to load API keys:', err);

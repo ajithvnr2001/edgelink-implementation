@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useAuth, useUser } from '@clerk/nextjs'
+import { useAuth } from '@/lib/auth'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz'
 
@@ -20,15 +20,7 @@ interface Webhook {
 
 export default function WebhooksPage() {
   const router = useRouter()
-  const { isLoaded, isSignedIn, getToken, signOut } = useAuth()
-  const { user: clerkUser } = useUser()
-
-  // Map Clerk user to expected format
-  const user = clerkUser ? {
-    email: clerkUser.primaryEmailAddress?.emailAddress || '',
-    plan: 'free' as 'free' | 'pro', // Default to free, should fetch from backend
-    user_id: clerkUser.id
-  } : null
+  const { isLoaded, isSignedIn, getToken, user } = useAuth()
 
   const [webhooks, setWebhooks] = useState<Webhook[]>([])
   const [loading, setLoading] = useState(true)
@@ -52,14 +44,14 @@ export default function WebhooksPage() {
     if (!isLoaded) return
 
     if (!isSignedIn) {
-      router.push('/sign-in')
+      router.push('/login')
       return
     }
 
-    if (clerkUser) {
+    if (user) {
       loadWebhooks()
     }
-  }, [isLoaded, isSignedIn, clerkUser, router])
+  }, [isLoaded, isSignedIn, user, router])
 
   const loadWebhooks = async () => {
     try {
@@ -144,7 +136,9 @@ export default function WebhooksPage() {
   }
 
   const handleLogout = async () => {
-    await signOut()
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('refreshToken')
+    localStorage.removeItem('user')
     router.push('/')
   }
 
