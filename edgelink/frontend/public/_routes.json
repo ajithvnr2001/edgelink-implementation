@@ -1,11 +1,8 @@
 {
   "version": 1,
+  "description": "Cloudflare Pages routing for Next.js with Clerk authentication",
   "include": [
     "/*"
   ],
-  "exclude": [
-    "/_next/static/*",
-    "/favicon.ico",
-    "/images/*"
-  ]
+  "exclude": []
 }

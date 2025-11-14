@@ -1,0 +1,16 @@
+# Headers for all pages
+/*
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# Clerk authentication routes - ensure they're not cached
+/sign-in/*
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/sign-up/*
+  Cache-Control: no-store, no-cache, must-revalidate
+
+# API routes - no caching
+/api/*
+  Cache-Control: no-store, no-cache, must-revalidate
