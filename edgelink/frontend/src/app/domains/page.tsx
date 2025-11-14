@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useUser } from '@clerk/nextjs';
+import { useAuth } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz';
 
@@ -23,8 +23,7 @@ interface Domain {
 
 export default function DomainsPage() {
   const router = useRouter();
-  const { isLoaded, isSignedIn, getToken } = useAuth();
-  const { user: clerkUser } = useUser();
+  const { isLoaded, isSignedIn, getToken, user } = useAuth();
 
   const [domains, setDomains] = useState<Domain[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,14 +37,14 @@ export default function DomainsPage() {
     if (!isLoaded) return;
 
     if (!isSignedIn) {
-      router.push('/sign-in');
+      router.push('/login');
       return;
     }
 
-    if (clerkUser) {
+    if (user) {
       loadDomains();
     }
-  }, [isLoaded, isSignedIn, clerkUser, router]);
+  }, [isLoaded, isSignedIn, user, router]);
 
   const loadDomains = async () => {
     try {
@@ -61,7 +60,7 @@ export default function DomainsPage() {
         const data = await response.json();
         setDomains(data.domains || []);
       } else if (response.status === 401) {
-        router.push('/sign-in');
+        router.push('/login');
       }
     } catch (err) {
       console.error('Failed to load domains:', err);

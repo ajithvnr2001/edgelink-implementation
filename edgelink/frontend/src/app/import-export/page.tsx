@@ -7,7 +7,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useUser } from '@clerk/nextjs';
+import { useAuth } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz';
 
@@ -32,7 +32,6 @@ export default function ImportExportPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { isLoaded, isSignedIn, getToken } = useAuth();
-  const { user: clerkUser } = useUser();
 
   const [activeTab, setActiveTab] = useState<'import' | 'export'>('import');
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -48,7 +47,7 @@ export default function ImportExportPage() {
     if (!isLoaded) return;
 
     if (!isSignedIn) {
-      router.push('/sign-in');
+      router.push('/login');
     }
   }, [isLoaded, isSignedIn, router]);
 

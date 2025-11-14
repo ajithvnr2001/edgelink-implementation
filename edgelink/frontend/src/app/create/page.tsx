@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useUser } from '@clerk/nextjs';
+import { useAuth } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz';
 
@@ -39,8 +39,7 @@ interface Domain {
 
 export default function CreateLinkPage() {
   const router = useRouter();
-  const { isLoaded, isSignedIn, getToken } = useAuth();
-  const { user: clerkUser } = useUser();
+  const { isLoaded, isSignedIn, getToken, user } = useAuth();
 
   const [url, setUrl] = useState('');
   const [customSlug, setCustomSlug] = useState('');
@@ -68,14 +67,14 @@ export default function CreateLinkPage() {
     if (!isLoaded) return;
 
     if (!isSignedIn) {
-      router.push('/sign-in');
+      router.push('/login');
       return;
     }
 
-    if (clerkUser) {
+    if (user) {
       loadDomains();
     }
-  }, [isLoaded, isSignedIn, clerkUser, router]);
+  }, [isLoaded, isSignedIn, user, router]);
 
   const loadDomains = async () => {
     try {
