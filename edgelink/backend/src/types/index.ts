@@ -20,17 +20,23 @@ export interface Env {
   RATE_LIMITER: any;
 
   // Environment variables
+  JWT_SECRET: string;
   ENVIRONMENT: string;
   FALLBACK_URL?: string; // Optional: URL to proxy requests when slug not found (e.g., your main website)
-
-  // Clerk Authentication
-  CLERK_SECRET_KEY: string;
-  CLERK_WEBHOOK_SECRET: string;
 
   // Cloudflare API credentials for Custom Hostnames
   CF_ACCOUNT_ID?: string;
   CF_ZONE_ID?: string;
   CF_API_TOKEN?: string;
+}
+
+export interface JWTPayload {
+  sub: string;        // User ID
+  email: string;      // User email
+  plan: 'free' | 'pro';
+  iat: number;        // Issued at (timestamp)
+  exp: number;        // Expiration (timestamp)
+  fingerprint: string; // Device fingerprint for theft detection
 }
 
 export interface User {

@@ -3,24 +3,11 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useAuth, useUser } from '@clerk/nextjs'
-import { type Link as LinkType, type DeviceRouting, type RoutingConfig, type GeoRouting, type ReferrerRouting } from '@/lib/api'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz'
+import { getLinks, deleteLink, updateLink, getUser, logout, getAccessToken, type Link as LinkType, setDeviceRouting, getRouting, deleteRouting, type DeviceRouting, type RoutingConfig, setGeoRouting, type GeoRouting, setReferrerRouting, type ReferrerRouting } from '@/lib/api'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { isLoaded, isSignedIn, getToken, signOut } = useAuth()
-  const { user: clerkUser } = useUser()
-
-  // Map Clerk user to expected format
-  // TODO: Fetch actual plan from backend API
-  const user = clerkUser ? {
-    email: clerkUser.primaryEmailAddress?.emailAddress || '',
-    plan: 'free' as 'free' | 'pro', // Default to free, should fetch from backend
-    user_id: clerkUser.id
-  } : null
-
+  const [user, setUser] = useState<any>(null)
   const [links, setLinks] = useState<LinkType[]>([])
   const [filteredLinks, setFilteredLinks] = useState<LinkType[]>([])
   const [loading, setLoading] = useState(true)
@@ -67,20 +54,14 @@ export default function DashboardPage() {
   const linksPerPage = 50
 
   useEffect(() => {
-    // Wait for Clerk to load
-    if (!isLoaded) return
-
-    // Redirect to sign-in if not authenticated
-    if (!isSignedIn) {
-      router.push('/sign-in')
+    const currentUser = getUser()
+    if (!currentUser) {
+      router.push('/login')
       return
     }
-
-    // Load user data and links
-    if (clerkUser) {
-      loadLinks()
-    }
-  }, [isLoaded, isSignedIn, clerkUser, router])
+    setUser(currentUser)
+    loadLinks()
+  }, [router])
 
   // Search and filter effect
   useEffect(() => {
@@ -113,20 +94,7 @@ export default function DashboardPage() {
   const loadLinks = async () => {
     try {
       setLoading(true)
-      const token = await getToken()
-
-      // Call API with Clerk token
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz'
-      const response = await fetch(`${API_URL}/api/links`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) throw new Error('Failed to load links')
-
-      const data = await response.json()
+      const data = await getLinks()
       setLinks(data.links)
       setFilteredLinks(data.links)
     } catch (err) {
@@ -137,7 +105,7 @@ export default function DashboardPage() {
   }
 
   const handleLogout = async () => {
-    await signOut()
+    await logout()
     router.push('/')
   }
 
@@ -147,20 +115,7 @@ export default function DashboardPage() {
     }
 
     try {
-      const token = await getToken()
-      const response = await fetch(`${API_URL}/api/links/${slug}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to delete link')
-      }
-
+      await deleteLink(slug)
       setLinks(links.filter(link => link.slug !== slug))
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete link')
@@ -211,23 +166,11 @@ export default function DashboardPage() {
 
     setEditLoading(true)
     try {
-      const token = await getToken()
-      const response = await fetch(`${API_URL}/api/links/${editingLink.slug}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          destination: editDestination,
-          ...(slugChanged && { slug: editSlug })
-        })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to update link')
-      }
+      const response = await updateLink(
+        editingLink.slug,
+        editDestination,
+        slugChanged ? editSlug : undefined
+      )
 
       // Update the link in the local state
       setLinks(links.map(link =>
@@ -263,21 +206,23 @@ export default function DashboardPage() {
     setQrCodeData(null)
 
     try {
-      const token = await getToken()
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz'
+      const accessToken = getAccessToken()
 
-      if (!token) {
+      if (!accessToken) {
         throw new Error('Not authenticated. Please log in again.')
       }
 
       console.log('Generating QR code for:', link.slug)
-      console.log('Token exists:', !!token)
+      console.log('Token exists:', !!accessToken)
 
-      const response = await fetch(`${API_URL}/api/links/${link.slug}/qr?format=${format}`, {
+      const headers: HeadersInit = {
+        'Authorization': `Bearer ${accessToken}`
+      }
+
+      const response = await fetch(`${API_BASE}/api/links/${link.slug}/qr?format=${format}`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers
       })
 
       console.log('Response status:', response.status)
@@ -322,18 +267,20 @@ export default function DashboardPage() {
     if (!qrCodeLink) return
 
     try {
-      const token = await getToken()
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://go.shortedbro.xyz'
+      const accessToken = getAccessToken()
 
-      if (!token) {
+      if (!accessToken) {
         throw new Error('Not authenticated. Please log in again.')
       }
 
-      const response = await fetch(`${API_URL}/api/links/${qrCodeLink.slug}/qr?format=${format}`, {
+      const headers: HeadersInit = {
+        'Authorization': `Bearer ${accessToken}`
+      }
+
+      const response = await fetch(`${API_BASE}/api/links/${qrCodeLink.slug}/qr?format=${format}`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers
       })
 
       if (!response.ok) {
@@ -378,27 +325,14 @@ export default function DashboardPage() {
 
     try {
       // Load existing routing configuration
-      const token = await getToken()
-      const response = await fetch(`${API_URL}/api/links/${link.slug}/routing`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
+      const config = await getRouting(link.slug)
+      setRoutingConfig(config)
 
-      if (response.ok) {
-        const config = await response.json()
-        setRoutingConfig(config)
-
-        // Pre-fill form with existing values
-        if (config.routing.device) {
-          setMobileUrl(config.routing.device.mobile || '')
-          setTabletUrl(config.routing.device.tablet || '')
-          setDesktopUrl(config.routing.device.desktop || '')
-        }
-      } else {
-        // If no routing config exists yet, that's okay
-        setRoutingConfig(null)
+      // Pre-fill form with existing values
+      if (config.routing.device) {
+        setMobileUrl(config.routing.device.mobile || '')
+        setTabletUrl(config.routing.device.tablet || '')
+        setDesktopUrl(config.routing.device.desktop || '')
       }
     } catch (err) {
       // If no routing config exists yet, that's okay
@@ -459,21 +393,7 @@ export default function DashboardPage() {
       if (tabletUrl.trim()) routing.tablet = tabletUrl.trim()
       if (desktopUrl.trim()) routing.desktop = desktopUrl.trim()
 
-      const token = await getToken()
-      const response = await fetch(`${API_URL}/api/links/${routingLink.slug}/routing/device`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ routing })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to save routing configuration')
-      }
-
+      await setDeviceRouting(routingLink.slug, routing)
       alert('Device routing configured successfully! ✅')
       closeRoutingModal()
     } catch (err) {
@@ -492,20 +412,7 @@ export default function DashboardPage() {
 
     setRoutingLoading(true)
     try {
-      const token = await getToken()
-      const response = await fetch(`${API_URL}/api/links/${routingLink.slug}/routing`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to delete routing rules')
-      }
-
+      await deleteRouting(routingLink.slug)
       alert('Routing rules deleted successfully')
       closeRoutingModal()
     } catch (err) {
@@ -531,28 +438,16 @@ export default function DashboardPage() {
 
     try {
       // Load existing routing configuration
-      const token = await getToken()
-      const response = await fetch(`${API_URL}/api/links/${link.slug}/routing`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
+      const config = await getRouting(link.slug)
+      setGeoRoutingConfig(config)
 
-      if (response.ok) {
-        const config = await response.json()
-        setGeoRoutingConfig(config)
-
-        // Pre-fill form with existing values
-        if (config.routing.geo) {
-          const routes = Object.entries(config.routing.geo).map(([country, url]) => ({
-            country,
-            url
-          }))
-          setGeoRoutes(routes)
-        }
-      } else {
-        setGeoRoutingConfig(null)
+      // Pre-fill form with existing values
+      if (config.routing.geo) {
+        const routes = Object.entries(config.routing.geo).map(([country, url]) => ({
+          country,
+          url
+        }))
+        setGeoRoutes(routes)
       }
     } catch (err) {
       // If no routing config exists yet, that's okay
@@ -639,21 +534,7 @@ export default function DashboardPage() {
         }
       })
 
-      const token = await getToken()
-      const response = await fetch(`${API_URL}/api/links/${geoRoutingLink.slug}/routing/geo`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ routing })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to save geographic routing')
-      }
-
+      await setGeoRouting(geoRoutingLink.slug, routing)
       alert('Geographic routing configured successfully! ✅')
       closeGeoRoutingModal()
     } catch (err) {
@@ -672,20 +553,7 @@ export default function DashboardPage() {
 
     setGeoRoutingLoading(true)
     try {
-      const token = await getToken()
-      const response = await fetch(`${API_URL}/api/links/${geoRoutingLink.slug}/routing`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to delete geographic routing rules')
-      }
-
+      await deleteRouting(geoRoutingLink.slug)
       alert('Geographic routing rules deleted successfully')
       closeGeoRoutingModal()
     } catch (err) {
@@ -711,28 +579,16 @@ export default function DashboardPage() {
 
     try {
       // Load existing routing configuration
-      const token = await getToken()
-      const response = await fetch(`${API_URL}/api/links/${link.slug}/routing`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
+      const config = await getRouting(link.slug)
+      setReferrerRoutingConfig(config)
 
-      if (response.ok) {
-        const config = await response.json()
-        setReferrerRoutingConfig(config)
-
-        // Pre-fill form with existing values
-        if (config.routing.referrer) {
-          const routes = Object.entries(config.routing.referrer).map(([domain, url]) => ({
-            domain,
-            url
-          }))
-          setReferrerRoutes(routes)
-        }
-      } else {
-        setReferrerRoutingConfig(null)
+      // Pre-fill form with existing values
+      if (config.routing.referrer) {
+        const routes = Object.entries(config.routing.referrer).map(([domain, url]) => ({
+          domain,
+          url
+        }))
+        setReferrerRoutes(routes)
       }
     } catch (err) {
       // If no routing config exists yet, that's okay
@@ -825,21 +681,7 @@ export default function DashboardPage() {
         }
       })
 
-      const token = await getToken()
-      const response = await fetch(`${API_URL}/api/links/${referrerRoutingLink.slug}/routing/referrer`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ routing })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to save referrer-based routing')
-      }
-
+      await setReferrerRouting(referrerRoutingLink.slug, routing)
       alert('Referrer-based routing configured successfully! ✅')
       closeReferrerRoutingModal()
     } catch (err) {
@@ -858,20 +700,7 @@ export default function DashboardPage() {
 
     setReferrerRoutingLoading(true)
     try {
-      const token = await getToken()
-      const response = await fetch(`${API_URL}/api/links/${referrerRoutingLink.slug}/routing`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to delete referrer routing rules')
-      }
-
+      await deleteRouting(referrerRoutingLink.slug)
       alert('Referrer routing rules deleted successfully')
       closeReferrerRoutingModal()
     } catch (err) {

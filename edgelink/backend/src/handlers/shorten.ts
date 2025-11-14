@@ -3,8 +3,7 @@
  * Based on PRD FR-1: URL Shortening
  */
 
-import type { Env, ShortenRequest, ShortenResponse, LinkKVValue } from '../types';
-import type { ClerkUser } from '../middleware/clerk-auth';
+import type { Env, ShortenRequest, ShortenResponse, JWTPayload, LinkKVValue } from '../types';
 import { generateSlugWithRetry } from '../utils/slug';
 import { isValidURL } from '../utils/validation';
 import { hashPassword } from '../utils/password';
@@ -19,7 +18,7 @@ import { hashPassword } from '../utils/password';
 export async function handleShorten(
   request: Request,
   env: Env,
-  user: ClerkUser | null
+  user: JWTPayload | null
 ): Promise<Response> {
   try {
     // Parse request body
@@ -51,7 +50,7 @@ export async function handleShorten(
     const linkData: LinkKVValue = {
       destination: body.url,
       created_at: now,
-      user_id: user?.user_id || 'anonymous',
+      user_id: user?.sub || 'anonymous',
       custom_domain: body.custom_domain,
       click_count: 0,
       metadata: {}
@@ -172,7 +171,7 @@ export async function handleShorten(
       VALUES (?, ?, ?, ?, datetime('now'), datetime('now'), ?, ?, 0)
     `).bind(
       slug,
-      user.user_id,
+      user.sub,
       body.url,
       body.custom_domain || null,
       body.expires_at || null,
@@ -180,7 +179,7 @@ export async function handleShorten(
     ).run();
 
     // Update usage tracking
-    await trackUsage(env, user.user_id, 'links_created');
+    await trackUsage(env, user.sub, 'links_created');
 
     const response: ShortenResponse = {
       slug,
