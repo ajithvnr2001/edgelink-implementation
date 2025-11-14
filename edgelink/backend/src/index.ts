@@ -159,17 +159,23 @@ export default {
 
       // URL shortening endpoint (anonymous or authenticated)
       if (path === '/api/shorten' && method === 'POST') {
-        // Authenticate (optional for this endpoint)
-        const { user, error: authError } = await authenticate(request, env);
-        if (authError) {
-          return addCorsHeaders(authError, corsHeaders);
+        // Authenticate with Clerk (optional for this endpoint - supports anonymous)
+        const authHeader = request.headers.get('Authorization');
+        let user = null;
+
+        if (authHeader) {
+          const { user: clerkUser, error: authError } = await requireClerkAuth(request, env);
+          if (authError) {
+            return addCorsHeaders(authError, corsHeaders);
+          }
+          user = clerkUser;
         }
 
         // Check rate limit
         const { success, info, error: rateLimitError } = await checkRateLimit(
           request,
           env,
-          user
+          user?.user_id
         );
 
         if (!success && rateLimitError) {

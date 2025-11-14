@@ -3,7 +3,8 @@
  * Based on PRD FR-1: URL Shortening
  */
 
-import type { Env, ShortenRequest, ShortenResponse, JWTPayload, LinkKVValue } from '../types';
+import type { Env, ShortenRequest, ShortenResponse, LinkKVValue } from '../types';
+import type { ClerkUser } from '../middleware/clerk-auth';
 import { generateSlugWithRetry } from '../utils/slug';
 import { isValidURL } from '../utils/validation';
 import { hashPassword } from '../utils/password';
@@ -18,7 +19,7 @@ import { hashPassword } from '../utils/password';
 export async function handleShorten(
   request: Request,
   env: Env,
-  user: JWTPayload | null
+  user: ClerkUser | null
 ): Promise<Response> {
   try {
     // Parse request body
@@ -50,7 +51,7 @@ export async function handleShorten(
     const linkData: LinkKVValue = {
       destination: body.url,
       created_at: now,
-      user_id: user?.sub || 'anonymous',
+      user_id: user?.user_id || 'anonymous',
       custom_domain: body.custom_domain,
       click_count: 0,
       metadata: {}
