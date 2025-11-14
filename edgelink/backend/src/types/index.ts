@@ -74,6 +74,7 @@ export interface LinkKVValue {
   geo_routing?: Record<string, string>;
   referrer_routing?: Record<string, string>;
   expires_at?: number;
+  timezone?: string; // IANA timezone identifier (e.g., 'Asia/Kolkata', 'America/New_York')
   max_clicks?: number;
   click_count?: number;
   password_hash?: string;
@@ -91,6 +92,7 @@ export interface ShortenRequest {
   custom_slug?: string;
   custom_domain?: string;
   expires_at?: string;
+  timezone?: string; // IANA timezone identifier (e.g., 'Asia/Kolkata', 'America/New_York')
   max_clicks?: number;
   password?: string;
   utm_template?: string;

@@ -24,6 +24,7 @@ export interface Link {
   custom_domain?: string
   created_at: string
   expires_at?: string
+  timezone?: string
   click_count: number
 }
 
@@ -32,6 +33,7 @@ export interface ShortenRequest {
   custom_slug?: string
   custom_domain?: string
   expires_at?: string
+  timezone?: string
   password?: string
 }
 
