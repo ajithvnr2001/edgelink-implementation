@@ -7,6 +7,9 @@ import type { Env, AuthRequest, AuthResponse, User } from '../types';
 import { generateJWT, generateFingerprint, generateRefreshToken } from '../auth/jwt';
 import { hashPassword, verifyPassword } from '../utils/password';
 import { isValidEmail, isValidPassword } from '../utils/validation';
+import { TokenService } from '../services/auth/tokenService';
+import { EmailService } from '../services/email/emailService';
+import { EmailRateLimiter } from '../services/email/rateLimiter';
 
 /**
  * Handle POST /auth/signup
@@ -70,23 +73,19 @@ export async function handleSignup(
     // Hash password
     const passwordHash = await hashPassword(body.password);
 
-    // Generate verification token
-    const verificationToken = generateRefreshToken();
-
     // Create user
     await env.DB.prepare(`
       INSERT INTO users (
         user_id, email, password_hash, name, plan,
-        email_verified, verification_token,
+        email_verified,
         created_at, updated_at
       )
-      VALUES (?, ?, ?, ?, 'free', FALSE, ?, datetime('now'), datetime('now'))
+      VALUES (?, ?, ?, ?, 'free', FALSE, datetime('now'), datetime('now'))
     `).bind(
       userId,
       body.email,
       passwordHash,
-      body.name || null,
-      verificationToken
+      body.name || null
     ).run();
 
     // Generate JWT tokens
@@ -111,8 +110,24 @@ export async function handleSignup(
       new Date(refreshExpiry).toISOString()
     ).run();
 
-    // TODO: Send verification email (implement in future)
-    // await sendVerificationEmail(env, body.email, verificationToken);
+    // Generate email verification token
+    const tokenService = new TokenService(env);
+    const { token: verificationToken } = await tokenService.generateVerificationToken(userId);
+
+    // Send verification email with rate limiting
+    const emailService = new EmailService(env);
+    const rateLimiter = new EmailRateLimiter(env.LINKS_KV);
+
+    const allowed = await rateLimiter.checkRateLimit(body.email, 'verification');
+    if (allowed) {
+      try {
+        await emailService.sendVerificationEmail(body.email, verificationToken);
+        console.log(`[Signup] Verification email sent to ${body.email}`);
+      } catch (error) {
+        console.error('[Signup] Failed to send verification email:', error);
+        // Don't fail signup if email fails
+      }
+    }
 
     const response: AuthResponse = {
       access_token: accessToken,
@@ -123,7 +138,8 @@ export async function handleSignup(
         user_id: userId,
         email: body.email,
         plan: 'free'
-      }
+      },
+      message: 'Account created successfully. Please check your email to verify your account within 90 days.'
     };
 
     return new Response(JSON.stringify(response), {
@@ -172,7 +188,7 @@ export async function handleLogin(
 
     // Get user from database
     const user = await env.DB.prepare(`
-      SELECT user_id, email, password_hash, plan
+      SELECT user_id, email, password_hash, plan, email_verified
       FROM users
       WHERE email = ?
     `).bind(body.email).first() as User | null;
@@ -227,10 +243,11 @@ export async function handleLogin(
       new Date(refreshExpiry).toISOString()
     ).run();
 
-    // Update last login
+    // Update last login timestamp
+    const now = Math.floor(Date.now() / 1000);
     await env.DB.prepare(`
-      UPDATE users SET last_login = datetime('now') WHERE user_id = ?
-    `).bind(user.user_id).run();
+      UPDATE users SET last_login_at = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?
+    `).bind(now, user.user_id).run();
 
     const response: AuthResponse = {
       access_token: accessToken,
@@ -240,7 +257,8 @@ export async function handleLogin(
       user: {
         user_id: user.user_id,
         email: user.email,
-        plan: user.plan
+        plan: user.plan,
+        email_verified: user.email_verified === 1 || user.email_verified === true
       }
     };
 

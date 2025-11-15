@@ -22,7 +22,20 @@ export interface Env {
   // Environment variables
   JWT_SECRET: string;
   ENVIRONMENT: string;
+  FRONTEND_URL?: string;
   FALLBACK_URL?: string; // Optional: URL to proxy requests when slug not found (e.g., your main website)
+
+  // Email Service (Resend)
+  RESEND_API_KEY: string;
+  EMAIL_FROM_ADDRESS?: string;
+
+  // DodoPayments Integration
+  DODO_API_KEY: string;
+  DODO_WEBHOOK_SECRET: string;
+  DODO_BASE_URL?: string;
+  DODO_PRICE_PRO_MONTHLY?: string;
+  DODO_PRICE_PRO_ANNUAL?: string;
+  DODO_PRICE_LIFETIME?: string;
 
   // Cloudflare API credentials for Custom Hostnames
   CF_ACCOUNT_ID?: string;
@@ -44,9 +57,11 @@ export interface User {
   email: string;
   password_hash: string;
   plan: 'free' | 'pro';
+  email_verified?: boolean | number;
   created_at: string;
   updated_at: string;
   last_login?: string;
+  last_login_at?: number;
 }
 
 export interface Link {

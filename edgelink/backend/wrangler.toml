@@ -47,17 +47,29 @@ ENVIRONMENT = "development"
 FRONTEND_URL = "http://localhost:3000"
 ALLOW_REGISTRATION = "true"
 NODE_ENV = "development"
+EMAIL_FROM_ADDRESS = "EdgeLink <noreply@shortedbro.xyz>"
+DODO_BASE_URL = "https://api.dodopayments.com/v1"
 # FALLBACK_URL = "https://example.com" # Optional: Proxy to this URL when slug not found (for root domain usage)
 
 # Secrets (set via: wrangler secret put <NAME>)
 # JWT_SECRET - Secret key for JWT signing/verification (Legacy, maintained for API keys)
 # Run: wrangler secret put JWT_SECRET
 #
-# Clerk Authentication Secrets (REQUIRED for Clerk integration)
-# CLERK_SECRET_KEY - Clerk secret key from dashboard (starts with sk_test_ or sk_live_)
-# CLERK_WEBHOOK_SECRET - Clerk webhook signing secret from webhook endpoint (starts with whsec_)
-# Run: wrangler secret put CLERK_SECRET_KEY
-# Run: wrangler secret put CLERK_WEBHOOK_SECRET
+# Email Service (Resend)
+# RESEND_API_KEY - API key from Resend dashboard (starts with re_)
+# Run: wrangler secret put RESEND_API_KEY
+#
+# DodoPayments Integration
+# DODO_API_KEY - DodoPayments API key from dashboard
+# DODO_WEBHOOK_SECRET - Webhook signing secret from DodoPayments
+# DODO_PRICE_PRO_MONTHLY - Price ID for monthly pro plan
+# DODO_PRICE_PRO_ANNUAL - Price ID for annual pro plan
+# DODO_PRICE_LIFETIME - Price ID for lifetime plan
+# Run: wrangler secret put DODO_API_KEY
+# Run: wrangler secret put DODO_WEBHOOK_SECRET
+# Run: wrangler secret put DODO_PRICE_PRO_MONTHLY
+# Run: wrangler secret put DODO_PRICE_PRO_ANNUAL
+# Run: wrangler secret put DODO_PRICE_LIFETIME
 #
 # Cloudflare API Credentials for Custom Hostnames (required for automatic custom domain setup)
 # CF_ZONE_ID - Zone ID for shortedbro.xyz (found in Cloudflare Dashboard → shortedbro.xyz → Overview)
@@ -74,6 +86,10 @@ namespace_id = "1001"
 simple = { limit = 1000, period = 86400 }
 
 # Cron Triggers for scheduled tasks
-# Runs daily at midnight to clean up expired links
+# Runs daily at 2 AM UTC for:
+# - Cleaning up expired links
+# - Sending 80-day warnings to unverified accounts
+# - Deleting 90-day unverified accounts
+# - Cleaning expired tokens
 [triggers]
-crons = ["0 0 * * *"]  # Every day at midnight (00:00 UTC)
+crons = ["0 2 * * *"]  # Every day at 2 AM UTC
