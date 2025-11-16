@@ -806,7 +806,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <Link
-                href="/login"
+                href="/resend-verification"
                 className="text-sm text-warning-400 hover:text-warning-300 font-medium whitespace-nowrap"
               >
                 Resend verification →
