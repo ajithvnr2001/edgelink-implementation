@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { verifyEmail, resendVerification, getUser } from '@/lib/api'
+import { verifyEmail, resendVerification, getUser, storeUser } from '@/lib/api'
 
 function VerifyEmailContent() {
   const router = useRouter()
@@ -32,6 +32,13 @@ function VerifyEmailContent() {
       .then((response) => {
         setStatus('success')
         setMessage(response.message || 'Email verified successfully!')
+
+        // Update user object in localStorage to mark email as verified
+        const currentUser = getUser()
+        if (currentUser) {
+          currentUser.email_verified = true
+          storeUser(currentUser)
+        }
 
         // Redirect to dashboard after 3 seconds
         setTimeout(() => {

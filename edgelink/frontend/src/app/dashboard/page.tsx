@@ -54,13 +54,28 @@ export default function DashboardPage() {
   const linksPerPage = 50
 
   useEffect(() => {
-    const currentUser = getUser()
-    if (!currentUser) {
-      router.push('/login')
-      return
+    const loadUserData = () => {
+      const currentUser = getUser()
+      if (!currentUser) {
+        router.push('/login')
+        return
+      }
+      setUser(currentUser)
     }
-    setUser(currentUser)
+
+    loadUserData()
     loadLinks()
+
+    // Listen for auth changes (e.g., after email verification)
+    const handleAuthChange = () => {
+      loadUserData()
+    }
+
+    window.addEventListener('authChange', handleAuthChange)
+
+    return () => {
+      window.removeEventListener('authChange', handleAuthChange)
+    }
   }, [router])
 
   // Search and filter effect
