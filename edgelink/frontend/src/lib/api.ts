@@ -479,3 +479,47 @@ export async function deleteRouting(slug: string): Promise<{ message: string; sl
     method: 'DELETE',
   })
 }
+
+/**
+ * Email Verification API Functions
+ */
+
+/**
+ * Verify email address with token
+ */
+export async function verifyEmail(token: string): Promise<{ message: string }> {
+  return apiRequest('/auth/verify-email', {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  })
+}
+
+/**
+ * Resend verification email
+ */
+export async function resendVerification(email: string): Promise<{ message: string }> {
+  return apiRequest('/auth/resend-verification', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+/**
+ * Request password reset
+ */
+export async function requestPasswordReset(email: string): Promise<{ message: string }> {
+  return apiRequest('/auth/request-reset', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+/**
+ * Reset password with token
+ */
+export async function resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+  return apiRequest('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, new_password: newPassword }),
+  })
+}
