@@ -55,21 +55,54 @@ export async function handleResetPassword(request: Request, env: Env): Promise<R
       );
     }
 
-    const passwordHash = await hashPassword(body.newPassword);
+    // Check 5-day rate limit
+    const user = await env.DB.prepare(
+      'SELECT last_password_reset_at FROM users WHERE user_id = ?'
+    ).bind(userId).first();
 
-    // Update password and mark token as used
+    if (user && user.last_password_reset_at) {
+      const lastResetAt = user.last_password_reset_at as number;
+      const now = Math.floor(Date.now() / 1000);
+      const fiveDaysInSeconds = 5 * 24 * 60 * 60; // 5 days
+      const timeSinceLastReset = now - lastResetAt;
+
+      if (timeSinceLastReset < fiveDaysInSeconds) {
+        const timeRemaining = fiveDaysInSeconds - timeSinceLastReset;
+        const daysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60));
+        const hoursRemaining = Math.ceil(timeRemaining / (60 * 60));
+
+        return new Response(
+          JSON.stringify({
+            error: `You can only reset your password once every 5 days. Please try again in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} (${hoursRemaining} hours).`,
+            code: 'RESET_RATE_LIMIT',
+            timeRemaining: timeRemaining,
+            daysRemaining: daysRemaining,
+            hoursRemaining: hoursRemaining
+          }),
+          {
+            status: 429,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      }
+    }
+
+    const passwordHash = await hashPassword(body.newPassword);
+    const now = Math.floor(Date.now() / 1000);
+
+    // Update password, set last_password_reset_at, and mark token as used
     await env.DB.batch([
       env.DB.prepare(`
         UPDATE users
-        SET password_hash = ?, updated_at = CURRENT_TIMESTAMP
+        SET password_hash = ?, last_password_reset_at = ?, updated_at = CURRENT_TIMESTAMP
         WHERE user_id = ?
-      `).bind(passwordHash, userId),
+      `).bind(passwordHash, now, userId),
 
       env.DB.prepare(`
         UPDATE password_reset_tokens
         SET used_at = ?
         WHERE user_id = ? AND used_at IS NULL
-      `).bind(Math.floor(Date.now() / 1000), userId)
+      `).bind(now, userId)
     ]);
 
     // Get user email
