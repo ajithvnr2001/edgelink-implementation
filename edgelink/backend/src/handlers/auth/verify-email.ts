@@ -1,6 +1,6 @@
 /**
  * Email Verification Handler
- * Handles GET /auth/verify-email?token=xxx
+ * Handles POST /auth/verify-email with token in body
  */
 
 import type { Env } from '../../types';
@@ -8,8 +8,9 @@ import { TokenService } from '../../services/auth/tokenService';
 
 export async function handleVerifyEmail(request: Request, env: Env): Promise<Response> {
   try {
-    const url = new URL(request.url);
-    const token = url.searchParams.get('token');
+    // Get token from request body
+    const body = await request.json() as { token: string };
+    const token = body.token;
 
     if (!token) {
       return new Response(
