@@ -44,6 +44,24 @@ export async function handleDodoPaymentsWebhook(request: Request, env: Env): Pro
 
     // Handle different event types
     switch (event.type) {
+      // Payment events
+      case 'payment.succeeded':
+        await handlePaymentSucceeded(event, env, subscriptionService);
+        break;
+
+      case 'payment.failed':
+        await handlePaymentFailed(event, env, subscriptionService);
+        break;
+
+      case 'payment.processing':
+        await handlePaymentProcessing(event, env, subscriptionService);
+        break;
+
+      case 'payment.cancelled':
+        await handlePaymentCancelled(event, env, subscriptionService);
+        break;
+
+      // Subscription events
       case 'subscription.active':
         await handleSubscriptionActive(event, env, subscriptionService);
         break;
@@ -70,6 +88,15 @@ export async function handleDodoPaymentsWebhook(request: Request, env: Env): Pro
 
       case 'subscription.plan_changed':
         await handleSubscriptionPlanChanged(event, env, subscriptionService);
+        break;
+
+      // Refund events
+      case 'refund.succeeded':
+        await handleRefundSucceeded(event, env, subscriptionService);
+        break;
+
+      case 'refund.failed':
+        await handleRefundFailed(event, env, subscriptionService);
         break;
 
       default:
@@ -290,4 +317,157 @@ async function handleSubscriptionPlanChanged(event: any, env: Env, subscriptionS
   });
 
   console.log(`[DodoWebhook] Subscription plan changed for user ${userId}`);
+}
+
+/**
+ * Handle payment.succeeded - Payment completed successfully
+ */
+async function handlePaymentSucceeded(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
+  const payment = event.data;
+  const userId = payment.metadata?.user_id;
+
+  if (!userId) {
+    console.error('[DodoWebhook] No user_id in payment metadata');
+    return;
+  }
+
+  // Record successful payment
+  await subscriptionService.recordPayment({
+    userId,
+    paymentId: payment.id,
+    customerId: payment.customer_id,
+    subscriptionId: payment.subscription_id,
+    amount: payment.amount,
+    currency: payment.currency,
+    status: 'succeeded',
+    plan: 'pro',
+    invoiceUrl: payment.invoice_url,
+    receiptUrl: payment.receipt_url,
+    metadata: payment.metadata
+  });
+
+  console.log(`[DodoWebhook] Payment succeeded for user ${userId}: ${payment.amount} ${payment.currency}`);
+}
+
+/**
+ * Handle payment.failed - Payment failed
+ */
+async function handlePaymentFailed(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
+  const payment = event.data;
+  const userId = payment.metadata?.user_id;
+
+  if (!userId) {
+    console.error('[DodoWebhook] No user_id in payment metadata');
+    return;
+  }
+
+  // Record failed payment
+  await subscriptionService.recordPayment({
+    userId,
+    paymentId: payment.id,
+    customerId: payment.customer_id,
+    subscriptionId: payment.subscription_id,
+    amount: payment.amount,
+    currency: payment.currency,
+    status: 'failed',
+    plan: 'pro',
+    invoiceUrl: payment.invoice_url,
+    receiptUrl: payment.receipt_url,
+    metadata: payment.metadata
+  });
+
+  console.log(`[DodoWebhook] Payment failed for user ${userId}: ${payment.failure_reason || 'Unknown reason'}`);
+  // TODO: Send email notification to user about failed payment
+}
+
+/**
+ * Handle payment.processing - Payment is being processed
+ */
+async function handlePaymentProcessing(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
+  const payment = event.data;
+  const userId = payment.metadata?.user_id;
+
+  if (!userId) {
+    console.error('[DodoWebhook] No user_id in payment metadata');
+    return;
+  }
+
+  // Log processing status (optional - you may not want to record this)
+  console.log(`[DodoWebhook] Payment processing for user ${userId}: ${payment.amount} ${payment.currency}`);
+}
+
+/**
+ * Handle payment.cancelled - Payment was cancelled
+ */
+async function handlePaymentCancelled(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
+  const payment = event.data;
+  const userId = payment.metadata?.user_id;
+
+  if (!userId) {
+    console.error('[DodoWebhook] No user_id in payment metadata');
+    return;
+  }
+
+  // Record cancelled payment
+  await subscriptionService.recordPayment({
+    userId,
+    paymentId: payment.id,
+    customerId: payment.customer_id,
+    subscriptionId: payment.subscription_id,
+    amount: payment.amount,
+    currency: payment.currency,
+    status: 'cancelled',
+    plan: 'pro',
+    invoiceUrl: payment.invoice_url,
+    receiptUrl: payment.receipt_url,
+    metadata: payment.metadata
+  });
+
+  console.log(`[DodoWebhook] Payment cancelled for user ${userId}`);
+}
+
+/**
+ * Handle refund.succeeded - Refund completed successfully
+ */
+async function handleRefundSucceeded(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
+  const refund = event.data;
+  const paymentId = refund.payment_id;
+
+  // Get the original payment to find user_id
+  const payment = await env.DB.prepare(
+    'SELECT user_id FROM payments WHERE payment_id = ?'
+  ).bind(paymentId).first();
+
+  if (!payment) {
+    console.error('[DodoWebhook] Original payment not found for refund');
+    return;
+  }
+
+  // Record refund in payments table with negative amount or separate refunds table
+  await subscriptionService.recordPayment({
+    userId: payment.user_id as string,
+    paymentId: refund.id,
+    customerId: refund.customer_id,
+    subscriptionId: null,
+    amount: -Math.abs(refund.amount), // Negative amount for refund
+    currency: refund.currency,
+    status: 'refunded',
+    plan: 'pro',
+    invoiceUrl: null,
+    receiptUrl: null,
+    metadata: { refund_reason: refund.reason, original_payment_id: paymentId }
+  });
+
+  console.log(`[DodoWebhook] Refund succeeded for payment ${paymentId}: ${refund.amount} ${refund.currency}`);
+  // TODO: Send email notification to user about successful refund
+}
+
+/**
+ * Handle refund.failed - Refund failed
+ */
+async function handleRefundFailed(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
+  const refund = event.data;
+
+  console.error(`[DodoWebhook] Refund failed for payment ${refund.payment_id}: ${refund.failure_reason || 'Unknown reason'}`);
+  // TODO: Log this for manual review or send notification to admin
 }

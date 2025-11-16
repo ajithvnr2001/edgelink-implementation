@@ -47,12 +47,20 @@ export async function handleResendWebhook(request: Request, env: Env): Promise<R
         await handleEmailDelayedDelivery(event, env);
         break;
 
+      case 'email.failed':
+        await handleEmailFailed(event, env);
+        break;
+
       case 'email.bounced':
         await handleEmailBounced(event, env);
         break;
 
       case 'email.complained':
         await handleEmailComplained(event, env);
+        break;
+
+      case 'email.scheduled':
+        await handleEmailScheduled(event, env);
         break;
 
       case 'email.opened':
@@ -225,4 +233,63 @@ async function handleEmailComplained(event: any, env: Env): Promise<void> {
   // TODO: Implement unsubscribe mechanism
   // When user marks as spam, we should stop sending them emails
   console.warn(`[ResendWebhook] Spam complaint from ${data.to} - consider auto-unsubscribing`);
+}
+
+/**
+ * Handle email.failed - Email failed to send
+ */
+async function handleEmailFailed(event: any, env: Env): Promise<void> {
+  const data = event.data;
+  const messageId = data.email_id;
+  const reason = data.reason || data.error_message || 'Unknown failure reason';
+
+  if (!messageId) {
+    console.error('[ResendWebhook] No email_id in event data');
+    return;
+  }
+
+  // Update email log status to 'failed'
+  const result = await env.DB.prepare(`
+    UPDATE email_logs
+    SET status = 'failed',
+        error_message = ?
+    WHERE provider_message_id = ?
+  `).bind(reason, messageId).run();
+
+  console.error(`[ResendWebhook] Email failed: ${messageId}`, {
+    to: data.to,
+    reason: reason,
+    updated: result.meta.changes
+  });
+
+  // Critical failure - should be investigated
+  console.error(`[ResendWebhook] CRITICAL: Email delivery failed for ${data.to}: ${reason}`);
+}
+
+/**
+ * Handle email.scheduled - Email scheduled for later delivery
+ */
+async function handleEmailScheduled(event: any, env: Env): Promise<void> {
+  const data = event.data;
+  const messageId = data.email_id;
+  const scheduledAt = data.scheduled_at || 'unknown';
+
+  if (!messageId) {
+    console.error('[ResendWebhook] No email_id in event data');
+    return;
+  }
+
+  // Update email log status to 'scheduled'
+  const result = await env.DB.prepare(`
+    UPDATE email_logs
+    SET status = 'scheduled',
+        error_message = ?
+    WHERE provider_message_id = ?
+  `).bind(`Scheduled for delivery at ${scheduledAt}`, messageId).run();
+
+  console.log(`[ResendWebhook] Email scheduled: ${messageId}`, {
+    to: data.to,
+    scheduled_at: scheduledAt,
+    updated: result.meta.changes
+  });
 }
