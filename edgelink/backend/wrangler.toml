@@ -44,7 +44,7 @@ dataset = "edgelink_analytics"
 # Environment variables
 [vars]
 ENVIRONMENT = "production"
-FRONTEND_URL = "https://go.shortedbro.xyz"
+FRONTEND_URL = "https://shortedbro.xyz"
 ALLOW_REGISTRATION = "true"
 NODE_ENV = "development"
 EMAIL_FROM_ADDRESS = "EdgeLink <noreply@go.shortedbro.xyz>"
