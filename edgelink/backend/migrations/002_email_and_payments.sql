@@ -8,7 +8,7 @@
 
 -- Extend users table with email verification and account lifecycle tracking
 ALTER TABLE users ADD COLUMN email_verified_at INTEGER;
-ALTER TABLE users ADD COLUMN last_login_at INTEGER DEFAULT (unixepoch());
+ALTER TABLE users ADD COLUMN last_login_at INTEGER;
 ALTER TABLE users ADD COLUMN unverified_warning_sent_at INTEGER;
 
 -- Update existing users table columns (these already exist but we ensure they're set correctly)
