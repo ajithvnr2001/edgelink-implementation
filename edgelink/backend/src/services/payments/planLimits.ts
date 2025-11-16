@@ -26,29 +26,9 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     passwordProtection: false,
     customSlug: false
   },
-  'pro_monthly': {
+  'pro': {
     maxLinks: -1, // Unlimited
     maxClicksPerLink: -1, // Unlimited
-    customDomain: true,
-    analytics: true,
-    apiAccess: true,
-    linkExpiration: true,
-    passwordProtection: true,
-    customSlug: true
-  },
-  'pro_annual': {
-    maxLinks: -1,
-    maxClicksPerLink: -1,
-    customDomain: true,
-    analytics: true,
-    apiAccess: true,
-    linkExpiration: true,
-    passwordProtection: true,
-    customSlug: true
-  },
-  'lifetime': {
-    maxLinks: -1,
-    maxClicksPerLink: -1,
     customDomain: true,
     analytics: true,
     apiAccess: true,

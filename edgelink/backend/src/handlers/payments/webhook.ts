@@ -101,16 +101,11 @@ async function handlePaymentSucceeded(event: any, env: Env, subscriptionService:
     amount: payment.amount,
     currency: payment.currency,
     status: 'succeeded',
-    plan: payment.metadata?.plan || 'pro_monthly',
+    plan: payment.metadata?.plan || 'pro',
     invoiceUrl: payment.invoice_url,
     receiptUrl: payment.receipt_url,
     metadata: payment.metadata
   });
-
-  // Handle lifetime payment
-  if (payment.metadata?.plan === 'lifetime') {
-    await subscriptionService.grantLifetimeAccess(userId, payment.customer_id);
-  }
 }
 
 async function handleSubscriptionUpdated(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
@@ -126,7 +121,7 @@ async function handleSubscriptionUpdated(event: any, env: Env, subscriptionServi
     userId,
     subscriptionId: subscription.id,
     customerId: subscription.customer_id,
-    plan: subscription.plan || 'pro_monthly',
+    plan: subscription.plan || 'pro',
     status: subscription.status,
     currentPeriodStart: subscription.current_period_start,
     currentPeriodEnd: subscription.current_period_end,

@@ -9,17 +9,33 @@ import { DodoPaymentsService } from '../../services/payments/dodoPaymentsService
 export async function handleCreateCheckout(request: Request, env: Env, userId: string): Promise<Response> {
   try {
     const body = await request.json() as {
-      plan: 'pro_monthly' | 'pro_annual' | 'lifetime';
+      plan?: 'pro';
     };
 
-    if (!body.plan || !['pro_monthly', 'pro_annual', 'lifetime'].includes(body.plan)) {
+    // Default to 'pro' if not specified
+    const plan = body.plan || 'pro';
+
+    if (plan !== 'pro') {
       return new Response(
         JSON.stringify({
-          error: 'Invalid plan. Must be pro_monthly, pro_annual, or lifetime',
+          error: 'Invalid plan. Must be pro',
           code: 'INVALID_PLAN'
         }),
         {
           status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    if (!env.DODO_PRODUCT_ID) {
+      return new Response(
+        JSON.stringify({
+          error: 'Payment system not configured',
+          code: 'PAYMENT_NOT_CONFIGURED'
+        }),
+        {
+          status: 500,
           headers: { 'Content-Type': 'application/json' }
         }
       );
@@ -70,12 +86,12 @@ export async function handleCreateCheckout(request: Request, env: Env, userId: s
     const session = await dodoPayments.createCheckoutSession({
       customerId,
       customerEmail: user.email as string,
-      plan: body.plan,
+      productId: env.DODO_PRODUCT_ID,
       successUrl: `${frontendUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${frontendUrl}/pricing`,
       metadata: {
         user_id: userId,
-        plan: body.plan
+        plan: 'pro'
       }
     });
 

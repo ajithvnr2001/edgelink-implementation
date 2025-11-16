@@ -45,12 +45,12 @@ export class DodoPaymentsService {
   }
 
   /**
-   * Create a checkout session for subscription or one-time payment
+   * Create a checkout session for subscription
    */
   async createCheckoutSession(params: {
     customerId?: string;
     customerEmail: string;
-    plan: 'pro_monthly' | 'pro_annual' | 'lifetime';
+    productId: string;
     successUrl: string;
     cancelUrl: string;
     metadata?: Record<string, string>;
@@ -65,10 +65,10 @@ export class DodoPaymentsService {
         customer_id: params.customerId,
         customer_email: params.customerEmail,
         line_items: [{
-          price: this.getPriceId(params.plan),
+          product_id: params.productId,
           quantity: 1
         }],
-        mode: params.plan === 'lifetime' ? 'payment' : 'subscription',
+        mode: 'subscription',
         success_url: params.successUrl,
         cancel_url: params.cancelUrl,
         metadata: params.metadata || {}
@@ -203,17 +203,4 @@ export class DodoPaymentsService {
     return signature === expectedSignature;
   }
 
-  /**
-   * Map plan to DodoPayments price ID
-   */
-  private getPriceId(plan: string): string {
-    // These would be set in environment variables
-    const priceIds: Record<string, string> = {
-      'pro_monthly': process.env.DODO_PRICE_PRO_MONTHLY || 'price_monthly_xxx',
-      'pro_annual': process.env.DODO_PRICE_PRO_ANNUAL || 'price_annual_xxx',
-      'lifetime': process.env.DODO_PRICE_LIFETIME || 'price_lifetime_xxx'
-    };
-
-    return priceIds[plan] || priceIds['pro_monthly'];
-  }
 }

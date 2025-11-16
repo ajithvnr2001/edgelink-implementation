@@ -33,9 +33,7 @@ export interface Env {
   DODO_API_KEY: string;
   DODO_WEBHOOK_SECRET: string;
   DODO_BASE_URL?: string;
-  DODO_PRICE_PRO_MONTHLY?: string;
-  DODO_PRICE_PRO_ANNUAL?: string;
-  DODO_PRICE_LIFETIME?: string;
+  DODO_PRODUCT_ID: string;
 
   // Cloudflare API credentials for Custom Hostnames
   CF_ACCOUNT_ID?: string;
