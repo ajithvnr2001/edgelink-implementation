@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+      - claude/*
     paths:
       - 'edgelink/backend/**'
       - '.github/workflows/deploy-backend.yml'

@@ -129,7 +129,12 @@ async function apiRequest<T>(
   const data = await response.json()
 
   if (!response.ok) {
-    throw new Error(data.error || 'Request failed')
+    const error: any = new Error(data.error || 'Request failed')
+    // Attach additional error data for better error handling
+    error.code = data.code
+    error.data = data
+    error.status = response.status
+    throw error
   }
 
   return data as T
@@ -520,6 +525,6 @@ export async function requestPasswordReset(email: string): Promise<{ message: st
 export async function resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
   return apiRequest('/auth/reset-password', {
     method: 'POST',
-    body: JSON.stringify({ token, new_password: newPassword }),
+    body: JSON.stringify({ token, newPassword }),
   })
 }
