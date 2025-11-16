@@ -106,15 +106,15 @@ export async function handleResetPassword(request: Request, env: Env): Promise<R
     ]);
 
     // Get user email
-    const user = await env.DB.prepare(
+    const userRecord = await env.DB.prepare(
       'SELECT email FROM users WHERE user_id = ?'
     ).bind(userId).first();
 
     // Send confirmation email
-    if (user) {
+    if (userRecord) {
       const emailService = new EmailService(env);
       try {
-        await emailService.sendPasswordChangedEmail(user.email as string);
+        await emailService.sendPasswordChangedEmail(userRecord.email as string);
       } catch (error) {
         console.error('[ResetPassword] Failed to send confirmation email:', error);
         // Don't fail the request if email fails
