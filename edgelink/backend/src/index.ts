@@ -166,7 +166,7 @@ export default {
       }
 
       // Email verification endpoints (no auth required)
-      if (path === '/auth/verify-email' && method === 'GET') {
+      if (path === '/auth/verify-email' && method === 'POST') {
         const response = await handleVerifyEmail(request, env);
         return addCorsHeaders(response, corsHeaders);
       }
