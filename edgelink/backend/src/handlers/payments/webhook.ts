@@ -44,21 +44,32 @@ export async function handleDodoPaymentsWebhook(request: Request, env: Env): Pro
 
     // Handle different event types
     switch (event.type) {
-      case 'payment.succeeded':
-        await handlePaymentSucceeded(event, env, subscriptionService);
+      case 'subscription.active':
+        await handleSubscriptionActive(event, env, subscriptionService);
         break;
 
-      case 'subscription.created':
-      case 'subscription.updated':
-        await handleSubscriptionUpdated(event, env, subscriptionService);
+      case 'subscription.renewed':
+        await handleSubscriptionRenewed(event, env, subscriptionService);
         break;
 
       case 'subscription.cancelled':
         await handleSubscriptionCancelled(event, env, subscriptionService);
         break;
 
-      case 'subscription.deleted':
-        await handleSubscriptionDeleted(event, env, subscriptionService);
+      case 'subscription.expired':
+        await handleSubscriptionExpired(event, env, subscriptionService);
+        break;
+
+      case 'subscription.failed':
+        await handleSubscriptionFailed(event, env, subscriptionService);
+        break;
+
+      case 'subscription.on_hold':
+        await handleSubscriptionOnHold(event, env, subscriptionService);
+        break;
+
+      case 'subscription.plan_changed':
+        await handleSubscriptionPlanChanged(event, env, subscriptionService);
         break;
 
       default:
@@ -83,32 +94,10 @@ export async function handleDodoPaymentsWebhook(request: Request, env: Env): Pro
   }
 }
 
-async function handlePaymentSucceeded(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
-  const payment = event.data;
-  const userId = payment.metadata?.user_id;
-
-  if (!userId) {
-    console.error('[DodoWebhook] No user_id in payment metadata');
-    return;
-  }
-
-  // Record payment
-  await subscriptionService.recordPayment({
-    userId,
-    paymentId: payment.id,
-    customerId: payment.customer_id,
-    subscriptionId: payment.subscription_id,
-    amount: payment.amount,
-    currency: payment.currency,
-    status: 'succeeded',
-    plan: payment.metadata?.plan || 'pro',
-    invoiceUrl: payment.invoice_url,
-    receiptUrl: payment.receipt_url,
-    metadata: payment.metadata
-  });
-}
-
-async function handleSubscriptionUpdated(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
+/**
+ * Handle subscription.active - Initial subscription activation
+ */
+async function handleSubscriptionActive(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
   const subscription = event.data;
   const userId = subscription.metadata?.user_id;
 
@@ -117,18 +106,68 @@ async function handleSubscriptionUpdated(event: any, env: Env, subscriptionServi
     return;
   }
 
+  // Activate subscription
   await subscriptionService.updateSubscriptionFromWebhook({
     userId,
     subscriptionId: subscription.id,
     customerId: subscription.customer_id,
-    plan: subscription.plan || 'pro',
-    status: subscription.status,
+    plan: 'pro',
+    status: 'active',
     currentPeriodStart: subscription.current_period_start,
     currentPeriodEnd: subscription.current_period_end,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end || false
+    cancelAtPeriodEnd: false
   });
+
+  console.log(`[DodoWebhook] Subscription activated for user ${userId}`);
 }
 
+/**
+ * Handle subscription.renewed - Subscription renewed (payment succeeded)
+ */
+async function handleSubscriptionRenewed(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
+  const subscription = event.data;
+  const userId = subscription.metadata?.user_id;
+
+  if (!userId) {
+    console.error('[DodoWebhook] No user_id in subscription metadata');
+    return;
+  }
+
+  // Update subscription period
+  await subscriptionService.updateSubscriptionFromWebhook({
+    userId,
+    subscriptionId: subscription.id,
+    customerId: subscription.customer_id,
+    plan: 'pro',
+    status: 'active',
+    currentPeriodStart: subscription.current_period_start,
+    currentPeriodEnd: subscription.current_period_end,
+    cancelAtPeriodEnd: false
+  });
+
+  // Record payment if available
+  if (subscription.latest_payment) {
+    await subscriptionService.recordPayment({
+      userId,
+      paymentId: subscription.latest_payment.id,
+      customerId: subscription.customer_id,
+      subscriptionId: subscription.id,
+      amount: subscription.latest_payment.amount,
+      currency: subscription.latest_payment.currency,
+      status: 'succeeded',
+      plan: 'pro',
+      invoiceUrl: subscription.latest_payment.invoice_url,
+      receiptUrl: subscription.latest_payment.receipt_url,
+      metadata: subscription.metadata
+    });
+  }
+
+  console.log(`[DodoWebhook] Subscription renewed for user ${userId}`);
+}
+
+/**
+ * Handle subscription.cancelled - User cancelled subscription
+ */
 async function handleSubscriptionCancelled(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
   const subscription = event.data;
   const userId = subscription.metadata?.user_id;
@@ -141,13 +180,19 @@ async function handleSubscriptionCancelled(event: any, env: Env, subscriptionSer
   // Mark as cancelled but keep active until period end
   await env.DB.prepare(`
     UPDATE users
-    SET subscription_cancel_at_period_end = 1,
+    SET subscription_status = 'cancelled',
+        subscription_cancel_at_period_end = 1,
         updated_at = CURRENT_TIMESTAMP
     WHERE user_id = ?
   `).bind(userId).run();
+
+  console.log(`[DodoWebhook] Subscription cancelled for user ${userId}, active until period end`);
 }
 
-async function handleSubscriptionDeleted(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
+/**
+ * Handle subscription.expired - Subscription ended/expired
+ */
+async function handleSubscriptionExpired(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
   const subscription = event.data;
   const userId = subscription.metadata?.user_id;
 
@@ -159,8 +204,9 @@ async function handleSubscriptionDeleted(event: any, env: Env, subscriptionServi
   // Downgrade to free plan
   await env.DB.prepare(`
     UPDATE users
-    SET subscription_status = 'free',
+    SET subscription_status = 'expired',
         subscription_plan = 'free',
+        plan = 'free',
         subscription_id = NULL,
         subscription_current_period_start = NULL,
         subscription_current_period_end = NULL,
@@ -168,4 +214,80 @@ async function handleSubscriptionDeleted(event: any, env: Env, subscriptionServi
         updated_at = CURRENT_TIMESTAMP
     WHERE user_id = ? AND lifetime_access = 0
   `).bind(userId).run();
+
+  console.log(`[DodoWebhook] Subscription expired for user ${userId}, downgraded to free`);
+}
+
+/**
+ * Handle subscription.failed - Payment failed
+ */
+async function handleSubscriptionFailed(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
+  const subscription = event.data;
+  const userId = subscription.metadata?.user_id;
+
+  if (!userId) {
+    console.error('[DodoWebhook] No user_id in subscription metadata');
+    return;
+  }
+
+  // Mark subscription as failed (grace period before expiration)
+  await env.DB.prepare(`
+    UPDATE users
+    SET subscription_status = 'failed',
+        updated_at = CURRENT_TIMESTAMP
+    WHERE user_id = ?
+  `).bind(userId).run();
+
+  console.log(`[DodoWebhook] Subscription payment failed for user ${userId}`);
+  // TODO: Send email notification to user about failed payment
+}
+
+/**
+ * Handle subscription.on_hold - Subscription paused/on hold
+ */
+async function handleSubscriptionOnHold(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
+  const subscription = event.data;
+  const userId = subscription.metadata?.user_id;
+
+  if (!userId) {
+    console.error('[DodoWebhook] No user_id in subscription metadata');
+    return;
+  }
+
+  // Mark subscription as on hold
+  await env.DB.prepare(`
+    UPDATE users
+    SET subscription_status = 'on_hold',
+        updated_at = CURRENT_TIMESTAMP
+    WHERE user_id = ?
+  `).bind(userId).run();
+
+  console.log(`[DodoWebhook] Subscription on hold for user ${userId}`);
+}
+
+/**
+ * Handle subscription.plan_changed - Subscription plan changed
+ */
+async function handleSubscriptionPlanChanged(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
+  const subscription = event.data;
+  const userId = subscription.metadata?.user_id;
+
+  if (!userId) {
+    console.error('[DodoWebhook] No user_id in subscription metadata');
+    return;
+  }
+
+  // Update subscription with new plan details
+  await subscriptionService.updateSubscriptionFromWebhook({
+    userId,
+    subscriptionId: subscription.id,
+    customerId: subscription.customer_id,
+    plan: 'pro', // Still pro plan, but might have different billing cycle
+    status: subscription.status || 'active',
+    currentPeriodStart: subscription.current_period_start,
+    currentPeriodEnd: subscription.current_period_end,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end || false
+  });
+
+  console.log(`[DodoWebhook] Subscription plan changed for user ${userId}`);
 }
