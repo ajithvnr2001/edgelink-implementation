@@ -31,6 +31,7 @@ import { handleCreateCheckout } from './handlers/payments/create-checkout';
 import { handleDodoPaymentsWebhook } from './handlers/payments/webhook';
 import { handleGetSubscriptionStatus } from './handlers/payments/subscription-status';
 import { handleCreateCustomerPortal } from './handlers/payments/customer-portal';
+import { handleResendWebhook } from './handlers/email/resend-webhook';
 import { dailyCleanup } from './cron/dailyCleanup';
 
 /**
@@ -219,6 +220,12 @@ export default {
       // DodoPayments webhook (no auth - verified by signature)
       if (path === '/webhooks/dodopayments' && method === 'POST') {
         const response = await handleDodoPaymentsWebhook(request, env);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Resend webhook (no auth - email delivery tracking)
+      if (path === '/webhooks/resend' && method === 'POST') {
+        const response = await handleResendWebhook(request, env);
         return addCorsHeaders(response, corsHeaders);
       }
 
