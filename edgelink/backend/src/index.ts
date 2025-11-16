@@ -23,6 +23,16 @@ import { handleExportAnalytics, handleExportLinks } from './handlers/export';
 import { handleBulkImport } from './handlers/bulk-import';
 import { handleCreateABTest, handleGetABTestResults, handleDeleteABTest } from './handlers/ab-testing';
 import { handleSetDeviceRouting, handleSetGeoRouting, handleSetTimeRouting, handleSetReferrerRouting, handleGetRouting, handleDeleteRouting } from './handlers/routing';
+import { handleVerifyEmail } from './handlers/auth/verify-email';
+import { handleResendVerification } from './handlers/auth/resend-verification';
+import { handleRequestPasswordReset } from './handlers/auth/request-reset';
+import { handleResetPassword } from './handlers/auth/reset-password';
+import { handleCreateCheckout } from './handlers/payments/create-checkout';
+import { handleDodoPaymentsWebhook } from './handlers/payments/webhook';
+import { handleGetSubscriptionStatus } from './handlers/payments/subscription-status';
+import { handleCreateCustomerPortal } from './handlers/payments/customer-portal';
+import { handleResendWebhook } from './handlers/email/resend-webhook';
+import { dailyCleanup } from './cron/dailyCleanup';
 
 /**
  * Main worker fetch handler
@@ -152,6 +162,70 @@ export default {
 
       if (path === '/auth/logout' && method === 'POST') {
         const response = await handleLogout(request, env);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Email verification endpoints (no auth required)
+      if (path === '/auth/verify-email' && method === 'GET') {
+        const response = await handleVerifyEmail(request, env);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      if (path === '/auth/resend-verification' && method === 'POST') {
+        const response = await handleResendVerification(request, env);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      if (path === '/auth/request-reset' && method === 'POST') {
+        const response = await handleRequestPasswordReset(request, env);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      if (path === '/auth/reset-password' && method === 'POST') {
+        const response = await handleResetPassword(request, env);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Payment endpoints (authenticated)
+      if (path === '/api/payments/create-checkout' && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleCreateCheckout(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      if (path === '/api/payments/subscription-status' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGetSubscriptionStatus(env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      if (path === '/api/payments/customer-portal' && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleCreateCustomerPortal(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // DodoPayments webhook (no auth - verified by signature)
+      if (path === '/webhooks/dodopayments' && method === 'POST') {
+        const response = await handleDodoPaymentsWebhook(request, env);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Resend webhook (no auth - email delivery tracking)
+      if (path === '/webhooks/resend' && method === 'POST') {
+        const response = await handleResendWebhook(request, env);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -666,37 +740,33 @@ export default {
 
   /**
    * Scheduled handler for periodic cleanup tasks
-   * Runs every hour to delete expired links
+   * Runs daily at 2 AM UTC for:
+   * - Cleaning up expired links
+   * - Sending 80-day warnings to unverified accounts
+   * - Deleting 90-day unverified accounts
+   * - Cleaning expired tokens
    */
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-    console.log('[Cron] Starting scheduled cleanup task');
-
     try {
-      // Clean up expired links from D1 database
-      const now = new Date().toISOString();
+      // Run comprehensive daily cleanup
+      await dailyCleanup(env);
 
-      // Delete expired authenticated links
+      // Also clean up expired links (existing functionality)
       const linksResult = await env.DB.prepare(`
         DELETE FROM links
         WHERE expires_at IS NOT NULL
         AND expires_at < datetime('now')
       `).run();
 
-      // Delete expired anonymous links
       const anonResult = await env.DB.prepare(`
         DELETE FROM anonymous_links
         WHERE expires_at < datetime('now')
       `).run();
 
       const totalDeleted = (linksResult.meta.changes || 0) + (anonResult.meta.changes || 0);
-
-      console.log(`[Cron] Cleanup complete: Deleted ${totalDeleted} expired links`);
-      console.log(`[Cron] - Authenticated links: ${linksResult.meta.changes || 0}`);
-      console.log(`[Cron] - Anonymous links: ${anonResult.meta.changes || 0}`);
-
-      // Note: KV entries auto-expire via TTL, no need to manually delete
+      console.log(`[Cron] Expired links cleaned: ${totalDeleted}`);
     } catch (error) {
-      console.error('[Cron] Cleanup failed:', error);
+      console.error('[Cron] Scheduled task failed:', error);
     }
   }
 };
