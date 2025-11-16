@@ -45,7 +45,7 @@ export async function handleRequestPasswordReset(request: Request, env: Env): Pr
 
     // Check if user exists
     const user = await env.DB.prepare(
-      'SELECT user_id, email FROM users WHERE email = ?'
+      'SELECT user_id, email, last_password_reset_at FROM users WHERE email = ?'
     ).bind(body.email).first();
 
     // ALWAYS return success to prevent email enumeration
@@ -60,6 +60,34 @@ export async function handleRequestPasswordReset(request: Request, env: Env): Pr
           headers: { 'Content-Type': 'application/json' }
         }
       );
+    }
+
+    // Check 5-day rate limit BEFORE sending email
+    if (user.last_password_reset_at) {
+      const lastResetAt = user.last_password_reset_at as number;
+      const now = Math.floor(Date.now() / 1000);
+      const fiveDaysInSeconds = 5 * 24 * 60 * 60; // 5 days
+      const timeSinceLastReset = now - lastResetAt;
+
+      if (timeSinceLastReset < fiveDaysInSeconds) {
+        const timeRemaining = fiveDaysInSeconds - timeSinceLastReset;
+        const daysRemaining = Math.ceil(timeRemaining / (24 * 60 * 60));
+        const hoursRemaining = Math.ceil(timeRemaining / (60 * 60));
+
+        return new Response(
+          JSON.stringify({
+            error: `You can only reset your password once every 5 days. Please try again in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} (${hoursRemaining} hours).`,
+            code: 'RESET_RATE_LIMIT',
+            timeRemaining: timeRemaining,
+            daysRemaining: daysRemaining,
+            hoursRemaining: hoursRemaining
+          }),
+          {
+            status: 429,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      }
     }
 
     // Generate reset token
