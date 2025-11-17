@@ -39,6 +39,9 @@ export default function PricingPage() {
             <h1 className="text-xl font-bold text-white">EdgeLink</h1>
           </Link>
           <div className="flex items-center space-x-4">
+            <Link href="/docs" className="text-gray-300 hover:text-white">
+              Docs
+            </Link>
             {user ? (
               <>
                 <Link href="/dashboard" className="text-gray-300 hover:text-white">

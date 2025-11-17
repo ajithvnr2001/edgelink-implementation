@@ -61,6 +61,12 @@ export default function HomePage() {
             <h1 className="text-xl font-bold text-white">EdgeLink</h1>
           </div>
           <nav className="flex items-center space-x-4">
+            <Link href="/pricing" className="text-gray-300 hover:text-white">
+              Pricing
+            </Link>
+            <Link href="/docs" className="text-gray-300 hover:text-white">
+              Docs
+            </Link>
             {isLoaded && isSignedIn ? (
               <Link href="/dashboard" className="btn-primary">
                 Dashboard
