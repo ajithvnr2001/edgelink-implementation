@@ -20,7 +20,7 @@ export interface CustomDomain {
 /**
  * POST /api/domains - Add a new custom domain
  *
- * Free tier: 1 domain, Pro: 5 domains (FR-4.5)
+ * Free tier: 0 domains, Pro: 2 domains (Updated plan limits)
  */
 export async function handleAddDomain(
   request: Request,
@@ -77,16 +77,16 @@ export async function handleAddDomain(
       );
     }
 
-    // Check user's domain count limit (FR-4.5: Free=1, Pro=5)
+    // Check user's domain count limit (Free=0, Pro=2)
     const userDomains = await env.DB.prepare(`
       SELECT COUNT(*) as count FROM custom_domains WHERE user_id = ?
     `).bind(userId).first() as { count: number };
 
-    const maxDomains = userPlan === 'pro' ? 5 : 1;
+    const maxDomains = userPlan === 'pro' ? 2 : 0;
     if (userDomains.count >= maxDomains) {
       return new Response(
         JSON.stringify({
-          error: `Domain limit reached. ${userPlan === 'free' ? 'Upgrade to Pro for 5 domains' : 'Maximum 5 domains on Pro plan'}`,
+          error: `Domain limit reached. ${userPlan === 'free' ? 'Upgrade to Pro to use custom domains (2 domains included)' : 'Maximum 2 domains on Pro plan'}`,
           code: 'DOMAIN_LIMIT_REACHED',
           limit: maxDomains,
           current: userDomains.count

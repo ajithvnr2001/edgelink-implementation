@@ -95,25 +95,37 @@ export default function PricingPage() {
                   <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300">500 links per month</span>
+                  <span className="text-gray-300"><strong className="text-white">1,000</strong> total active links</span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300">1,000 API calls per day</span>
+                  <span className="text-gray-300"><strong className="text-white">10,000</strong> clicks per month</span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300">Basic analytics</span>
+                  <span className="text-gray-300"><strong className="text-white">100</strong> API calls per day</span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300">Link expiration</span>
+                  <span className="text-gray-300">Basic click counting</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-300">Link expiration & password protection</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-300">Edit destination URL</span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-6 h-6 text-gray-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,13 +137,13 @@ export default function PricingPage() {
                   <svg className="w-6 h-6 text-gray-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  <span className="text-gray-500">No advanced routing</span>
+                  <span className="text-gray-500">No analytics, QR codes, routing, webhooks</span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-6 h-6 text-gray-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  <span className="text-gray-500">No QR codes</span>
+                  <span className="text-gray-500">No bulk import/export</span>
                 </li>
               </ul>
 
@@ -149,7 +161,7 @@ export default function PricingPage() {
 
               <div className="text-center mb-8 mt-6">
                 <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
-                <div className="text-5xl font-bold text-white mb-2">$9</div>
+                <div className="text-5xl font-bold text-white mb-2">$15</div>
                 <div className="text-gray-400">per month</div>
               </div>
 
@@ -158,37 +170,31 @@ export default function PricingPage() {
                   <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300"><strong className="text-white">5,000 links</strong> per month</span>
+                  <span className="text-gray-300"><strong className="text-white">100,000</strong> total active links</span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300"><strong className="text-white">10,000 API calls</strong> per day</span>
+                  <span className="text-gray-300"><strong className="text-white">500,000</strong> clicks per month</span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300">Advanced analytics</span>
+                  <span className="text-gray-300"><strong className="text-white">5,000</strong> API calls per day</span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300">Custom domains</span>
+                  <span className="text-gray-300"><strong className="text-white">2 custom domains</strong> with SSL</span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300">Geographic routing</span>
-                </li>
-                <li className="flex items-start">
-                  <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-gray-300">Device routing</span>
+                  <span className="text-gray-300">Advanced analytics & charts</span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -200,7 +206,19 @@ export default function PricingPage() {
                   <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300">Password-protected links</span>
+                  <span className="text-gray-300">Geo, device & referrer routing</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-300">Edit slug after creation</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-300">Webhooks & bulk import/export</span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-6 h-6 text-success-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -241,7 +259,7 @@ export default function PricingPage() {
                   What happens if I exceed my limits?
                 </h3>
                 <p className="text-gray-400">
-                  Free users can't create more links or make API calls once limits are reached. Pro users get 10x higher limits. Contact us if you need custom limits.
+                  Free users can't create more links or make API calls once limits are reached. Monthly click limits reset at the beginning of each month. Pro users get 100x more links and 50x more clicks per month. Contact us for Enterprise plans if you need higher limits.
                 </p>
               </div>
 

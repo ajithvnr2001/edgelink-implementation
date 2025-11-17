@@ -1,6 +1,6 @@
 /**
  * Rate Limiting Middleware
- * Based on PRD FR-7.6: Rate limits 1k/day free, 10k/day pro
+ * Updated API call limits: 100/day free, 5,000/day pro
  */
 
 import type { Env, JWTPayload, RateLimitInfo } from '../types';
@@ -10,8 +10,8 @@ import type { Env, JWTPayload, RateLimitInfo } from '../types';
  */
 const RATE_LIMITS = {
   anonymous: { limit: 10, period: 3600 },      // 10 per hour for anonymous
-  free: { limit: 1000, period: 86400 },        // 1,000 per day
-  pro: { limit: 10000, period: 86400 }         // 10,000 per day
+  free: { limit: 100, period: 86400 },         // 100 per day (3,000/month)
+  pro: { limit: 5000, period: 86400 }          // 5,000 per day (150,000/month)
 };
 
 /**
