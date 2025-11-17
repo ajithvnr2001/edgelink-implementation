@@ -520,9 +520,14 @@ export default function DomainsPage() {
         {/* Domain Limits Info */}
         <div className="mt-6 p-4 bg-gray-800 border border-gray-700 rounded-lg">
           <p className="text-sm text-gray-400">
-            <strong className="text-white">Domain Limits:</strong> Free tier: 1 domain | Pro tier: 5 domains
-            {domains.length > 0 && ` (${domains.length}/1 used)`}
+            <strong className="text-white">Domain Limits:</strong> Free tier: 0 domains (Pro-only feature) | Pro tier: 2 custom domains with SSL
+            {user?.plan === 'pro' && domains.length > 0 && ` (${domains.length}/2 used)`}
           </p>
+          {user?.plan === 'free' && (
+            <p className="text-sm text-yellow-300 mt-2">
+              ⭐ <strong>Upgrade to Pro ($15/month)</strong> to unlock custom domains with SSL certificates
+            </p>
+          )}
         </div>
       </div>
 

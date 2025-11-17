@@ -850,9 +850,9 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="card p-6">
-              <div className="text-gray-400 text-sm mb-1">Plan Limit</div>
+              <div className="text-gray-400 text-sm mb-1">Total Links Limit</div>
               <div className="text-3xl font-bold text-white">
-                {user.plan === 'pro' ? '5,000' : '500'} <span className="text-lg text-gray-400">/mo</span>
+                {user.plan === 'pro' ? '100K' : '1,000'}
               </div>
             </div>
           </div>
@@ -1101,19 +1101,19 @@ export default function DashboardPage() {
                     Upgrade to Pro
                   </h3>
                   <p className="text-gray-300 mb-4">
-                    Get 5,000 links/month, 10K API calls/day, geographic routing, device routing, QR codes, and more
+                    Get 100,000 total links, 500,000 clicks/month, 5,000 API calls/day, 2 custom domains, and all Pro features
                   </p>
                   <ul className="text-sm text-gray-400 space-y-1">
-                    <li>✓ Geographic routing (country-based redirects)</li>
-                    <li>✓ Device routing (mobile, tablet, desktop)</li>
-                    <li>✓ Referrer routing (source-based redirects)</li>
-                    <li>✓ A/B testing & time-based routing</li>
-                    <li>✓ Password-protected links & QR codes</li>
-                    <li>✓ Webhooks & advanced analytics</li>
+                    <li>✓ 100,000 total active links</li>
+                    <li>✓ 500,000 clicks per month</li>
+                    <li>✓ 5,000 API calls per day</li>
+                    <li>✓ 2 custom domains with SSL</li>
+                    <li>✓ Geographic, device & referrer routing</li>
+                    <li>✓ QR codes, webhooks & advanced analytics</li>
                   </ul>
                 </div>
                 <div className="text-right ml-8">
-                  <div className="text-4xl font-bold text-white mb-2">$9</div>
+                  <div className="text-4xl font-bold text-white mb-2">$15</div>
                   <div className="text-gray-400 mb-4">/month</div>
                   <Link href="/pricing" className="btn-primary inline-block">
                     Upgrade Now
