@@ -256,14 +256,56 @@ export default function DomainsPage() {
             >
               ← Back
             </button>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              + Add Domain
-            </button>
+            {user?.plan === 'pro' ? (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                + Add Domain
+              </button>
+            ) : (
+              <button
+                onClick={() => router.push('/pricing')}
+                className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+              >
+                🔒 Upgrade to Pro
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Free Plan Info Banner */}
+        {user?.plan === 'free' && (
+          <div className="mb-6 bg-blue-900/20 border border-blue-700/40 rounded-lg p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  🔒 Custom Domains - Pro Feature
+                </h3>
+                <p className="text-sm text-gray-300 mb-3">
+                  Custom domains are only available on the Pro plan. Upgrade to connect up to 2 custom domains with SSL certificates.
+                </p>
+                <ul className="text-sm text-gray-400 space-y-1 mb-4 ml-4">
+                  <li>✓ 2 custom domains with SSL certificates</li>
+                  <li>✓ Automatic DNS verification</li>
+                  <li>✓ Professional branded short links</li>
+                  <li>✓ Plus all Pro features (100K links, 500K clicks/month, analytics, QR codes, routing)</li>
+                </ul>
+                <button
+                  onClick={() => router.push('/pricing')}
+                  className="px-5 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium text-sm"
+                >
+                  Upgrade to Pro - $15/month
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-200">
@@ -375,14 +417,29 @@ export default function DomainsPage() {
           {domains.length === 0 ? (
             <div className="p-12 text-center">
               <div className="text-6xl mb-4">🌐</div>
-              <h3 className="text-xl font-semibold text-white mb-2">No domains yet</h3>
-              <p className="text-gray-400 mb-6">Add your first custom domain to get started</p>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                Add Domain
-              </button>
+              <h3 className="text-xl font-semibold text-white mb-2">
+                {user?.plan === 'pro' ? 'No domains yet' : 'Custom Domains - Pro Feature'}
+              </h3>
+              <p className="text-gray-400 mb-6">
+                {user?.plan === 'pro'
+                  ? 'Add your first custom domain to get started'
+                  : 'Upgrade to Pro to use custom domains with SSL certificates'}
+              </p>
+              {user?.plan === 'pro' ? (
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Add Domain
+                </button>
+              ) : (
+                <button
+                  onClick={() => router.push('/pricing')}
+                  className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                >
+                  🔒 Upgrade to Pro - $15/month
+                </button>
+              )}
             </div>
           ) : (
             <div className="divide-y divide-gray-700">

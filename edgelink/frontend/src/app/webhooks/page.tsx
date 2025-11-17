@@ -198,15 +198,33 @@ export default function WebhooksPage() {
 
           {/* Pro Feature Gate */}
           {!isPro && (
-            <div className="card p-8 bg-gradient-to-r from-primary-900/20 to-primary-800/20 border-primary-500/30 mb-8">
-              <div className="text-center">
-                <h3 className="text-xl font-bold text-white mb-2">
-                  Webhooks are a Pro Feature
-                </h3>
-                <p className="text-gray-300 mb-4">
-                  Upgrade to Pro to receive real-time notifications for link events
-                </p>
-                <button className="btn-primary">Upgrade to Pro - $9/month</button>
+            <div className="mb-6 bg-blue-900/20 border border-blue-700/40 rounded-lg p-8">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold text-white mb-2">
+                    🔒 Webhooks - Pro Feature
+                  </h3>
+                  <p className="text-gray-300 mb-4">
+                    Webhooks are only available on the Pro plan. Upgrade to receive real-time notifications for link events.
+                  </p>
+                  <ul className="text-sm text-gray-400 space-y-2 mb-6 ml-4">
+                    <li>✓ Real-time notifications for link clicks, creation, and expiration</li>
+                    <li>✓ Milestone alerts (100, 1000 clicks)</li>
+                    <li>✓ Secure HMAC signature verification</li>
+                    <li>✓ Plus all Pro features (100K links, 500K clicks/month, analytics, custom domains)</li>
+                  </ul>
+                  <button
+                    onClick={() => router.push('/pricing')}
+                    className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                  >
+                    Upgrade to Pro - $15/month
+                  </button>
+                </div>
               </div>
             </div>
           )}
