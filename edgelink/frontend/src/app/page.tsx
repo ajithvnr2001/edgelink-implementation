@@ -88,9 +88,9 @@ export default function HomePage() {
             <span className="text-primary-500">for developers</span>
           </h1>
           <p className="text-xl text-gray-400 mb-12">
-            Built on Cloudflare Edge. Free tier with 500 links/month, 1K API calls/day.
+            Built on Cloudflare Edge. Free tier with 1,000 links, 10K clicks/month.
             <br />
-            Just $9/month for Pro features.
+            Just $15/month for Pro: 100K links, 500K clicks/month, custom domains & more.
           </p>
 
           {/* Shortener Form */}
@@ -188,7 +188,7 @@ export default function HomePage() {
                 Developer First
               </h3>
               <p className="text-gray-400">
-                1K free API calls/day, full REST API, JWT auth
+                100 free API calls/day, full REST API, JWT auth
               </p>
             </div>
 
@@ -198,7 +198,7 @@ export default function HomePage() {
                 Affordable
               </h3>
               <p className="text-gray-400">
-                Free forever tier. Pro at $9/month, 10x cheaper than Bitly
+                Free forever tier. Pro at $15/month, 2x cheaper than Bitly
               </p>
             </div>
           </div>
