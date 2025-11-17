@@ -60,10 +60,14 @@ export async function handleCreateCheckout(request: Request, env: Env, userId: s
     }
 
     // Initialize DodoPayments service
+    const baseUrl = env.DODO_BASE_URL || 'https://api.dodopayments.com/v1';
+    console.log('[CreateCheckout] Using DodoPayments base URL:', baseUrl);
+    console.log('[CreateCheckout] Product ID:', env.DODO_PRODUCT_ID);
+
     const dodoPayments = new DodoPaymentsService({
       apiKey: env.DODO_API_KEY,
       webhookSecret: env.DODO_WEBHOOK_SECRET,
-      baseUrl: env.DODO_BASE_URL || 'https://api.dodopayments.com/v1'
+      baseUrl: baseUrl
     });
 
     // Create or get customer
