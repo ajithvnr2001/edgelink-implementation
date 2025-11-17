@@ -748,6 +748,54 @@ export default function DashboardPage() {
     })
   }
 
+  // Check if link is inactive based on plan policy
+  const isLinkInactive = (link: LinkType): boolean => {
+    if (!user) return false
+
+    const now = Date.now()
+    const createdAt = new Date(link.created_at).getTime()
+    const lastClicked = link.last_clicked_at ? new Date(link.last_clicked_at).getTime() : null
+
+    if (user.plan === 'free') {
+      // Free: Inactive if 0 clicks after 90 days OR inactive for 180 days
+      const day90 = 90 * 24 * 60 * 60 * 1000
+      const day180 = 180 * 24 * 60 * 60 * 1000
+
+      // 0 clicks after 90 days
+      if (link.click_count === 0 && (now - createdAt) > day90) {
+        return true
+      }
+
+      // Last clicked more than 180 days ago
+      if (lastClicked && (now - lastClicked) > day180) {
+        return true
+      }
+
+      // Created but never clicked for 180 days
+      if (!lastClicked && link.click_count === 0 && (now - createdAt) > day180) {
+        return true
+      }
+    } else if (user.plan === 'pro') {
+      // Pro: Inactive if inactive for 365 days
+      const day365 = 365 * 24 * 60 * 60 * 1000
+
+      // Last clicked more than 365 days ago
+      if (lastClicked && (now - lastClicked) > day365) {
+        return true
+      }
+
+      // Created but never clicked for 365 days
+      if (!lastClicked && link.click_count === 0 && (now - createdAt) > day365) {
+        return true
+      }
+    }
+
+    return false
+  }
+
+  // Count inactive links
+  const inactiveLinksCount = links.filter(isLinkInactive).length
+
   // Pagination calculations
   const totalPages = Math.ceil(filteredLinks.length / linksPerPage)
   const startIndex = (currentPage - 1) * linksPerPage
@@ -837,6 +885,30 @@ export default function DashboardPage() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
+          {/* Inactive Links Warning Banner */}
+          {inactiveLinksCount > 0 && (
+            <div className="mb-6 bg-warning-500/10 border border-warning-500/30 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-warning-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-white mb-1">
+                    {inactiveLinksCount} Inactive Link{inactiveLinksCount > 1 ? 's' : ''} Found
+                  </h4>
+                  <p className="text-xs text-gray-300 mb-2">
+                    {user.plan === 'free'
+                      ? 'These links have 0 clicks after 90 days or have been inactive for 180+ days. They will be auto-deleted by our cleanup system.'
+                      : 'These links have been inactive for 365+ days (1 year). They will be auto-deleted by our cleanup system.'}
+                  </p>
+                  <p className="text-xs text-primary-400">
+                    💡 To keep these links active, just click them or share them again. Inactive links are marked with a yellow badge below.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="card p-6">
@@ -850,9 +922,9 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="card p-6">
-              <div className="text-gray-400 text-sm mb-1">Plan Limit</div>
+              <div className="text-gray-400 text-sm mb-1">Total Links Limit</div>
               <div className="text-3xl font-bold text-white">
-                {user.plan === 'pro' ? '5,000' : '500'} <span className="text-lg text-gray-400">/mo</span>
+                {user.plan === 'pro' ? '100K' : '1,000'}
               </div>
             </div>
           </div>
@@ -947,6 +1019,15 @@ export default function DashboardPage() {
                           {link.custom_domain && (
                             <span className="px-2 py-1 bg-blue-900/50 text-blue-300 text-xs font-medium rounded border border-blue-700">
                               Custom Domain
+                            </span>
+                          )}
+                          {isLinkInactive(link) ? (
+                            <span className="px-2 py-1 bg-warning-500/20 text-warning-400 text-xs font-medium rounded border border-warning-500/40">
+                              ⚠️ Inactive
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 bg-green-900/30 text-green-400 text-xs font-medium rounded border border-green-700/40">
+                              ✓ Active
                             </span>
                           )}
                         </div>
@@ -1101,19 +1182,19 @@ export default function DashboardPage() {
                     Upgrade to Pro
                   </h3>
                   <p className="text-gray-300 mb-4">
-                    Get 5,000 links/month, 10K API calls/day, geographic routing, device routing, QR codes, and more
+                    Get 100,000 total links, 500,000 clicks/month, 5,000 API calls/day, 2 custom domains, and all Pro features
                   </p>
                   <ul className="text-sm text-gray-400 space-y-1">
-                    <li>✓ Geographic routing (country-based redirects)</li>
-                    <li>✓ Device routing (mobile, tablet, desktop)</li>
-                    <li>✓ Referrer routing (source-based redirects)</li>
-                    <li>✓ A/B testing & time-based routing</li>
-                    <li>✓ Password-protected links & QR codes</li>
-                    <li>✓ Webhooks & advanced analytics</li>
+                    <li>✓ 100,000 total active links</li>
+                    <li>✓ 500,000 clicks per month</li>
+                    <li>✓ 5,000 API calls per day</li>
+                    <li>✓ 2 custom domains with SSL</li>
+                    <li>✓ Geographic, device & referrer routing</li>
+                    <li>✓ QR codes, webhooks & advanced analytics</li>
                   </ul>
                 </div>
                 <div className="text-right ml-8">
-                  <div className="text-4xl font-bold text-white mb-2">$9</div>
+                  <div className="text-4xl font-bold text-white mb-2">$15</div>
                   <div className="text-gray-400 mb-4">/month</div>
                   <Link href="/pricing" className="btn-primary inline-block">
                     Upgrade Now

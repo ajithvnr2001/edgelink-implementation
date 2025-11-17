@@ -6,11 +6,13 @@
  * 1. Send warnings to unverified accounts (80 days old)
  * 2. Delete unverified accounts (90+ days old)
  * 3. Clean up expired tokens (7+ days old)
+ * 4. Clean up inactive links (free: 90/180 days, pro: 365 days)
  */
 
 import type { Env } from '../types';
 import { EmailService } from '../services/email/emailService';
 import { DeletionService } from '../services/cleanup/deletionService';
+import { InactiveLinkCleanupService } from './inactiveLinkCleanup';
 
 export async function dailyCleanup(env: Env): Promise<void> {
   console.log('[Cron] Starting daily cleanup job');
@@ -22,6 +24,7 @@ export async function dailyCleanup(env: Env): Promise<void> {
   let warningsSent = 0;
   let accountsDeleted = 0;
   let tokensDeleted = 0;
+  let inactiveLinksDeleted = 0;
 
   try {
     // ========================================
@@ -114,12 +117,27 @@ export async function dailyCleanup(env: Env): Promise<void> {
     tokensDeleted = (verificationResult.meta.changes || 0) + (resetResult.meta.changes || 0);
 
     // ========================================
+    // TASK 4: Clean up inactive links
+    // ========================================
+    const inactiveLinkCleanup = new InactiveLinkCleanupService(env);
+    const inactiveLinkResult = await inactiveLinkCleanup.run();
+
+    inactiveLinksDeleted = inactiveLinkResult.linksDeleted;
+
+    console.log(`[Cron] Inactive links cleanup:
+      - Free tier deleted: ${inactiveLinkResult.freeDeleted}
+      - Pro tier deleted: ${inactiveLinkResult.proDeleted}
+      - Total deleted: ${inactiveLinksDeleted}
+    `);
+
+    // ========================================
     // SUMMARY
     // ========================================
     console.log(`[Cron] Daily cleanup complete:
-      - Warnings sent: ${warningsSent}
+      - Account warnings sent: ${warningsSent}
       - Accounts deleted: ${accountsDeleted}
       - Expired tokens cleaned: ${tokensDeleted}
+      - Inactive links deleted: ${inactiveLinksDeleted}
     `);
   } catch (error) {
     console.error('[Cron] Daily cleanup failed:', error);

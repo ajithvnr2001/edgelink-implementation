@@ -756,6 +756,7 @@ export default {
    * - Sending 80-day warnings to unverified accounts
    * - Deleting 90-day unverified accounts
    * - Cleaning expired tokens
+   * - Cleaning up inactive links (free: 90/180 days, pro: 365 days)
    */
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     try {

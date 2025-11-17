@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS links (
   timezone TEXT DEFAULT 'UTC', -- User's timezone for expiration display (e.g., 'Asia/Kolkata', 'America/New_York')
   max_clicks INTEGER,
   click_count INTEGER DEFAULT 0,
+  last_clicked_at TIMESTAMP, -- Track last click for inactive link cleanup
   password_hash TEXT,
   utm_template TEXT,
   device_routing TEXT, -- JSON: {"mobile": "url", "desktop": "url", "tablet": "url"}

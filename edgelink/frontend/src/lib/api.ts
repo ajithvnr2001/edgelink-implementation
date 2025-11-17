@@ -26,6 +26,7 @@ export interface Link {
   expires_at?: string
   timezone?: string
   click_count: number
+  last_clicked_at?: string  // Track last click for inactive link detection
 }
 
 export interface ShortenRequest {
