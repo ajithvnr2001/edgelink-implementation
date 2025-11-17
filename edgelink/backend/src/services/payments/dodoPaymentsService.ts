@@ -281,57 +281,98 @@ export class DodoPaymentsService {
       const signedContent = `${svixId}.${svixTimestamp}.${payload}`;
 
       console.log('[DodoPayments] Signed content length:', signedContent.length);
+      console.log('[DodoPayments] Signed content preview:', signedContent.substring(0, 100) + '...');
 
-      // Extract secret (remove 'whsec_' prefix if present)
+      // Extract and decode secret
+      // Svix secrets are base64-encoded and prefixed with 'whsec_'
       let secret = this.webhookSecret;
       if (secret.startsWith('whsec_')) {
         secret = secret.substring(6);
         console.log('[DodoPayments] Removed whsec_ prefix from secret');
       }
 
-      // Calculate HMAC-SHA256
-      const encoder = new TextEncoder();
+      // Base64 decode the secret to get the raw bytes
+      console.log('[DodoPayments] Base64 decoding webhook secret');
+      let secretBytes: Uint8Array;
+      try {
+        // Convert base64 string to bytes
+        const binaryString = atob(secret);
+        secretBytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          secretBytes[i] = binaryString.charCodeAt(i);
+        }
+        console.log('[DodoPayments] Secret decoded successfully, byte length:', secretBytes.length);
+      } catch (error) {
+        console.error('[DodoPayments] Failed to base64 decode secret, using raw string:', error);
+        // Fallback: use the string as-is
+        const encoder = new TextEncoder();
+        secretBytes = encoder.encode(secret);
+      }
+
+      // Calculate HMAC-SHA256 using the decoded secret bytes
       const key = await crypto.subtle.importKey(
         'raw',
-        encoder.encode(secret),
+        secretBytes,
         { name: 'HMAC', hash: 'SHA-256' },
         false,
         ['sign']
       );
 
+      // Encode signed content as UTF-8
+      const encoder = new TextEncoder();
+      const signedContentBytes = encoder.encode(signedContent);
+
       const signatureBuffer = await crypto.subtle.sign(
         'HMAC',
         key,
-        encoder.encode(signedContent)
+        signedContentBytes
       );
 
       // Convert to base64
       const expectedSignature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
 
       console.log('[DodoPayments] Expected signature (base64):', expectedSignature.substring(0, 20) + '...');
+      console.log('[DodoPayments] Full expected signature:', expectedSignature);
 
-      // Svix signatures can be comma-separated (for key rotation)
-      // Format: v1,base64sig or just base64sig
-      const signatures = svixSignature.split(',').map(s => s.trim());
+      // Svix signatures format: "v1,signature1 v1,signature2" (space-separated for key rotation)
+      // Each signature is "version,base64hash"
+      const signaturePairs = svixSignature.split(' ').map(s => s.trim());
 
-      console.log('[DodoPayments] Provided signatures count:', signatures.length);
+      console.log('[DodoPayments] Signature pairs count:', signaturePairs.length);
+      console.log('[DodoPayments] Raw signature header:', svixSignature);
 
-      // Check each signature (handle both v1,sig and sig formats)
-      for (const sig of signatures) {
-        const sigValue = sig.includes(',') ? sig.split(',')[1] : sig;
+      // Check each signature pair
+      for (const signaturePair of signaturePairs) {
+        // Split by comma to get version and signature
+        const parts = signaturePair.split(',');
 
-        // Remove version prefix if present (e.g., "v1" from "v1,signature")
-        const cleanSig = sigValue.replace(/^v\d+,/, '');
+        if (parts.length >= 2) {
+          // Format: v1,signature
+          const version = parts[0];
+          const signature = parts.slice(1).join(','); // Rejoin in case signature has commas
 
-        console.log('[DodoPayments] Comparing with signature:', cleanSig.substring(0, 20) + '...');
+          console.log('[DodoPayments] Checking signature with version:', version);
+          console.log('[DodoPayments] Signature value:', signature.substring(0, 20) + '...');
+          console.log('[DodoPayments] Full signature value:', signature);
 
-        if (cleanSig === expectedSignature) {
-          console.log('[DodoPayments] Signature match found!');
-          return true;
+          if (signature === expectedSignature) {
+            console.log('[DodoPayments] ✅ Signature match found!');
+            return true;
+          }
+        } else {
+          // Format: just signature (no version)
+          console.log('[DodoPayments] Checking signature without version:', signaturePair.substring(0, 20) + '...');
+
+          if (signaturePair === expectedSignature) {
+            console.log('[DodoPayments] ✅ Signature match found!');
+            return true;
+          }
         }
       }
 
-      console.error('[DodoPayments] No matching signature found');
+      console.error('[DodoPayments] ❌ No matching signature found');
+      console.error('[DodoPayments] Expected:', expectedSignature);
+      console.error('[DodoPayments] Received:', svixSignature);
       return false;
     } catch (error) {
       console.error('[DodoPayments] Signature verification error:', error);
