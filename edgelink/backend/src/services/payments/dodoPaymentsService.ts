@@ -225,24 +225,59 @@ export class DodoPaymentsService {
     customerId: string;
     returnUrl: string;
   }): Promise<{ url: string }> {
-    const response = await fetch(`${this.baseUrl}/customer-portal/sessions`, {
+    const url = `${this.baseUrl}/customer-portal/sessions`;
+    console.log('[DodoPayments] Creating customer portal session at:', url);
+    console.log('[DodoPayments] Customer ID:', params.customerId);
+    console.log('[DodoPayments] Return URL:', params.returnUrl);
+
+    const requestBody = {
+      customer_id: params.customerId,
+      return_url: params.returnUrl
+    };
+
+    console.log('[DodoPayments] Request body:', JSON.stringify(requestBody));
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        customer_id: params.customerId,
-        return_url: params.returnUrl
-      })
+      body: JSON.stringify(requestBody)
     });
 
+    console.log('[DodoPayments] Response status:', response.status, response.statusText);
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`DodoPayments API error: ${error.message}`);
+      const contentType = response.headers.get('content-type');
+      console.log('[DodoPayments] Error response content-type:', contentType);
+
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+      try {
+        if (contentType?.includes('application/json')) {
+          const error = await response.json();
+          errorMessage = error.message || error.error || JSON.stringify(error);
+          console.log('[DodoPayments] API error:', error);
+        } else {
+          const text = await response.text();
+          errorMessage = text.substring(0, 200); // First 200 chars
+          console.log('[DodoPayments] Non-JSON error:', text);
+        }
+      } catch (parseError) {
+        console.error('[DodoPayments] Failed to parse error response:', parseError);
+      }
+
+      throw new Error(`DodoPayments API error: ${errorMessage}. URL: ${url}`);
     }
 
-    return await response.json();
+    const portal = await response.json();
+    console.log('[DodoPayments] Customer portal session created:', JSON.stringify(portal));
+    console.log('[DodoPayments] Portal URL:', portal.url || portal.portal_url);
+
+    return {
+      url: portal.url || portal.portal_url
+    };
   }
 
   /**

@@ -36,14 +36,19 @@ export async function handleCreateCustomerPortal(request: Request, env: Env, use
     });
 
     const frontendUrl = env.FRONTEND_URL || 'https://shortedbro.xyz';
+
+    console.log('[CustomerPortal] Creating portal session for customer:', user.customer_id);
+
     const portal = await dodoPayments.createCustomerPortalSession({
       customerId: user.customer_id as string,
-      returnUrl: `${frontendUrl}/billing`
+      returnUrl: `${frontendUrl}/billing/settings`
     });
+
+    console.log('[CustomerPortal] Portal session created successfully:', portal.url);
 
     return new Response(
       JSON.stringify({
-        portal_url: portal.url
+        url: portal.url  // Frontend expects "url" field
       }),
       {
         status: 200,
