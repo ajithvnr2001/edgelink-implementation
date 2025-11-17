@@ -37,6 +37,8 @@ LOG_LEVEL = "error"
 FRONTEND_URL = "https://shortedbro.xyz"
 ALLOW_REGISTRATION = "true"
 NODE_ENV = "production"
+EMAIL_FROM_ADDRESS = "EdgeLink <noreply@go.shortedbro.xyz>"
+DODO_BASE_URL = "https://test.dodopayments.com"
 
 # Production rate limiting
 [[env.production.unsafe.bindings]]
@@ -50,3 +52,7 @@ simple = { limit = 100, period = 60 }
 # Required secrets:
 # - JWT_SECRET: Strong random secret for JWT signing (64+ chars)
 # - REFRESH_TOKEN_SECRET: Strong random secret for refresh tokens (64+ chars)
+# - RESEND_API_KEY: Resend API key for email sending (starts with re_)
+# - DODO_API_KEY: DodoPayments API key (starts with dodo_sk_)
+# - DODO_WEBHOOK_SECRET: DodoPayments webhook signing secret (starts with whsec_)
+# - DODO_PRODUCT_ID: DodoPayments product ID for Pro plan (starts with prod_)
