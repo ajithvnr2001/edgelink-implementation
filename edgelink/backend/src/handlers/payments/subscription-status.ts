@@ -9,10 +9,13 @@ import { DodoPaymentsService } from '../../services/payments/dodoPaymentsService
 
 export async function handleGetSubscriptionStatus(env: Env, userId: string): Promise<Response> {
   try {
+    // Default to test mode URL - use DODO_BASE_URL secret to override
+    const baseUrl = env.DODO_BASE_URL || 'https://test.dodopayments.com';
+
     const dodoPayments = new DodoPaymentsService({
       apiKey: env.DODO_API_KEY,
       webhookSecret: env.DODO_WEBHOOK_SECRET,
-      baseUrl: env.DODO_BASE_URL || 'https://api.dodopayments.com/v1'
+      baseUrl: baseUrl
     });
 
     const subscriptionService = new SubscriptionService(env, dodoPayments);

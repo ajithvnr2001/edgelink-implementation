@@ -26,10 +26,13 @@ export async function handleCreateCustomerPortal(request: Request, env: Env, use
       );
     }
 
+    // Default to test mode URL - use DODO_BASE_URL secret to override
+    const baseUrl = env.DODO_BASE_URL || 'https://test.dodopayments.com';
+
     const dodoPayments = new DodoPaymentsService({
       apiKey: env.DODO_API_KEY,
       webhookSecret: env.DODO_WEBHOOK_SECRET,
-      baseUrl: env.DODO_BASE_URL || 'https://api.dodopayments.com/v1'
+      baseUrl: baseUrl
     });
 
     const frontendUrl = env.FRONTEND_URL || 'https://shortedbro.xyz';

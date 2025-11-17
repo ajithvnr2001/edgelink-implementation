@@ -55,7 +55,11 @@ export class DodoPaymentsService {
     cancelUrl: string;
     metadata?: Record<string, string>;
   }): Promise<CheckoutSession> {
-    const response = await fetch(`${this.baseUrl}/checkout/sessions`, {
+    const url = `${this.baseUrl}/checkout/sessions`;
+    console.log('[DodoPayments] Creating checkout session at:', url);
+    console.log('[DodoPayments] Product ID:', params.productId);
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
@@ -75,9 +79,29 @@ export class DodoPaymentsService {
       })
     });
 
+    console.log('[DodoPayments] Response status:', response.status, response.statusText);
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`DodoPayments API error: ${error.message}`);
+      const contentType = response.headers.get('content-type');
+      console.log('[DodoPayments] Error response content-type:', contentType);
+
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+      try {
+        if (contentType?.includes('application/json')) {
+          const error = await response.json();
+          errorMessage = error.message || error.error || JSON.stringify(error);
+          console.log('[DodoPayments] API error:', error);
+        } else {
+          const text = await response.text();
+          errorMessage = text.substring(0, 200); // First 200 chars
+          console.log('[DodoPayments] Non-JSON error:', text);
+        }
+      } catch (parseError) {
+        console.error('[DodoPayments] Failed to parse error response:', parseError);
+      }
+
+      throw new Error(`DodoPayments API error: ${errorMessage}. URL: ${url}`);
     }
 
     return await response.json();
