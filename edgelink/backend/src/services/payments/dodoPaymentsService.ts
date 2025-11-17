@@ -63,9 +63,24 @@ export class DodoPaymentsService {
     cancelUrl: string;
     metadata?: Record<string, string>;
   }): Promise<CheckoutSession> {
-    const url = `${this.baseUrl}/checkout/sessions`;
+    const url = `${this.baseUrl}/checkouts`;
     console.log('[DodoPayments] Creating checkout session at:', url);
     console.log('[DodoPayments] Product ID:', params.productId);
+
+    const requestBody = {
+      customer_id: params.customerId,
+      customer_email: params.customerEmail,
+      customer_name: params.customerName || params.customerEmail.split('@')[0],
+      product_cart: [{
+        product_id: params.productId,
+        quantity: 1
+      }],
+      success_url: params.successUrl,
+      failure_url: params.cancelUrl,
+      metadata: params.metadata || {}
+    };
+
+    console.log('[DodoPayments] Request body:', JSON.stringify(requestBody));
 
     const response = await fetch(url, {
       method: 'POST',
@@ -73,19 +88,7 @@ export class DodoPaymentsService {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        customer_id: params.customerId,
-        customer_email: params.customerEmail,
-        customer_name: params.customerName || params.customerEmail.split('@')[0],
-        line_items: [{
-          product_id: params.productId,
-          quantity: 1
-        }],
-        mode: 'subscription',
-        success_url: params.successUrl,
-        cancel_url: params.cancelUrl,
-        metadata: params.metadata || {}
-      })
+      body: JSON.stringify(requestBody)
     });
 
     console.log('[DodoPayments] Response status:', response.status, response.statusText);
