@@ -789,6 +789,9 @@ export default function DashboardPage() {
             <Link href="/webhooks" className="text-gray-300 hover:text-white transition-colors">
               🪝 Webhooks
             </Link>
+            <Link href="/billing/settings" className="text-gray-300 hover:text-white transition-colors">
+              💳 Billing
+            </Link>
             <span className="text-gray-400">
               {user.email}
             </span>
