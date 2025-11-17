@@ -28,11 +28,19 @@ export async function handleCreateCheckout(request: Request, env: Env, userId: s
       );
     }
 
-    if (!env.DODO_PRODUCT_ID) {
+    // Validate all required DodoPayments credentials
+    const missingCredentials = [];
+    if (!env.DODO_API_KEY) missingCredentials.push('DODO_API_KEY');
+    if (!env.DODO_WEBHOOK_SECRET) missingCredentials.push('DODO_WEBHOOK_SECRET');
+    if (!env.DODO_PRODUCT_ID) missingCredentials.push('DODO_PRODUCT_ID');
+
+    if (missingCredentials.length > 0) {
+      console.error('[CreateCheckout] Missing credentials:', missingCredentials.join(', '));
       return new Response(
         JSON.stringify({
-          error: 'Payment system not configured',
-          code: 'PAYMENT_NOT_CONFIGURED'
+          error: `Payment system not configured. Missing: ${missingCredentials.join(', ')}`,
+          code: 'PAYMENT_NOT_CONFIGURED',
+          missing_credentials: missingCredentials
         }),
         {
           status: 500,
@@ -112,10 +120,35 @@ export async function handleCreateCheckout(request: Request, env: Env, userId: s
     );
   } catch (error: any) {
     console.error('[CreateCheckout] Error:', error);
+    console.error('[CreateCheckout] Error stack:', error.stack);
+
+    // Provide more specific error information
+    let errorMessage = error.message || 'Failed to create checkout session';
+    let errorCode = 'CHECKOUT_FAILED';
+    let errorDetails: any = {};
+
+    // Check if this is a DodoPayments API error
+    if (errorMessage.includes('DodoPayments API error')) {
+      errorCode = 'DODOPAYMENTS_API_ERROR';
+      errorDetails.api_error = errorMessage;
+    }
+    // Check if this is a database error
+    else if (errorMessage.includes('D1')) {
+      errorCode = 'DATABASE_ERROR';
+      errorDetails.db_error = errorMessage;
+    }
+    // Check if this is a network error
+    else if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
+      errorCode = 'NETWORK_ERROR';
+      errorDetails.network_error = errorMessage;
+    }
+
     return new Response(
       JSON.stringify({
-        error: error.message || 'Failed to create checkout session',
-        code: 'CHECKOUT_FAILED'
+        error: errorMessage,
+        code: errorCode,
+        details: errorDetails,
+        timestamp: new Date().toISOString()
       }),
       {
         status: 500,
