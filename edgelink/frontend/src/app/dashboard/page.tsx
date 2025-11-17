@@ -1112,9 +1112,9 @@ export default function DashboardPage() {
                 <div className="text-right ml-8">
                   <div className="text-4xl font-bold text-white mb-2">$9</div>
                   <div className="text-gray-400 mb-4">/month</div>
-                  <button className="btn-primary">
+                  <Link href="/pricing" className="btn-primary inline-block">
                     Upgrade Now
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>
