@@ -87,5 +87,6 @@ simple = { limit = 1000, period = 86400 }
 # - Sending 80-day warnings to unverified accounts
 # - Deleting 90-day unverified accounts
 # - Cleaning expired tokens
+# - Cleaning up inactive links (free: 90/180 days, pro: 365 days)
 [triggers]
 crons = ["0 2 * * *"]  # Every day at 2 AM UTC

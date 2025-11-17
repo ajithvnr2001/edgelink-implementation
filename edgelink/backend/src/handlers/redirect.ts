@@ -398,10 +398,11 @@ async function incrementClickCount(
       `).bind(slug).run();
       console.log(`[incrementClickCount] Updated anonymous link, rows affected: ${result.meta.changes}`);
     } else {
-      // Update D1 database
+      // Update D1 database (increment click count and update last clicked timestamp)
       const dbResult = await env.DB.prepare(`
         UPDATE links
-        SET click_count = click_count + 1
+        SET click_count = click_count + 1,
+            last_clicked_at = CURRENT_TIMESTAMP
         WHERE slug = ?
       `).bind(slug).run();
       console.log(`[incrementClickCount] Updated D1 database, rows affected: ${dbResult.meta.changes}`);
