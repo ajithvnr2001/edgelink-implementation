@@ -121,12 +121,13 @@ export class DodoPaymentsService {
    */
   async createCustomer(params: {
     email: string;
-    name?: string;
+    name: string; // Required by DodoPayments API
     metadata?: Record<string, string>;
   }): Promise<Customer> {
     const url = `${this.baseUrl}/customers`;
     console.log('[DodoPayments] Creating customer at:', url);
     console.log('[DodoPayments] Customer email:', params.email);
+    console.log('[DodoPayments] Customer name:', params.name);
 
     const response = await fetch(url, {
       method: 'POST',
