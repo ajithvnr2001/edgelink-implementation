@@ -2,13 +2,15 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { getUser, storeUser } from '@/lib/api'
 
 function BillingSuccessContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
   const [user, setUser] = useState<any>(null)
+  const [countdown, setCountdown] = useState(5)
+  const router = useRouter()
 
   useEffect(() => {
     // Refresh user data to get updated plan
@@ -19,7 +21,21 @@ function BillingSuccessContent() {
       storeUser(currentUser)
       setUser(currentUser)
     }
-  }, [])
+
+    // Auto-redirect to dashboard after 5 seconds
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          router.push('/dashboard')
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [router])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4">
@@ -45,9 +61,16 @@ function BillingSuccessContent() {
           <h1 className="text-3xl font-bold text-white mb-4">
             Welcome to EdgeLink Pro!
           </h1>
-          <p className="text-xl text-gray-300 mb-8">
+          <p className="text-xl text-gray-300 mb-4">
             Your payment was successful. You now have access to all Pro features.
           </p>
+
+          {/* Auto-redirect notice */}
+          <div className="bg-primary-500/10 border border-primary-500/30 rounded-lg p-4 mb-8">
+            <p className="text-sm text-gray-300">
+              Redirecting to dashboard in <span className="text-primary-400 font-bold text-lg">{countdown}</span> seconds...
+            </p>
+          </div>
 
           {/* Session ID */}
           {sessionId && (

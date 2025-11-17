@@ -31,6 +31,7 @@ import { handleCreateCheckout } from './handlers/payments/create-checkout';
 import { handleDodoPaymentsWebhook } from './handlers/payments/webhook';
 import { handleGetSubscriptionStatus } from './handlers/payments/subscription-status';
 import { handleCreateCustomerPortal } from './handlers/payments/customer-portal';
+import { handleGetPaymentHistory } from './handlers/payments/payment-history';
 import { handleResendWebhook } from './handlers/email/resend-webhook';
 import { dailyCleanup } from './cron/dailyCleanup';
 
@@ -214,6 +215,16 @@ export default {
         }
 
         const response = await handleCreateCustomerPortal(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      if (path === '/api/payments/history' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGetPaymentHistory(env, user.sub);
         return addCorsHeaders(response, corsHeaders);
       }
 

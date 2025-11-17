@@ -3,14 +3,16 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { getUser, getSubscriptionStatus, createCustomerPortal } from '@/lib/api'
+import { getUser, getSubscriptionStatus, createCustomerPortal, getPaymentHistory } from '@/lib/api'
 
 export default function BillingSettingsPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [subscription, setSubscription] = useState<any>(null)
+  const [paymentHistory, setPaymentHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [portalLoading, setPortalLoading] = useState(false)
+  const [historyLoading, setHistoryLoading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -36,6 +38,18 @@ export default function BillingSettingsPage() {
     }
   }
 
+  const loadPaymentHistory = async () => {
+    setHistoryLoading(true)
+    try {
+      const history = await getPaymentHistory()
+      setPaymentHistory(history.payments || [])
+    } catch (err: any) {
+      console.error('Failed to load payment history:', err)
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
   const handleManageBilling = async () => {
     setPortalLoading(true)
     setError('')
@@ -58,6 +72,23 @@ export default function BillingSettingsPage() {
       month: 'long',
       day: 'numeric'
     })
+  }
+
+  const formatDateTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const formatAmount = (amount: number, currency: string) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency.toUpperCase()
+    }).format(amount / 100) // Amount is in cents
   }
 
   const getPlanName = (plan?: string) => {
@@ -211,6 +242,127 @@ export default function BillingSettingsPage() {
               </div>
             )}
           </div>
+
+          {/* Subscription Timeline & Payment History */}
+          {isPro && (
+            <div className="card p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-white">Subscription Timeline</h2>
+                {!historyLoading && paymentHistory.length === 0 && (
+                  <button
+                    onClick={loadPaymentHistory}
+                    className="btn-secondary text-sm"
+                  >
+                    Load Payment History
+                  </button>
+                )}
+              </div>
+
+              {historyLoading ? (
+                <div className="text-center py-8">
+                  <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  <p className="text-gray-400 text-sm">Loading payment history...</p>
+                </div>
+              ) : paymentHistory.length > 0 ? (
+                <div className="space-y-4">
+                  {/* Timeline */}
+                  <div className="relative pl-8 space-y-6">
+                    {paymentHistory.map((payment, index) => (
+                      <div key={payment.payment_id} className="relative">
+                        {/* Timeline dot */}
+                        <div className={`absolute left-[-2rem] top-1 w-3 h-3 rounded-full ${
+                          payment.status === 'succeeded' || payment.status === 'paid'
+                            ? 'bg-success-500'
+                            : payment.status === 'pending'
+                            ? 'bg-warning-500'
+                            : 'bg-error-500'
+                        }`}></div>
+
+                        {/* Timeline line */}
+                        {index < paymentHistory.length - 1 && (
+                          <div className="absolute left-[-1.75rem] top-4 w-0.5 h-full bg-gray-700"></div>
+                        )}
+
+                        {/* Payment info */}
+                        <div className="bg-gray-700/30 rounded-lg p-4 border border-gray-700">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold text-white">
+                                  {payment.plan === 'pro_monthly' && 'Pro Monthly Subscription'}
+                                  {payment.plan === 'pro_annual' && 'Pro Annual Subscription'}
+                                  {payment.plan === 'pro' && 'Pro Subscription'}
+                                  {!payment.plan.includes('pro') && payment.plan}
+                                </h3>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  payment.status === 'succeeded' || payment.status === 'paid'
+                                    ? 'bg-success-500/20 text-success-500'
+                                    : payment.status === 'pending'
+                                    ? 'bg-warning-500/20 text-warning-500'
+                                    : 'bg-error-500/20 text-error-500'
+                                }`}>
+                                  {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-400">
+                                {formatDateTime(payment.created_at)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-white">
+                                {formatAmount(payment.amount, payment.currency)}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Invoice/Receipt links */}
+                          {(payment.invoice_url || payment.receipt_url) && (
+                            <div className="flex gap-2 mt-3 pt-3 border-t border-gray-600">
+                              {payment.invoice_url && (
+                                <a
+                                  href={payment.invoice_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-primary-400 hover:text-primary-300"
+                                >
+                                  📄 View Invoice →
+                                </a>
+                              )}
+                              {payment.receipt_url && (
+                                <a
+                                  href={payment.receipt_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-primary-400 hover:text-primary-300"
+                                >
+                                  🧾 View Receipt →
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Load more button if needed */}
+                  <div className="text-center pt-2">
+                    <button
+                      onClick={loadPaymentHistory}
+                      className="text-sm text-gray-400 hover:text-white"
+                    >
+                      Refresh History
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400">
+                  <p>No payment history available yet.</p>
+                  <p className="text-sm mt-2">Your payment records will appear here once processed.</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Pro Features */}
           {!isPro && (
