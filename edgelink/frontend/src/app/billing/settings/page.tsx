@@ -25,6 +25,11 @@ export default function BillingSettingsPage() {
 
     // Fetch subscription status
     loadSubscription()
+
+    // Auto-load payment history for Pro users
+    if (currentUser.plan === 'pro') {
+      loadPaymentHistory()
+    }
   }, [router])
 
   const loadSubscription = async () => {
@@ -227,8 +232,15 @@ export default function BillingSettingsPage() {
             ) : (
               <div className="space-y-4">
                 <p className="text-gray-400">
-                  Manage your payment method, view invoices, or cancel your subscription through the customer portal.
+                  Your Pro subscription is active. View your payment history and subscription details below.
                 </p>
+                <div className="bg-primary-500/10 border border-primary-500/30 rounded-lg p-4">
+                  <p className="text-sm text-gray-300">
+                    💡 <strong>Manage Subscription:</strong> To update your payment method or cancel your subscription,
+                    please contact support at <a href="mailto:support@edgelink.com" className="text-primary-400 hover:text-primary-300">support@edgelink.com</a>
+                  </p>
+                </div>
+                {/* Hidden for now - customer portal not available in test mode
                 <button
                   onClick={handleManageBilling}
                   disabled={portalLoading}
@@ -236,9 +248,7 @@ export default function BillingSettingsPage() {
                 >
                   {portalLoading ? 'Loading...' : 'Open Billing Portal'}
                 </button>
-                <p className="text-sm text-gray-500">
-                  You'll be redirected to a secure portal to manage your billing.
-                </p>
+                */}
               </div>
             )}
           </div>
@@ -247,15 +257,14 @@ export default function BillingSettingsPage() {
           {isPro && (
             <div className="card p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white">Subscription Timeline</h2>
-                {!historyLoading && paymentHistory.length === 0 && (
-                  <button
-                    onClick={loadPaymentHistory}
-                    className="btn-secondary text-sm"
-                  >
-                    Load Payment History
-                  </button>
-                )}
+                <h2 className="text-xl font-bold text-white">Payment History</h2>
+                <button
+                  onClick={loadPaymentHistory}
+                  className="btn-secondary text-sm"
+                  disabled={historyLoading}
+                >
+                  {historyLoading ? 'Loading...' : 'Refresh'}
+                </button>
               </div>
 
               {historyLoading ? (
