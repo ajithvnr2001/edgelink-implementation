@@ -50,6 +50,7 @@ export class DodoPaymentsService {
   async createCheckoutSession(params: {
     customerId?: string;
     customerEmail: string;
+    customerName?: string;
     productId: string;
     successUrl: string;
     cancelUrl: string;
@@ -68,6 +69,7 @@ export class DodoPaymentsService {
       body: JSON.stringify({
         customer_id: params.customerId,
         customer_email: params.customerEmail,
+        customer_name: params.customerName || params.customerEmail.split('@')[0],
         line_items: [{
           product_id: params.productId,
           quantity: 1
