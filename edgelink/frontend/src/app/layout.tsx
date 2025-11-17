@@ -3,8 +3,8 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'EdgeLink - Developer-First URL Shortener',
-  description: 'Fast, affordable URL shortener built on Cloudflare Edge. Free tier with 500 links/month, 1K API calls/day, and 1 custom domain.',
-  keywords: ['url shortener', 'link shortener', 'cloudflare', 'edge computing', 'developer tools'],
+  description: 'Fast, affordable URL shortener built on Cloudflare Edge. Free tier with 1,000 links, 10K clicks/month. Pro: 100K links, 500K clicks/month, $15/mo.',
+  keywords: ['url shortener', 'link shortener', 'cloudflare', 'edge computing', 'developer tools', 'api', 'webhooks', 'custom domains'],
 }
 
 export default function RootLayout({

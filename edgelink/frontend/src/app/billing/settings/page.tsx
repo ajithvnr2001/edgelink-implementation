@@ -185,22 +185,36 @@ export default function BillingSettingsPage() {
 
               {!isPro && (
                 <div>
-                  <p className="text-sm text-gray-400 mb-1">Monthly Limit</p>
-                  <p className="text-lg font-bold text-white">500 links</p>
+                  <p className="text-sm text-gray-400 mb-1">Total Links</p>
+                  <p className="text-lg font-bold text-white">1,000 active links</p>
+                </div>
+              )}
+
+              {!isPro && (
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Monthly Clicks</p>
+                  <p className="text-lg font-bold text-white">10,000 per month</p>
                 </div>
               )}
 
               {isPro && (
                 <div>
-                  <p className="text-sm text-gray-400 mb-1">Monthly Limit</p>
-                  <p className="text-lg font-bold text-white">5,000 links</p>
+                  <p className="text-sm text-gray-400 mb-1">Total Links</p>
+                  <p className="text-lg font-bold text-white">100,000 active links</p>
+                </div>
+              )}
+
+              {isPro && (
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Monthly Clicks</p>
+                  <p className="text-lg font-bold text-white">500,000 per month</p>
                 </div>
               )}
 
               {isPro && (
                 <div>
                   <p className="text-sm text-gray-400 mb-1">Daily API Calls</p>
-                  <p className="text-lg font-bold text-white">10,000</p>
+                  <p className="text-lg font-bold text-white">5,000 per day</p>
                 </div>
               )}
             </div>
@@ -376,31 +390,37 @@ export default function BillingSettingsPage() {
           {/* Pro Features */}
           {!isPro && (
             <div className="card p-6">
-              <h2 className="text-xl font-bold text-white mb-4">Pro Features</h2>
+              <h2 className="text-xl font-bold text-white mb-4">Upgrade to Pro - $15/month</h2>
               <div className="grid md:grid-cols-2 gap-3">
                 <div className="flex items-start">
                   <svg className="w-5 h-5 text-success-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300 text-sm">5,000 links per month (10x more)</span>
+                  <span className="text-gray-300 text-sm">100,000 total links (100x more)</span>
                 </div>
                 <div className="flex items-start">
                   <svg className="w-5 h-5 text-success-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300 text-sm">10,000 API calls per day (10x more)</span>
+                  <span className="text-gray-300 text-sm">500,000 clicks/month (50x more)</span>
                 </div>
                 <div className="flex items-start">
                   <svg className="w-5 h-5 text-success-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300 text-sm">Custom domain support</span>
+                  <span className="text-gray-300 text-sm">5,000 API calls/day (50x more)</span>
                 </div>
                 <div className="flex items-start">
                   <svg className="w-5 h-5 text-success-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300 text-sm">Geographic & device routing</span>
+                  <span className="text-gray-300 text-sm">2 custom domains with SSL</span>
+                </div>
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-success-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-300 text-sm">Advanced analytics & charts</span>
                 </div>
                 <div className="flex items-start">
                   <svg className="w-5 h-5 text-success-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -412,13 +432,19 @@ export default function BillingSettingsPage() {
                   <svg className="w-5 h-5 text-success-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300 text-sm">Advanced analytics</span>
+                  <span className="text-gray-300 text-sm">Geo, device & referrer routing</span>
                 </div>
                 <div className="flex items-start">
                   <svg className="w-5 h-5 text-success-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-300 text-sm">Password-protected links</span>
+                  <span className="text-gray-300 text-sm">Edit slug after creation</span>
+                </div>
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-success-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-300 text-sm">Webhooks & bulk import/export</span>
                 </div>
                 <div className="flex items-start">
                   <svg className="w-5 h-5 text-success-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
