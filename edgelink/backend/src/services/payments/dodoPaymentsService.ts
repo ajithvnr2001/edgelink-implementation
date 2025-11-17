@@ -116,7 +116,12 @@ export class DodoPaymentsService {
       throw new Error(`DodoPayments API error: ${errorMessage}. URL: ${url}`);
     }
 
-    return await response.json();
+    const checkoutSession = await response.json();
+    console.log('[DodoPayments] Checkout session created successfully:', JSON.stringify(checkoutSession));
+    console.log('[DodoPayments] Checkout URL:', checkoutSession.checkout_url || checkoutSession.url);
+    console.log('[DodoPayments] Session ID:', checkoutSession.session_id || checkoutSession.id);
+
+    return checkoutSession;
   }
 
   /**

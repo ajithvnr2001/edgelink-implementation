@@ -123,10 +123,22 @@ export async function handleCreateCheckout(request: Request, env: Env, userId: s
       }
     });
 
+    // DodoPayments may return 'checkout_url' or 'url', and 'session_id' or 'id'
+    const checkoutUrl = (session as any).checkout_url || (session as any).url;
+    const sessionId = (session as any).session_id || (session as any).id;
+
+    console.log('[CreateCheckout] Checkout URL:', checkoutUrl);
+    console.log('[CreateCheckout] Session ID:', sessionId);
+
+    if (!checkoutUrl) {
+      console.error('[CreateCheckout] No checkout URL in response:', session);
+      throw new Error('Failed to get checkout URL from DodoPayments response');
+    }
+
     return new Response(
       JSON.stringify({
-        checkout_url: session.url,
-        session_id: session.id
+        checkout_url: checkoutUrl,
+        session_id: sessionId
       }),
       {
         status: 200,
