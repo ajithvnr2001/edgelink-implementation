@@ -528,3 +528,37 @@ export async function resetPassword(token: string, newPassword: string): Promise
     body: JSON.stringify({ token, newPassword }),
   })
 }
+
+/**
+ * Create checkout session for Pro upgrade
+ */
+export async function createCheckoutSession(plan: 'pro' = 'pro'): Promise<{ checkout_url: string; session_id: string }> {
+  return apiRequest('/api/payments/create-checkout', {
+    method: 'POST',
+    body: JSON.stringify({ plan }),
+  })
+}
+
+/**
+ * Get subscription status
+ */
+export async function getSubscriptionStatus(): Promise<{
+  status: string;
+  plan: string;
+  current_period_end?: number;
+  cancel_at_period_end?: boolean;
+}> {
+  return apiRequest('/api/payments/subscription-status', {
+    method: 'GET',
+  })
+}
+
+/**
+ * Create customer portal session
+ */
+export async function createCustomerPortal(returnUrl: string): Promise<{ url: string }> {
+  return apiRequest('/api/payments/customer-portal', {
+    method: 'POST',
+    body: JSON.stringify({ return_url: returnUrl }),
+  })
+}
