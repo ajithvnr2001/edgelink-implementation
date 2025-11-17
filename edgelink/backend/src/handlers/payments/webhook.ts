@@ -233,26 +233,38 @@ async function handleSubscriptionActive(event: any, env: Env, subscriptionServic
   }
 
   // Validate required fields
-  if (!subscription.id) {
-    console.error('[DodoWebhook] Missing subscription.id');
+  const subscriptionId = subscription.subscription_id || subscription.id;
+  const customerId = subscription.customer?.customer_id || subscription.customer_id;
+
+  if (!subscriptionId) {
+    console.error('[DodoWebhook] Missing subscription_id');
     return;
   }
 
-  if (!subscription.customer_id) {
+  if (!customerId) {
     console.error('[DodoWebhook] Missing customer_id');
     return;
   }
 
+  // Convert ISO dates to Unix timestamps
+  const currentPeriodStart = subscription.previous_billing_date
+    ? Math.floor(new Date(subscription.previous_billing_date).getTime() / 1000)
+    : subscription.current_period_start || Math.floor(Date.now() / 1000);
+
+  const currentPeriodEnd = subscription.next_billing_date
+    ? Math.floor(new Date(subscription.next_billing_date).getTime() / 1000)
+    : subscription.current_period_end || Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60);
+
   // Activate subscription
   const updateParams = {
     userId,
-    subscriptionId: subscription.id,
-    customerId: subscription.customer_id,
+    subscriptionId: subscriptionId,
+    customerId: customerId,
     plan: 'pro',
     status: 'active',
-    currentPeriodStart: subscription.current_period_start || Math.floor(Date.now() / 1000),
-    currentPeriodEnd: subscription.current_period_end || Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60), // Default 30 days
-    cancelAtPeriodEnd: subscription.cancel_at_period_end || false
+    currentPeriodStart: currentPeriodStart,
+    currentPeriodEnd: currentPeriodEnd,
+    cancelAtPeriodEnd: subscription.cancel_at_next_billing_date || subscription.cancel_at_period_end || false
   };
 
   console.log('[DodoWebhook] Updating subscription with params:', updateParams);
@@ -279,26 +291,38 @@ async function handleSubscriptionRenewed(event: any, env: Env, subscriptionServi
   }
 
   // Validate required fields
-  if (!subscription.id) {
-    console.error('[DodoWebhook] Missing subscription.id');
+  const subscriptionId = subscription.subscription_id || subscription.id;
+  const customerId = subscription.customer?.customer_id || subscription.customer_id;
+
+  if (!subscriptionId) {
+    console.error('[DodoWebhook] Missing subscription_id');
     return;
   }
 
-  if (!subscription.customer_id) {
+  if (!customerId) {
     console.error('[DodoWebhook] Missing customer_id');
     return;
   }
 
+  // Convert ISO dates to Unix timestamps
+  const currentPeriodStart = subscription.previous_billing_date
+    ? Math.floor(new Date(subscription.previous_billing_date).getTime() / 1000)
+    : subscription.current_period_start || Math.floor(Date.now() / 1000);
+
+  const currentPeriodEnd = subscription.next_billing_date
+    ? Math.floor(new Date(subscription.next_billing_date).getTime() / 1000)
+    : subscription.current_period_end || Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60);
+
   // Update subscription period
   const updateParams = {
     userId,
-    subscriptionId: subscription.id,
-    customerId: subscription.customer_id,
+    subscriptionId: subscriptionId,
+    customerId: customerId,
     plan: 'pro',
     status: 'active',
-    currentPeriodStart: subscription.current_period_start || Math.floor(Date.now() / 1000),
-    currentPeriodEnd: subscription.current_period_end || Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60),
-    cancelAtPeriodEnd: subscription.cancel_at_period_end || false
+    currentPeriodStart: currentPeriodStart,
+    currentPeriodEnd: currentPeriodEnd,
+    cancelAtPeriodEnd: subscription.cancel_at_next_billing_date || subscription.cancel_at_period_end || false
   };
 
   console.log('[DodoWebhook] Updating subscription with params:', updateParams);
@@ -309,9 +333,9 @@ async function handleSubscriptionRenewed(event: any, env: Env, subscriptionServi
   if (subscription.latest_payment && subscription.latest_payment.id) {
     const recordParams = {
       userId,
-      paymentId: subscription.latest_payment.id,
-      customerId: subscription.customer_id,
-      subscriptionId: subscription.id,
+      paymentId: subscription.latest_payment.payment_id || subscription.latest_payment.id,
+      customerId: customerId,
+      subscriptionId: subscriptionId,
       amount: subscription.latest_payment.amount || 0,
       currency: subscription.latest_payment.currency || 'USD',
       status: 'succeeded',
@@ -473,12 +497,15 @@ async function handlePaymentSucceeded(event: any, env: Env, subscriptionService:
   }
 
   // Validate required fields
-  if (!payment.id) {
-    console.error('[DodoWebhook] Missing payment.id');
+  const paymentId = payment.payment_id || payment.id;
+  const customerId = payment.customer?.customer_id || payment.customer_id;
+
+  if (!paymentId) {
+    console.error('[DodoWebhook] Missing payment_id');
     return;
   }
 
-  if (!payment.customer_id) {
+  if (!customerId) {
     console.error('[DodoWebhook] Missing customer_id');
     return;
   }
@@ -486,14 +513,14 @@ async function handlePaymentSucceeded(event: any, env: Env, subscriptionService:
   // Record successful payment
   const recordParams = {
     userId,
-    paymentId: payment.id,
-    customerId: payment.customer_id,
+    paymentId: paymentId,
+    customerId: customerId,
     subscriptionId: payment.subscription_id || undefined,
-    amount: payment.amount || 0,
+    amount: payment.total_amount || payment.settlement_amount || payment.amount || 0,
     currency: payment.currency || 'USD',
-    status: 'succeeded',
+    status: payment.status || 'succeeded',
     plan: 'pro',
-    invoiceUrl: payment.invoice_url || undefined,
+    invoiceUrl: payment.payment_link || payment.invoice_url || undefined,
     receiptUrl: payment.receipt_url || undefined,
     metadata: payment.metadata || {}
   };
