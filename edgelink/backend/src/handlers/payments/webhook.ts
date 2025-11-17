@@ -9,8 +9,24 @@ import { SubscriptionService } from '../../services/payments/subscriptionService
 
 export async function handleDodoPaymentsWebhook(request: Request, env: Env): Promise<Response> {
   try {
-    const signature = request.headers.get('x-dodo-signature') || '';
+    // DodoPayments uses Svix for webhook delivery
+    // Get Svix headers
+    const svixId = request.headers.get('svix-id');
+    const svixTimestamp = request.headers.get('svix-timestamp');
+    const svixSignature = request.headers.get('svix-signature');
+
+    console.log('[DodoWebhook] Received webhook');
+    console.log('[DodoWebhook] Svix ID:', svixId);
+    console.log('[DodoWebhook] Svix Timestamp:', svixTimestamp);
+    console.log('[DodoWebhook] Svix Signature present:', !!svixSignature);
+
+    if (!svixId || !svixTimestamp || !svixSignature) {
+      console.error('[DodoWebhook] Missing Svix headers');
+      return new Response('Missing Svix headers', { status: 401 });
+    }
+
     const payload = await request.text();
+    console.log('[DodoWebhook] Payload length:', payload.length);
 
     // Verify webhook signature
     // Default to test mode URL - use DODO_BASE_URL secret to override
@@ -22,13 +38,22 @@ export async function handleDodoPaymentsWebhook(request: Request, env: Env): Pro
       baseUrl: baseUrl
     });
 
-    const isValid = await dodoPayments.verifyWebhookSignature(payload, signature);
+    const isValid = await dodoPayments.verifySvixWebhookSignature(
+      payload,
+      svixId,
+      svixTimestamp,
+      svixSignature
+    );
+
     if (!isValid) {
       console.error('[DodoWebhook] Invalid signature');
       return new Response('Invalid signature', { status: 401 });
     }
 
+    console.log('[DodoWebhook] Signature verified successfully');
+
     const event = JSON.parse(payload);
+    console.log('[DodoWebhook] Event type:', event.type);
 
     // Log webhook event
     await env.DB.prepare(`

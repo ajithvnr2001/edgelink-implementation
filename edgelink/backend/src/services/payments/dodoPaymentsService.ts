@@ -246,7 +246,101 @@ export class DodoPaymentsService {
   }
 
   /**
-   * Verify webhook signature
+   * Verify Svix webhook signature
+   * DodoPayments uses Svix for webhook delivery
+   *
+   * Algorithm:
+   * 1. Construct signed content: `${svix_id}.${svix_timestamp}.${payload}`
+   * 2. Calculate HMAC-SHA256 using webhook secret
+   * 3. Compare with provided signature
+   * 4. Verify timestamp is within 5 minutes
+   */
+  async verifySvixWebhookSignature(
+    payload: string,
+    svixId: string,
+    svixTimestamp: string,
+    svixSignature: string
+  ): Promise<boolean> {
+    try {
+      // Verify timestamp is within 5 minutes
+      const timestamp = parseInt(svixTimestamp, 10);
+      const now = Math.floor(Date.now() / 1000);
+      const timeDiff = Math.abs(now - timestamp);
+
+      console.log('[DodoPayments] Timestamp verification:');
+      console.log('[DodoPayments] Current time:', now);
+      console.log('[DodoPayments] Webhook time:', timestamp);
+      console.log('[DodoPayments] Time difference (seconds):', timeDiff);
+
+      if (timeDiff > 300) { // 5 minutes
+        console.error('[DodoPayments] Timestamp too old or too far in future');
+        return false;
+      }
+
+      // Construct signed content: id.timestamp.payload
+      const signedContent = `${svixId}.${svixTimestamp}.${payload}`;
+
+      console.log('[DodoPayments] Signed content length:', signedContent.length);
+
+      // Extract secret (remove 'whsec_' prefix if present)
+      let secret = this.webhookSecret;
+      if (secret.startsWith('whsec_')) {
+        secret = secret.substring(6);
+        console.log('[DodoPayments] Removed whsec_ prefix from secret');
+      }
+
+      // Calculate HMAC-SHA256
+      const encoder = new TextEncoder();
+      const key = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
+
+      const signatureBuffer = await crypto.subtle.sign(
+        'HMAC',
+        key,
+        encoder.encode(signedContent)
+      );
+
+      // Convert to base64
+      const expectedSignature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
+
+      console.log('[DodoPayments] Expected signature (base64):', expectedSignature.substring(0, 20) + '...');
+
+      // Svix signatures can be comma-separated (for key rotation)
+      // Format: v1,base64sig or just base64sig
+      const signatures = svixSignature.split(',').map(s => s.trim());
+
+      console.log('[DodoPayments] Provided signatures count:', signatures.length);
+
+      // Check each signature (handle both v1,sig and sig formats)
+      for (const sig of signatures) {
+        const sigValue = sig.includes(',') ? sig.split(',')[1] : sig;
+
+        // Remove version prefix if present (e.g., "v1" from "v1,signature")
+        const cleanSig = sigValue.replace(/^v\d+,/, '');
+
+        console.log('[DodoPayments] Comparing with signature:', cleanSig.substring(0, 20) + '...');
+
+        if (cleanSig === expectedSignature) {
+          console.log('[DodoPayments] Signature match found!');
+          return true;
+        }
+      }
+
+      console.error('[DodoPayments] No matching signature found');
+      return false;
+    } catch (error) {
+      console.error('[DodoPayments] Signature verification error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Verify webhook signature (legacy method, kept for backward compatibility)
    */
   async verifyWebhookSignature(payload: string, signature: string): Promise<boolean> {
     const encoder = new TextEncoder();
