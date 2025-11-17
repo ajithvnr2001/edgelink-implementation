@@ -42,6 +42,13 @@ export class DodoPaymentsService {
     this.apiKey = config.apiKey;
     this.webhookSecret = config.webhookSecret;
     this.baseUrl = config.baseUrl;
+
+    // Log configuration (without exposing full API key)
+    console.log('[DodoPayments] Service initialized');
+    console.log('[DodoPayments] Base URL:', this.baseUrl);
+    console.log('[DodoPayments] API Key present:', !!this.apiKey);
+    console.log('[DodoPayments] API Key prefix:', this.apiKey?.substring(0, 12) + '...');
+    console.log('[DodoPayments] Webhook Secret present:', !!this.webhookSecret);
   }
 
   /**
@@ -117,7 +124,11 @@ export class DodoPaymentsService {
     name?: string;
     metadata?: Record<string, string>;
   }): Promise<Customer> {
-    const response = await fetch(`${this.baseUrl}/customers`, {
+    const url = `${this.baseUrl}/customers`;
+    console.log('[DodoPayments] Creating customer at:', url);
+    console.log('[DodoPayments] Customer email:', params.email);
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
@@ -130,9 +141,27 @@ export class DodoPaymentsService {
       })
     });
 
+    console.log('[DodoPayments] Create customer response status:', response.status, response.statusText);
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`DodoPayments API error: ${error.message}`);
+      const contentType = response.headers.get('content-type');
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+      try {
+        if (contentType?.includes('application/json')) {
+          const error = await response.json();
+          errorMessage = error.message || error.error || JSON.stringify(error);
+          console.log('[DodoPayments] API error:', error);
+        } else {
+          const text = await response.text();
+          errorMessage = text.substring(0, 200);
+          console.log('[DodoPayments] Non-JSON error:', text);
+        }
+      } catch (parseError) {
+        console.error('[DodoPayments] Failed to parse error response:', parseError);
+      }
+
+      throw new Error(`DodoPayments API error: ${errorMessage}. URL: ${url}`);
     }
 
     return await response.json();

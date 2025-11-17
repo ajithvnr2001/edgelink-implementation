@@ -48,7 +48,7 @@ FRONTEND_URL = "https://shortedbro.xyz"
 ALLOW_REGISTRATION = "true"
 NODE_ENV = "development"
 EMAIL_FROM_ADDRESS = "EdgeLink <noreply@go.shortedbro.xyz>"
-DODO_BASE_URL = "https://api.dodopayments.com/v1"
+DODO_BASE_URL = "https://test.dodopayments.com"
 # FALLBACK_URL = "https://example.com" # Optional: Proxy to this URL when slug not found (for root domain usage)
 
 # Secrets (set via: wrangler secret put <NAME>)
