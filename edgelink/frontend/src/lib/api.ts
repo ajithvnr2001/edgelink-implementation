@@ -562,3 +562,24 @@ export async function createCustomerPortal(returnUrl: string): Promise<{ url: st
     body: JSON.stringify({ return_url: returnUrl }),
   })
 }
+
+/**
+ * Get payment history
+ */
+export async function getPaymentHistory(): Promise<{
+  payments: Array<{
+    payment_id: string;
+    amount: number;
+    currency: string;
+    status: string;
+    plan: string;
+    created_at: string;
+    invoice_url?: string;
+    receipt_url?: string;
+  }>;
+  total: number;
+}> {
+  return apiRequest('/api/payments/history', {
+    method: 'GET',
+  })
+}

@@ -85,6 +85,12 @@ export class SubscriptionService {
   }): Promise<void> {
     const now = Math.floor(Date.now() / 1000);
 
+    console.log('[SubscriptionService] Updating user subscription in database');
+    console.log('[SubscriptionService] User ID:', params.userId);
+    console.log('[SubscriptionService] Subscription ID:', params.subscriptionId);
+    console.log('[SubscriptionService] Plan:', params.plan);
+    console.log('[SubscriptionService] Status:', params.status);
+
     await this.env.DB.prepare(`
       UPDATE users
       SET
@@ -92,6 +98,7 @@ export class SubscriptionService {
         customer_id = ?,
         subscription_plan = ?,
         subscription_status = ?,
+        plan = ?,
         subscription_current_period_start = ?,
         subscription_current_period_end = ?,
         subscription_cancel_at_period_end = ?,
@@ -102,11 +109,14 @@ export class SubscriptionService {
       params.customerId,
       params.plan,
       params.status,
+      params.plan,  // Also update the main plan field!
       params.currentPeriodStart,
       params.currentPeriodEnd,
       params.cancelAtPeriodEnd ? 1 : 0,
       params.userId
     ).run();
+
+    console.log('[SubscriptionService] ✅ User subscription updated successfully');
   }
 
   /**
