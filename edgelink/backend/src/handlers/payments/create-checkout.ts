@@ -60,7 +60,8 @@ export async function handleCreateCheckout(request: Request, env: Env, userId: s
     }
 
     // Initialize DodoPayments service
-    const baseUrl = env.DODO_BASE_URL || 'https://api.dodopayments.com/v1';
+    // Default to test mode URL - use DODO_BASE_URL secret to override
+    const baseUrl = env.DODO_BASE_URL || 'https://test.dodopayments.com';
     console.log('[CreateCheckout] Using DodoPayments base URL:', baseUrl);
     console.log('[CreateCheckout] Product ID:', env.DODO_PRODUCT_ID);
 

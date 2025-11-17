@@ -13,10 +13,13 @@ export async function handleDodoPaymentsWebhook(request: Request, env: Env): Pro
     const payload = await request.text();
 
     // Verify webhook signature
+    // Default to test mode URL - use DODO_BASE_URL secret to override
+    const baseUrl = env.DODO_BASE_URL || 'https://test.dodopayments.com';
+
     const dodoPayments = new DodoPaymentsService({
       apiKey: env.DODO_API_KEY,
       webhookSecret: env.DODO_WEBHOOK_SECRET,
-      baseUrl: env.DODO_BASE_URL || 'https://api.dodopayments.com/v1'
+      baseUrl: baseUrl
     });
 
     const isValid = await dodoPayments.verifyWebhookSignature(payload, signature);
