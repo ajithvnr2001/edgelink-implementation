@@ -9,20 +9,53 @@ import { SubscriptionService } from '../../services/payments/subscriptionService
 
 export async function handleDodoPaymentsWebhook(request: Request, env: Env): Promise<Response> {
   try {
-    // DodoPayments uses Svix for webhook delivery
-    // Get Svix headers
-    const svixId = request.headers.get('svix-id');
-    const svixTimestamp = request.headers.get('svix-timestamp');
-    const svixSignature = request.headers.get('svix-signature');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('[DodoWebhook] Received webhook request');
 
-    console.log('[DodoWebhook] Received webhook');
-    console.log('[DodoWebhook] Svix ID:', svixId);
-    console.log('[DodoWebhook] Svix Timestamp:', svixTimestamp);
-    console.log('[DodoWebhook] Svix Signature present:', !!svixSignature);
+    // Log ALL headers to debug the issue
+    console.log('[DodoWebhook] ALL INCOMING HEADERS:');
+    for (const [key, value] of request.headers.entries()) {
+      console.log(`  ${key}: ${value}`);
+    }
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    // DodoPayments uses Svix for webhook delivery
+    // Try different header name variations (Cloudflare may lowercase headers)
+    let svixId = request.headers.get('svix-id') ||
+                 request.headers.get('Svix-Id') ||
+                 request.headers.get('SVIX-ID') ||
+                 request.headers.get('webhook-id') ||
+                 request.headers.get('x-svix-id');
+
+    let svixTimestamp = request.headers.get('svix-timestamp') ||
+                        request.headers.get('Svix-Timestamp') ||
+                        request.headers.get('SVIX-TIMESTAMP') ||
+                        request.headers.get('webhook-timestamp') ||
+                        request.headers.get('x-svix-timestamp');
+
+    let svixSignature = request.headers.get('svix-signature') ||
+                        request.headers.get('Svix-Signature') ||
+                        request.headers.get('SVIX-SIGNATURE') ||
+                        request.headers.get('webhook-signature') ||
+                        request.headers.get('x-svix-signature');
+
+    console.log('[DodoWebhook] Extracted headers:');
+    console.log('  Svix ID:', svixId);
+    console.log('  Svix Timestamp:', svixTimestamp);
+    console.log('  Svix Signature present:', !!svixSignature);
+    console.log('  Svix Signature (first 50 chars):', svixSignature?.substring(0, 50));
 
     if (!svixId || !svixTimestamp || !svixSignature) {
-      console.error('[DodoWebhook] Missing Svix headers');
-      return new Response('Missing Svix headers', { status: 401 });
+      console.error('[DodoWebhook] ❌ Missing Svix headers after trying all variations');
+      console.error('[DodoWebhook] This suggests Cloudflare may be stripping headers or using different names');
+      return new Response(JSON.stringify({
+        error: 'Missing Svix headers',
+        type: 'DodoWebhook',
+        message: 'Missing Svix headers'
+      }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const payload = await request.text();
