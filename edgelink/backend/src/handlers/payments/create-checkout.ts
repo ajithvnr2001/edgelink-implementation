@@ -51,7 +51,7 @@ export async function handleCreateCheckout(request: Request, env: Env, userId: s
 
     // Get user data
     const user = await env.DB.prepare(
-      'SELECT user_id, email, customer_id FROM users WHERE user_id = ?'
+      'SELECT user_id, email, name, customer_id FROM users WHERE user_id = ?'
     ).bind(userId).first();
 
     if (!user) {
@@ -82,8 +82,12 @@ export async function handleCreateCheckout(request: Request, env: Env, userId: s
     // Create or get customer
     let customerId = user.customer_id as string | undefined;
     if (!customerId) {
+      // Generate name from email if user doesn't have one
+      const customerName = (user.name as string) || (user.email as string).split('@')[0];
+
       const customer = await dodoPayments.createCustomer({
         email: user.email as string,
+        name: customerName,
         metadata: { user_id: userId }
       });
       customerId = customer.id;
