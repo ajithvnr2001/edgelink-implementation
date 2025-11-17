@@ -87,87 +87,121 @@ export async function handleDodoPaymentsWebhook(request: Request, env: Env): Pro
 
     const event = JSON.parse(payload);
     console.log('[DodoWebhook] Event type:', event.type);
+    console.log('[DodoWebhook] Event structure:', JSON.stringify({
+      id: event.id,
+      type: event.type,
+      business_id: event.business_id,
+      data_keys: Object.keys(event.data || {}),
+      data_sample: {
+        customer_id: event.data?.customer_id,
+        subscription_id: event.data?.subscription_id,
+        payment_id: event.data?.payment_id,
+        id: event.data?.id
+      }
+    }));
 
-    // Log webhook event
+    // Log webhook event - handle undefined values properly
+    const eventId = event.id || event.data?.id || crypto.randomUUID();
+    const customerId = event.data?.customer_id || null;
+    const subscriptionId = event.data?.subscription_id || event.data?.id || null;
+    const paymentId = event.data?.payment_id || event.data?.id || null;
+
+    console.log('[DodoWebhook] Inserting webhook event:', {
+      eventId,
+      eventType: event.type,
+      customerId,
+      subscriptionId,
+      paymentId
+    });
+
     await env.DB.prepare(`
       INSERT INTO webhook_events (event_id, event_type, customer_id, subscription_id, payment_id, payload, processed)
       VALUES (?, ?, ?, ?, ?, ?, 0)
     `).bind(
-      event.id || crypto.randomUUID(),
-      event.type,
-      event.data?.customer_id || null,
-      event.data?.subscription_id || null,
-      event.data?.payment_id || null,
+      eventId,
+      event.type || 'unknown',
+      customerId,
+      subscriptionId,
+      paymentId,
       payload
     ).run();
 
     const subscriptionService = new SubscriptionService(env, dodoPayments);
 
     // Handle different event types
-    switch (event.type) {
-      // Payment events
-      case 'payment.succeeded':
-        await handlePaymentSucceeded(event, env, subscriptionService);
-        break;
+    try {
+      switch (event.type) {
+        // Payment events
+        case 'payment.succeeded':
+          await handlePaymentSucceeded(event, env, subscriptionService);
+          break;
 
-      case 'payment.failed':
-        await handlePaymentFailed(event, env, subscriptionService);
-        break;
+        case 'payment.failed':
+          await handlePaymentFailed(event, env, subscriptionService);
+          break;
 
-      case 'payment.processing':
-        await handlePaymentProcessing(event, env, subscriptionService);
-        break;
+        case 'payment.processing':
+          await handlePaymentProcessing(event, env, subscriptionService);
+          break;
 
-      case 'payment.cancelled':
-        await handlePaymentCancelled(event, env, subscriptionService);
-        break;
+        case 'payment.cancelled':
+          await handlePaymentCancelled(event, env, subscriptionService);
+          break;
 
-      // Subscription events
-      case 'subscription.active':
-        await handleSubscriptionActive(event, env, subscriptionService);
-        break;
+        // Subscription events
+        case 'subscription.active':
+          await handleSubscriptionActive(event, env, subscriptionService);
+          break;
 
-      case 'subscription.renewed':
-        await handleSubscriptionRenewed(event, env, subscriptionService);
-        break;
+        case 'subscription.renewed':
+          await handleSubscriptionRenewed(event, env, subscriptionService);
+          break;
 
-      case 'subscription.cancelled':
-        await handleSubscriptionCancelled(event, env, subscriptionService);
-        break;
+        case 'subscription.cancelled':
+          await handleSubscriptionCancelled(event, env, subscriptionService);
+          break;
 
-      case 'subscription.expired':
-        await handleSubscriptionExpired(event, env, subscriptionService);
-        break;
+        case 'subscription.expired':
+          await handleSubscriptionExpired(event, env, subscriptionService);
+          break;
 
-      case 'subscription.failed':
-        await handleSubscriptionFailed(event, env, subscriptionService);
-        break;
+        case 'subscription.failed':
+          await handleSubscriptionFailed(event, env, subscriptionService);
+          break;
 
-      case 'subscription.on_hold':
-        await handleSubscriptionOnHold(event, env, subscriptionService);
-        break;
+        case 'subscription.on_hold':
+          await handleSubscriptionOnHold(event, env, subscriptionService);
+          break;
 
-      case 'subscription.plan_changed':
-        await handleSubscriptionPlanChanged(event, env, subscriptionService);
-        break;
+        case 'subscription.plan_changed':
+          await handleSubscriptionPlanChanged(event, env, subscriptionService);
+          break;
 
-      // Refund events
-      case 'refund.succeeded':
-        await handleRefundSucceeded(event, env, subscriptionService);
-        break;
+        // Refund events
+        case 'refund.succeeded':
+          await handleRefundSucceeded(event, env, subscriptionService);
+          break;
 
-      case 'refund.failed':
-        await handleRefundFailed(event, env, subscriptionService);
-        break;
+        case 'refund.failed':
+          await handleRefundFailed(event, env, subscriptionService);
+          break;
 
-      default:
-        console.log(`[DodoWebhook] Unhandled event type: ${event.type}`);
+        default:
+          console.log(`[DodoWebhook] Unhandled event type: ${event.type}`);
+      }
+
+      // Mark as processed
+      await env.DB.prepare(
+        'UPDATE webhook_events SET processed = 1 WHERE event_id = ?'
+      ).bind(eventId).run();
+
+      console.log('[DodoWebhook] Event processed successfully');
+    } catch (handlerError) {
+      console.error('[DodoWebhook] Error processing event:', handlerError);
+      console.error('[DodoWebhook] Event data:', JSON.stringify(event.data, null, 2));
+      // Don't mark as processed if handler failed
+      throw handlerError;
     }
-
-    // Mark as processed
-    await env.DB.prepare(
-      'UPDATE webhook_events SET processed = 1 WHERE event_id = ?'
-    ).bind(event.id).run();
 
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
@@ -187,24 +221,43 @@ export async function handleDodoPaymentsWebhook(request: Request, env: Env): Pro
  */
 async function handleSubscriptionActive(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
   const subscription = event.data;
+
+  console.log('[DodoWebhook] handleSubscriptionActive - subscription data:', JSON.stringify(subscription, null, 2));
+
   const userId = subscription.metadata?.user_id;
 
   if (!userId) {
     console.error('[DodoWebhook] No user_id in subscription metadata');
+    console.error('[DodoWebhook] Available metadata:', JSON.stringify(subscription.metadata));
+    return;
+  }
+
+  // Validate required fields
+  if (!subscription.id) {
+    console.error('[DodoWebhook] Missing subscription.id');
+    return;
+  }
+
+  if (!subscription.customer_id) {
+    console.error('[DodoWebhook] Missing customer_id');
     return;
   }
 
   // Activate subscription
-  await subscriptionService.updateSubscriptionFromWebhook({
+  const updateParams = {
     userId,
     subscriptionId: subscription.id,
     customerId: subscription.customer_id,
     plan: 'pro',
     status: 'active',
-    currentPeriodStart: subscription.current_period_start,
-    currentPeriodEnd: subscription.current_period_end,
-    cancelAtPeriodEnd: false
-  });
+    currentPeriodStart: subscription.current_period_start || Math.floor(Date.now() / 1000),
+    currentPeriodEnd: subscription.current_period_end || Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60), // Default 30 days
+    cancelAtPeriodEnd: subscription.cancel_at_period_end || false
+  };
+
+  console.log('[DodoWebhook] Updating subscription with params:', updateParams);
+
+  await subscriptionService.updateSubscriptionFromWebhook(updateParams);
 
   console.log(`[DodoWebhook] Subscription activated for user ${userId}`);
 }
@@ -214,40 +267,63 @@ async function handleSubscriptionActive(event: any, env: Env, subscriptionServic
  */
 async function handleSubscriptionRenewed(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
   const subscription = event.data;
+
+  console.log('[DodoWebhook] handleSubscriptionRenewed - subscription data:', JSON.stringify(subscription, null, 2));
+
   const userId = subscription.metadata?.user_id;
 
   if (!userId) {
     console.error('[DodoWebhook] No user_id in subscription metadata');
+    console.error('[DodoWebhook] Available metadata:', JSON.stringify(subscription.metadata));
+    return;
+  }
+
+  // Validate required fields
+  if (!subscription.id) {
+    console.error('[DodoWebhook] Missing subscription.id');
+    return;
+  }
+
+  if (!subscription.customer_id) {
+    console.error('[DodoWebhook] Missing customer_id');
     return;
   }
 
   // Update subscription period
-  await subscriptionService.updateSubscriptionFromWebhook({
+  const updateParams = {
     userId,
     subscriptionId: subscription.id,
     customerId: subscription.customer_id,
     plan: 'pro',
     status: 'active',
-    currentPeriodStart: subscription.current_period_start,
-    currentPeriodEnd: subscription.current_period_end,
-    cancelAtPeriodEnd: false
-  });
+    currentPeriodStart: subscription.current_period_start || Math.floor(Date.now() / 1000),
+    currentPeriodEnd: subscription.current_period_end || Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60),
+    cancelAtPeriodEnd: subscription.cancel_at_period_end || false
+  };
+
+  console.log('[DodoWebhook] Updating subscription with params:', updateParams);
+
+  await subscriptionService.updateSubscriptionFromWebhook(updateParams);
 
   // Record payment if available
-  if (subscription.latest_payment) {
-    await subscriptionService.recordPayment({
+  if (subscription.latest_payment && subscription.latest_payment.id) {
+    const recordParams = {
       userId,
       paymentId: subscription.latest_payment.id,
       customerId: subscription.customer_id,
       subscriptionId: subscription.id,
-      amount: subscription.latest_payment.amount,
-      currency: subscription.latest_payment.currency,
+      amount: subscription.latest_payment.amount || 0,
+      currency: subscription.latest_payment.currency || 'USD',
       status: 'succeeded',
       plan: 'pro',
-      invoiceUrl: subscription.latest_payment.invoice_url,
-      receiptUrl: subscription.latest_payment.receipt_url,
-      metadata: subscription.metadata
-    });
+      invoiceUrl: subscription.latest_payment.invoice_url || undefined,
+      receiptUrl: subscription.latest_payment.receipt_url || undefined,
+      metadata: subscription.metadata || {}
+    };
+
+    console.log('[DodoWebhook] Recording payment with params:', recordParams);
+
+    await subscriptionService.recordPayment(recordParams);
   }
 
   console.log(`[DodoWebhook] Subscription renewed for user ${userId}`);
@@ -385,27 +461,46 @@ async function handleSubscriptionPlanChanged(event: any, env: Env, subscriptionS
  */
 async function handlePaymentSucceeded(event: any, env: Env, subscriptionService: SubscriptionService): Promise<void> {
   const payment = event.data;
+
+  console.log('[DodoWebhook] handlePaymentSucceeded - payment data:', JSON.stringify(payment, null, 2));
+
   const userId = payment.metadata?.user_id;
 
   if (!userId) {
     console.error('[DodoWebhook] No user_id in payment metadata');
+    console.error('[DodoWebhook] Available metadata:', JSON.stringify(payment.metadata));
+    return;
+  }
+
+  // Validate required fields
+  if (!payment.id) {
+    console.error('[DodoWebhook] Missing payment.id');
+    return;
+  }
+
+  if (!payment.customer_id) {
+    console.error('[DodoWebhook] Missing customer_id');
     return;
   }
 
   // Record successful payment
-  await subscriptionService.recordPayment({
+  const recordParams = {
     userId,
     paymentId: payment.id,
     customerId: payment.customer_id,
-    subscriptionId: payment.subscription_id,
-    amount: payment.amount,
-    currency: payment.currency,
+    subscriptionId: payment.subscription_id || undefined,
+    amount: payment.amount || 0,
+    currency: payment.currency || 'USD',
     status: 'succeeded',
     plan: 'pro',
-    invoiceUrl: payment.invoice_url,
-    receiptUrl: payment.receipt_url,
-    metadata: payment.metadata
-  });
+    invoiceUrl: payment.invoice_url || undefined,
+    receiptUrl: payment.receipt_url || undefined,
+    metadata: payment.metadata || {}
+  };
+
+  console.log('[DodoWebhook] Recording payment with params:', recordParams);
+
+  await subscriptionService.recordPayment(recordParams);
 
   console.log(`[DodoWebhook] Payment succeeded for user ${userId}: ${payment.amount} ${payment.currency}`);
 }
