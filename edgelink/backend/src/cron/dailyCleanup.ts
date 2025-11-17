@@ -25,7 +25,6 @@ export async function dailyCleanup(env: Env): Promise<void> {
   let accountsDeleted = 0;
   let tokensDeleted = 0;
   let inactiveLinksDeleted = 0;
-  let inactiveLinksWarned = 0;
 
   try {
     // ========================================
@@ -123,12 +122,12 @@ export async function dailyCleanup(env: Env): Promise<void> {
     const inactiveLinkCleanup = new InactiveLinkCleanupService(env);
     const inactiveLinkResult = await inactiveLinkCleanup.run();
 
-    inactiveLinksWarned = inactiveLinkResult.warningsSent;
     inactiveLinksDeleted = inactiveLinkResult.linksDeleted;
 
     console.log(`[Cron] Inactive links cleanup:
-      - Warnings sent: ${inactiveLinksWarned}
-      - Links deleted: ${inactiveLinksDeleted}
+      - Free tier deleted: ${inactiveLinkResult.freeDeleted}
+      - Pro tier deleted: ${inactiveLinkResult.proDeleted}
+      - Total deleted: ${inactiveLinksDeleted}
     `);
 
     // ========================================
@@ -138,7 +137,6 @@ export async function dailyCleanup(env: Env): Promise<void> {
       - Account warnings sent: ${warningsSent}
       - Accounts deleted: ${accountsDeleted}
       - Expired tokens cleaned: ${tokensDeleted}
-      - Inactive link warnings: ${inactiveLinksWarned}
       - Inactive links deleted: ${inactiveLinksDeleted}
     `);
   } catch (error) {
