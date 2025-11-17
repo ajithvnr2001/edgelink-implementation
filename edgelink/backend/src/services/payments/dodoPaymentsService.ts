@@ -165,7 +165,11 @@ export class DodoPaymentsService {
       throw new Error(`DodoPayments API error: ${errorMessage}. URL: ${url}`);
     }
 
-    return await response.json();
+    const customer = await response.json();
+    console.log('[DodoPayments] Customer created successfully:', JSON.stringify(customer));
+    console.log('[DodoPayments] Customer ID:', customer.customer_id || customer.id);
+
+    return customer;
   }
 
   /**

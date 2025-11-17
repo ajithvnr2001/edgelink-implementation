@@ -90,12 +90,23 @@ export async function handleCreateCheckout(request: Request, env: Env, userId: s
         name: customerName,
         metadata: { user_id: userId }
       });
-      customerId = customer.id;
+
+      // DodoPayments may return either 'customer_id' or 'id'
+      customerId = (customer as any).customer_id || (customer as any).id;
+
+      if (!customerId) {
+        console.error('[CreateCheckout] Customer creation succeeded but no customer ID in response:', customer);
+        throw new Error('Failed to get customer ID from DodoPayments response');
+      }
+
+      console.log('[CreateCheckout] Extracted customer ID:', customerId);
 
       // Update user with customer ID
       await env.DB.prepare(
         'UPDATE users SET customer_id = ? WHERE user_id = ?'
       ).bind(customerId, userId).run();
+
+      console.log('[CreateCheckout] Updated user with customer ID');
     }
 
     // Create checkout session
