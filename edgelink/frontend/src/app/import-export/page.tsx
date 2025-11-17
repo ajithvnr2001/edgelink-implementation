@@ -31,7 +31,7 @@ interface ImportResult {
 export default function ImportExportPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { isLoaded, isSignedIn, getToken, user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'import' | 'export'>('import');
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -151,6 +151,9 @@ https://example.com/blog,,,,,`;
     document.body.removeChild(a);
   };
 
+  // Check if user is Pro
+  const isPro = user?.plan === 'pro';
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4">
       <div className="max-w-5xl mx-auto py-8">
@@ -166,34 +169,69 @@ https://example.com/blog,,,,,`;
           <p className="text-gray-400">Manage your links in bulk</p>
         </div>
 
-        {/* Tabs */}
-        <div className="bg-gray-800 rounded-lg mb-6">
-          <div className="flex border-b border-gray-700">
-            <button
-              onClick={() => setActiveTab('import')}
-              className={`flex-1 py-4 px-6 font-medium ${
-                activeTab === 'import'
-                  ? 'text-blue-500 border-b-2 border-blue-500'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              📥 Import Links
-            </button>
-            <button
-              onClick={() => setActiveTab('export')}
-              className={`flex-1 py-4 px-6 font-medium ${
-                activeTab === 'export'
-                  ? 'text-blue-500 border-b-2 border-blue-500'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              📤 Export Links
-            </button>
+        {/* Free Plan Restriction Banner */}
+        {!isPro && (
+          <div className="mb-6 bg-blue-900/20 border border-blue-700/40 rounded-lg p-8">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold text-white mb-2">
+                  🔒 Bulk Operations - Pro Feature
+                </h3>
+                <p className="text-gray-300 mb-4">
+                  Import/Export functionality is only available on the Pro plan. Upgrade to manage your links in bulk.
+                </p>
+                <ul className="text-sm text-gray-400 space-y-2 mb-6 ml-4">
+                  <li>✓ Import up to 1,000 links at once from CSV</li>
+                  <li>✓ Export all your links to CSV or JSON format</li>
+                  <li>✓ Bulk edit links with custom slugs, domains, and expiration</li>
+                  <li>✓ Plus all Pro features (100K links, 500K clicks/month, analytics, custom domains)</li>
+                </ul>
+                <button
+                  onClick={() => router.push('/pricing')}
+                  className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                >
+                  Upgrade to Pro - $15/month
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Import Tab */}
-        {activeTab === 'import' && (
+        {/* Tabs - Only show for Pro users */}
+        {isPro && (
+          <div className="bg-gray-800 rounded-lg mb-6">
+            <div className="flex border-b border-gray-700">
+              <button
+                onClick={() => setActiveTab('import')}
+                className={`flex-1 py-4 px-6 font-medium ${
+                  activeTab === 'import'
+                    ? 'text-blue-500 border-b-2 border-blue-500'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                📥 Import Links
+              </button>
+              <button
+                onClick={() => setActiveTab('export')}
+                className={`flex-1 py-4 px-6 font-medium ${
+                  activeTab === 'export'
+                    ? 'text-blue-500 border-b-2 border-blue-500'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                📤 Export Links
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Import Tab - Only show for Pro users */}
+        {isPro && activeTab === 'import' && (
           <div className="space-y-6">
             {/* Instructions */}
             <div className="bg-blue-900/20 border border-blue-500 rounded-lg p-6">
@@ -340,8 +378,8 @@ https://example.com/blog,,,,,`;
           </div>
         )}
 
-        {/* Export Tab */}
-        {activeTab === 'export' && (
+        {/* Export Tab - Only show for Pro users */}
+        {isPro && activeTab === 'export' && (
           <div className="space-y-6">
             {/* Export Format */}
             <div className="bg-gray-800 rounded-lg p-6">
