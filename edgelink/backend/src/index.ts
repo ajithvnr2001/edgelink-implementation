@@ -342,17 +342,24 @@ export default {
       }
 
       // Get detailed analytics for a link (authenticated)
+      // Exclude reserved paths: overview, summary, groups
       if (path.startsWith('/api/analytics/') && path.split('/').length === 4 && method === 'GET') {
-        const { user, error } = await requireAuth(request, env);
-        if (error) {
-          return addCorsHeaders(error, corsHeaders);
-        }
-
         const slug = path.split('/')[3];
-        const url = new URL(request.url);
-        const timeRange = (url.searchParams.get('range') as '7d' | '30d') || '7d';
-        const response = await handleGetAnalytics(env, user.sub, slug, timeRange);
-        return addCorsHeaders(response, corsHeaders);
+
+        // Skip reserved paths - they have their own handlers
+        if (slug === 'overview' || slug === 'summary' || slug === 'groups') {
+          // Let it fall through to the specific handlers below
+        } else {
+          const { user, error } = await requireAuth(request, env);
+          if (error) {
+            return addCorsHeaders(error, corsHeaders);
+          }
+
+          const url = new URL(request.url);
+          const timeRange = (url.searchParams.get('range') as '7d' | '30d') || '7d';
+          const response = await handleGetAnalytics(env, user.sub, slug, timeRange);
+          return addCorsHeaders(response, corsHeaders);
+        }
       }
 
       // Get analytics summary (authenticated)
