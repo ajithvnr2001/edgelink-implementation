@@ -12,6 +12,7 @@ import {
   LinkIcon,
   FolderIcon,
   ArrowTopRightOnSquareIcon,
+  ArrowLeftIcon,
 } from '@heroicons/react/24/outline'
 import {
   LineChart,
@@ -135,6 +136,15 @@ export default function OverallAnalyticsPage() {
       <MobileNav />
 
       <div className="container mx-auto px-4 py-6">
+        {/* Back Button */}
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-4 transition-colors"
+        >
+          <ArrowLeftIcon className="h-4 w-4" />
+          Back to Dashboard
+        </Link>
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
