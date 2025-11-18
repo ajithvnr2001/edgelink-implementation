@@ -422,7 +422,7 @@ export default function DashboardPage() {
     }
   }
 
-  const downloadQRCode = async (format: 'svg' | 'png') => {
+  const downloadQRCode = async () => {
     if (!qrCodeLink) return
 
     try {
@@ -437,7 +437,7 @@ export default function DashboardPage() {
         'Authorization': `Bearer ${accessToken}`
       }
 
-      const response = await fetch(`${API_BASE}/api/links/${qrCodeLink.slug}/qr?format=${format}`, {
+      const response = await fetch(`${API_BASE}/api/links/${qrCodeLink.slug}/qr`, {
         method: 'GET',
         headers
       })
@@ -450,7 +450,7 @@ export default function DashboardPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${qrCodeLink.slug}-qr.${format}`
+      a.download = `${qrCodeLink.slug}-qr.svg`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -1561,18 +1561,12 @@ export default function DashboardPage() {
 
               {/* Download Options */}
               {qrCodeData && !qrCodeLoading && (
-                <div className="flex justify-center space-x-3 pt-4">
+                <div className="flex justify-center pt-4">
                   <button
-                    onClick={() => downloadQRCode('svg')}
-                    className="btn-secondary"
+                    onClick={() => downloadQRCode()}
+                    className="btn-primary px-6"
                   >
-                    📥 Download SVG
-                  </button>
-                  <button
-                    onClick={() => downloadQRCode('png')}
-                    className="btn-primary"
-                  >
-                    📥 Download PNG
+                    📥 Download QR Code
                   </button>
                 </div>
               )}
@@ -1581,8 +1575,8 @@ export default function DashboardPage() {
               <div className="bg-primary-500/10 border border-primary-500/30 rounded-lg p-4">
                 <p className="text-sm text-gray-300">
                   <span className="font-semibold text-primary-400">Pro Tip:</span> Share this QR code on
-                  printed materials, social media, or presentations. Anyone who scans it will be redirected
-                  to your destination URL.
+                  printed materials, social media, or presentations. SVG format works everywhere and scales
+                  perfectly to any size.
                 </p>
               </div>
             </div>
