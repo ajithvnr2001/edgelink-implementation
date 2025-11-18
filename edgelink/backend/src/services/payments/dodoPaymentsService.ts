@@ -226,8 +226,8 @@ export class DodoPaymentsService {
     returnUrl: string;
   }): Promise<{ url: string }> {
     // DodoPayments SDK uses: client.customers.customerPortal.create('cus_123')
-    // Which maps to: POST /customers/{customer_id}/customer-portal
-    const url = `${this.baseUrl}/customers/${params.customerId}/customer-portal`;
+    // Which maps to: POST /customers/{customer_id}/customer-portal/session
+    const url = `${this.baseUrl}/customers/${params.customerId}/customer-portal/session`;
     console.log('[DodoPayments] Creating customer portal session at:', url);
     console.log('[DodoPayments] Customer ID:', params.customerId);
     console.log('[DodoPayments] Return URL:', params.returnUrl);
