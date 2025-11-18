@@ -156,7 +156,7 @@ export default function UsagePage() {
             <div>
               <h1 className="text-2xl font-bold text-white">Usage & Limits</h1>
               <p className="text-gray-400 mt-1">
-                {usage.plan === 'pro' ? 'Pro Plan' : 'Free Plan'} - Track your usage and limits
+                {usage.plan === 'lifetime' ? 'Lifetime Plan' : usage.plan === 'pro' ? 'Pro Plan' : 'Free Plan'} - Track your usage and limits
               </p>
             </div>
 
@@ -171,13 +171,57 @@ export default function UsagePage() {
           </div>
         </div>
 
-        {/* Reset Notice */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <ArrowPathIcon className="h-4 w-4" />
-            <span>Monthly limits reset on <strong className="text-white">{formatResetDate(usage.resetDate)}</strong></span>
+        {/* Subscription Info for Pro Users */}
+        {usage.subscription && (
+          <div className={`border rounded-lg p-4 mb-6 ${
+            usage.subscription.cancelAtPeriodEnd
+              ? 'bg-yellow-500/10 border-yellow-500/30'
+              : 'bg-gray-800 border-gray-700'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-sm">
+                  <ArrowPathIcon className="h-4 w-4 text-gray-400" />
+                  <span className="text-gray-400">
+                    Billing cycle: <strong className="text-white">{formatResetDate(usage.subscription.periodStart)}</strong> - <strong className="text-white">{formatResetDate(usage.subscription.periodEnd)}</strong>
+                  </span>
+                </div>
+                {usage.subscription.cancelAtPeriodEnd && (
+                  <p className="text-yellow-500 text-sm mt-2">
+                    Your subscription will cancel on {formatResetDate(usage.subscription.periodEnd)}. Pro features will be disabled after this date.
+                  </p>
+                )}
+              </div>
+              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                usage.subscription.status === 'active'
+                  ? 'bg-green-500/20 text-green-400'
+                  : 'bg-red-500/20 text-red-400'
+              }`}>
+                {usage.subscription.status}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Reset Notice for Free Users */}
+        {!usage.subscription && usage.plan !== 'lifetime' && (
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              <ArrowPathIcon className="h-4 w-4" />
+              <span>Monthly limits reset on <strong className="text-white">{formatResetDate(usage.resetDate)}</strong></span>
+            </div>
+          </div>
+        )}
+
+        {/* Lifetime Notice */}
+        {usage.plan === 'lifetime' && (
+          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2 text-sm text-green-400">
+              <CheckCircleIcon className="h-4 w-4" />
+              <span>You have lifetime access - no monthly limits or renewal required!</span>
+            </div>
+          </div>
+        )}
 
         {/* Usage Metrics */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-6">

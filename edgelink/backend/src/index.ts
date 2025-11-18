@@ -293,7 +293,7 @@ export default {
       }
 
       // Update link (authenticated) - Week 4 Enhanced
-      if (path.startsWith('/api/links/') && !path.includes('/qr') && method === 'PUT') {
+      if (path.startsWith('/api/links/') && !path.includes('/qr') && !path.endsWith('/group') && method === 'PUT') {
         const { user, error } = await requireAuth(request, env);
         if (error) {
           return addCorsHeaders(error, corsHeaders);

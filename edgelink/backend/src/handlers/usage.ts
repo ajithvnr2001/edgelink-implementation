@@ -37,6 +37,12 @@ interface UsageData {
     groups: boolean;
   };
   resetDate: string;
+  subscription?: {
+    status: string;
+    periodStart: string;
+    periodEnd: string;
+    cancelAtPeriodEnd: boolean;
+  };
 }
 
 export async function handleGetUsage(
@@ -48,6 +54,24 @@ export async function handleGetUsage(
   try {
     const limits = PlanLimitsService.getLimits(plan);
 
+    // Get user subscription data
+    const userResult = await env.DB.prepare(`
+      SELECT
+        subscription_status,
+        subscription_current_period_start,
+        subscription_current_period_end,
+        subscription_cancel_at_period_end,
+        lifetime_access
+      FROM users
+      WHERE user_id = ?
+    `).bind(userId).first() as {
+      subscription_status: string | null;
+      subscription_current_period_start: number | null;
+      subscription_current_period_end: number | null;
+      subscription_cancel_at_period_end: number | null;
+      lifetime_access: number | null;
+    } | null;
+
     // Get current link count
     const linksResult = await env.DB.prepare(`
       SELECT COUNT(*) as count
@@ -55,9 +79,7 @@ export async function handleGetUsage(
       WHERE user_id = ?
     `).bind(userId).first() as { count: number } | null;
 
-    // Get monthly clicks (all links created this month)
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
     const clicksResult = await env.DB.prepare(`
       SELECT COALESCE(SUM(click_count), 0) as total_clicks
@@ -86,11 +108,22 @@ export async function handleGetUsage(
       WHERE user_id = ?
     `).bind(userId).first() as { count: number } | null;
 
-    // Calculate reset date (first day of next month)
-    const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    // Calculate reset date based on subscription period for Pro users
+    let resetDate: Date;
+
+    if (plan === 'pro' && userResult?.subscription_current_period_end) {
+      // Pro users: reset date is end of current billing period
+      resetDate = new Date(userResult.subscription_current_period_end * 1000);
+    } else if (userResult?.lifetime_access === 1) {
+      // Lifetime users: no reset needed, set far future date
+      resetDate = new Date('2099-12-31');
+    } else {
+      // Free users: reset on first of next month
+      resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    }
 
     const usageData: UsageData = {
-      plan,
+      plan: userResult?.lifetime_access === 1 ? 'lifetime' : plan,
       limits: {
         maxLinks: limits.maxLinks,
         maxClicksPerMonth: limits.maxClicksPerMonth,
@@ -122,6 +155,20 @@ export async function handleGetUsage(
       },
       resetDate: resetDate.toISOString(),
     };
+
+    // Add subscription info for Pro users
+    if (plan === 'pro' && userResult) {
+      usageData.subscription = {
+        status: userResult.subscription_status || 'unknown',
+        periodStart: userResult.subscription_current_period_start
+          ? new Date(userResult.subscription_current_period_start * 1000).toISOString()
+          : '',
+        periodEnd: userResult.subscription_current_period_end
+          ? new Date(userResult.subscription_current_period_end * 1000).toISOString()
+          : '',
+        cancelAtPeriodEnd: userResult.subscription_cancel_at_period_end === 1,
+      };
+    }
 
     return new Response(JSON.stringify(usageData), {
       headers: { 'Content-Type': 'application/json' },
