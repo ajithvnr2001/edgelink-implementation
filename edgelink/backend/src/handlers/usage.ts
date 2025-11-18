@@ -79,11 +79,11 @@ export async function handleGetUsage(
       WHERE user_id = ? AND archived_at IS NULL
     `).bind(userId).first() as { count: number } | null;
 
-    // Get API keys count
+    // Get API keys count (keys are deleted when revoked, not marked)
     const apiKeysResult = await env.DB.prepare(`
       SELECT COUNT(*) as count
       FROM api_keys
-      WHERE user_id = ? AND revoked_at IS NULL
+      WHERE user_id = ?
     `).bind(userId).first() as { count: number } | null;
 
     // Calculate reset date (first day of next month)
