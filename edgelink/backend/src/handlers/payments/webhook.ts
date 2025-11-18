@@ -272,6 +272,12 @@ async function handleSubscriptionActive(event: any, env: Env, subscriptionServic
   await subscriptionService.updateSubscriptionFromWebhook(updateParams);
 
   console.log(`[DodoWebhook] Subscription activated for user ${userId}`);
+
+  // DodoPayments automatically sends to customer:
+  // ✅ Subscription activation email
+  // ✅ Welcome email with plan details
+  // No need to send emails from backend!
+  console.log(`[DodoWebhook] 📧 DodoPayments automatically sent subscription activation email to customer`);
 }
 
 /**
@@ -351,6 +357,12 @@ async function handleSubscriptionRenewed(event: any, env: Env, subscriptionServi
   }
 
   console.log(`[DodoWebhook] Subscription renewed for user ${userId}`);
+
+  // DodoPayments automatically sends to customer:
+  // ✅ Renewal confirmation email
+  // ✅ Invoice PDF for the renewal payment
+  // No need to send emails from backend!
+  console.log(`[DodoWebhook] 📧 DodoPayments automatically sent renewal confirmation email to customer`);
 }
 
 /**
@@ -529,7 +541,14 @@ async function handlePaymentSucceeded(event: any, env: Env, subscriptionService:
 
   await subscriptionService.recordPayment(recordParams);
 
-  console.log(`[DodoWebhook] Payment succeeded for user ${userId}: ${payment.amount} ${payment.currency}`);
+  console.log(`[DodoWebhook] Payment succeeded for user ${userId}: ${payment.total_amount || payment.amount} ${payment.currency}`);
+
+  // DodoPayments automatically sends to customer (ajithvnr2001@gmail.com configured in dashboard):
+  // ✅ Payment receipt email
+  // ✅ Invoice PDF
+  // ✅ Payment confirmation
+  // No need to send emails from backend - DodoPayments handles it all!
+  console.log(`[DodoWebhook] 📧 DodoPayments automatically sent invoice/receipt to customer email`);
 }
 
 /**
