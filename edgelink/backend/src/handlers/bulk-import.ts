@@ -14,6 +14,8 @@ interface ImportRow {
   expires_at?: string;
   utm_params?: string;
   password?: string;
+  group_id?: string;
+  group_name?: string;
 }
 
 interface ImportResult {
@@ -191,6 +193,12 @@ function parseCSV(csvData: string): ImportRow[] {
   const passwordIndex = header.findIndex(col =>
     col === 'password'
   );
+  const groupIdIndex = header.findIndex(col =>
+    col === 'group_id' || col === 'groupid'
+  );
+  const groupNameIndex = header.findIndex(col =>
+    col === 'group_name' || col === 'groupname' || col === 'group'
+  );
 
   // Parse data rows
   const rows: ImportRow[] = [];
@@ -224,6 +232,14 @@ function parseCSV(csvData: string): ImportRow[] {
 
     if (passwordIndex !== -1 && cells[passwordIndex]) {
       row.password = cells[passwordIndex].trim();
+    }
+
+    if (groupIdIndex !== -1 && cells[groupIdIndex]) {
+      row.group_id = cells[groupIdIndex].trim();
+    }
+
+    if (groupNameIndex !== -1 && cells[groupNameIndex]) {
+      row.group_name = cells[groupNameIndex].trim();
     }
 
     if (row.destination) {
@@ -281,6 +297,9 @@ async function importLinks(
     imported_links: []
   };
 
+  // Cache for group lookups by name
+  const groupNameCache: Map<string, string | null> = new Map();
+
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     const rowNumber = i + 2; // +2 for header and 0-index
@@ -324,17 +343,51 @@ async function importLinks(
         passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       }
 
+      // Resolve group_id
+      let groupId: string | null = null;
+      if (row.group_id) {
+        // Verify group belongs to user
+        const group = await env.DB.prepare(
+          'SELECT group_id FROM link_groups WHERE group_id = ? AND user_id = ?'
+        ).bind(row.group_id, userId).first();
+
+        if (group) {
+          groupId = row.group_id;
+        } else {
+          throw new Error(`Group ID "${row.group_id}" not found or not owned by you`);
+        }
+      } else if (row.group_name) {
+        // Look up group by name (use cache for efficiency)
+        if (groupNameCache.has(row.group_name)) {
+          groupId = groupNameCache.get(row.group_name) || null;
+        } else {
+          const group = await env.DB.prepare(
+            'SELECT group_id FROM link_groups WHERE name = ? AND user_id = ? AND archived_at IS NULL'
+          ).bind(row.group_name, userId).first();
+
+          if (group) {
+            groupId = group.group_id as string;
+            groupNameCache.set(row.group_name, groupId);
+          } else {
+            // Group not found, leave as ungrouped but warn
+            groupNameCache.set(row.group_name, null);
+            console.warn(`Group "${row.group_name}" not found for row ${rowNumber}, importing as ungrouped`);
+          }
+        }
+      }
+
       // Insert into D1
       await env.DB.prepare(`
         INSERT INTO links (
-          slug, user_id, destination, custom_domain,
+          slug, user_id, destination, custom_domain, group_id,
           expires_at, utm_params, password_hash, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `).bind(
         slug,
         userId,
         row.destination,
         row.custom_domain || null,
+        groupId,
         row.expires_at || null,
         row.utm_params || null,
         passwordHash
