@@ -539,7 +539,7 @@ export async function handleGenerateQR(
   userId: string,
   slug: string,
   userPlan: string,
-  format: 'svg' | 'png' = 'svg'
+  format: 'svg' = 'svg'
 ): Promise<Response> {
   // Check Pro plan
   if (userPlan !== 'pro') {
@@ -578,43 +578,21 @@ export async function handleGenerateQR(
     const domain = link.custom_domain || 'go.shortedbro.xyz';
     const shortUrl = `https://${domain}/${slug}`;
 
-    // Generate QR code using inline generator
+    // Generate QR code as SVG (only format supported in Cloudflare Workers)
     // Error correction level 'H' provides the highest error correction (~30%)
-    if (format === 'svg') {
-      const svg = generateQRCodeSVG(shortUrl, {
-        cellSize: 8,
-        margin: 4,
-        errorCorrection: 'H'
-      });
+    const svg = generateQRCodeSVG(shortUrl, {
+      cellSize: 8,
+      margin: 4,
+      errorCorrection: 'H'
+    });
 
-      return new Response(svg, {
-        status: 200,
-        headers: {
-          'Content-Type': 'image/svg+xml',
-          'Content-Disposition': `attachment; filename="${slug}-qr.svg"`
-        }
-      });
-    } else {
-      // For PNG format, generate data URL and convert to binary
-      const dataUrl = generateQRCodeDataURL(shortUrl, {
-        cellSize: 8,
-        margin: 4,
-        errorCorrection: 'H'
-      });
-
-      // Extract base64 data from data URL (format: data:image/svg+xml;base64,...)
-      const base64Data = dataUrl.split(',')[1];
-      const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-
-      // Return SVG as PNG (browsers will render it correctly)
-      return new Response(binaryData, {
-        status: 200,
-        headers: {
-          'Content-Type': 'image/svg+xml',
-          'Content-Disposition': `attachment; filename="${slug}-qr.svg"`
-        }
-      });
-    }
+    return new Response(svg, {
+      status: 200,
+      headers: {
+        'Content-Type': 'image/svg+xml',
+        'Content-Disposition': `attachment; filename="${slug}-qr.svg"`
+      }
+    });
   } catch (error) {
     console.error('Failed to generate QR code:', error);
     return new Response(
