@@ -635,6 +635,12 @@ export interface UsageData {
     groups: boolean;
   };
   resetDate: string;
+  subscription?: {
+    status: string;
+    periodStart: string;
+    periodEnd: string;
+    cancelAtPeriodEnd: boolean;
+  };
 }
 
 export async function getUsage(): Promise<UsageData> {
