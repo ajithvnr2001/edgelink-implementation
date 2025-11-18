@@ -1302,6 +1302,83 @@ useEffect(() => {
 
 ---
 
+## DodoPayments Email Notifications
+
+### How Email Notifications Work
+
+DodoPayments automatically handles all payment-related email notifications. **No email code is needed in the backend** - DodoPayments sends everything directly to customers.
+
+### Email Flow
+
+```
+Payment Completed → DodoPayments System
+                         ↓
+        ┌────────────────┴────────────────┐
+        ↓                                 ↓
+   Customer Email                   Merchant Email
+   (who paid)                    (ajithvnr2001@gmail.com)
+        ↓                                 ↓
+   - Payment receipt              - Invoice copy
+   - Invoice PDF                  - Payment notification
+   - Confirmation
+```
+
+### What DodoPayments Sends Automatically
+
+**To Customer (at their checkout email):**
+- ✅ Payment receipt email
+- ✅ Invoice PDF
+- ✅ Payment confirmation
+- ✅ Subscription activation email
+- ✅ Renewal confirmation emails
+
+**To Merchant (ajithvnr2001@gmail.com):**
+- ✅ Invoice copy
+- ✅ Payment notifications
+
+### Important: Test Mode vs Production Mode
+
+| Feature | Test Mode | Production Mode |
+|---------|-----------|-----------------|
+| Emails Sent | ❌ No real emails | ✅ Real emails sent |
+| Invoices Generated | ✅ Yes | ✅ Yes |
+| Webhooks Fired | ✅ Yes | ✅ Yes |
+
+**Test Mode Limitation:** DodoPayments does NOT send actual emails in test/sandbox mode (`https://test.dodopayments.com`) to prevent spam during development.
+
+**To receive real emails:** Switch to production mode (`https://live.dodopayments.com`) with real payment methods.
+
+### Configure Email Branding
+
+In DodoPayments Dashboard → Settings → Business Profile:
+1. Upload your **business logo** (appears on invoices)
+2. Add **brand display name** (shown in emails)
+3. Add **support email** (ajithvnr2001@gmail.com - for customer inquiries)
+
+### Backend Implementation
+
+The webhook handler only updates the database - no email sending code:
+
+```typescript
+// When payment.succeeded webhook is received:
+// 1. Record payment in database ✅
+// 2. Update user subscription status ✅
+// 3. DodoPayments sends emails automatically ✅ (no code needed)
+
+console.log(`[DodoWebhook] Payment succeeded for user ${userId}`);
+console.log(`[DodoWebhook] 📧 DodoPayments automatically sent invoice/receipt to customer`);
+```
+
+### Benefits
+
+- ✅ **Zero email costs** - completely free
+- ✅ **Professional invoices** with your branding
+- ✅ **Automatic delivery** - no code to maintain
+- ✅ **Legal compliance** - proper tax invoices
+- ✅ **Faster development** - one less integration
+
+---
+
 ## Pending Tasks
 
 ### ✅ Completed (Previously High Priority)
