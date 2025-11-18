@@ -157,6 +157,44 @@ export async function handleShorten(
       linkData.geo_routing = body.geo_routing;
     }
 
+    // Handle group assignment (Pro feature)
+    let groupId: string | null = null;
+    if (body.group_id) {
+      if (user.plan !== 'pro') {
+        return new Response(
+          JSON.stringify({
+            error: 'Link groups are a Pro feature',
+            code: 'PRO_FEATURE_REQUIRED'
+          }),
+          {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      // Verify group exists and belongs to user
+      const group = await env.DB.prepare(
+        'SELECT group_id FROM link_groups WHERE group_id = ? AND user_id = ? AND archived_at IS NULL'
+      ).bind(body.group_id, user.sub).first();
+
+      if (!group) {
+        return new Response(
+          JSON.stringify({
+            error: 'Group not found or not owned by you',
+            code: 'GROUP_NOT_FOUND'
+          }),
+          {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      groupId = body.group_id;
+      linkData.group_id = groupId;
+    }
+
     // Store in KV for fast redirects
     const expirationTtl = linkData.expires_at
       ? Math.floor((linkData.expires_at - now) / 1000)
@@ -171,15 +209,16 @@ export async function handleShorten(
     // Store in D1 for management
     await env.DB.prepare(`
       INSERT INTO links (
-        slug, user_id, destination, custom_domain,
+        slug, user_id, destination, custom_domain, group_id,
         created_at, updated_at, expires_at, timezone, max_clicks, click_count
       )
-      VALUES (?, ?, ?, ?, datetime('now'), datetime('now'), ?, ?, ?, 0)
+      VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'), ?, ?, ?, 0)
     `).bind(
       slug,
       user.sub,
       body.url,
       body.custom_domain || null,
+      groupId,
       body.expires_at || null,
       body.timezone || 'UTC',
       body.max_clicks || null
