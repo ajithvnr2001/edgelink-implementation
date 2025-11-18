@@ -6,6 +6,7 @@
 import type { Env } from '../types';
 import { generateSlug } from '../utils/slug';
 import { isValidURL } from '../utils/validation';
+import { PlanLimitsService } from '../services/payments/planLimits';
 
 interface ImportRow {
   destination: string;
@@ -46,6 +47,20 @@ export async function handleBulkImport(
   plan: string
 ): Promise<Response> {
   try {
+    // Check if user has bulk operations feature
+    if (!PlanLimitsService.hasFeatureAccess(plan, 'bulkOperations')) {
+      return new Response(
+        JSON.stringify({
+          error: 'Bulk import is a Pro feature. Upgrade to Pro to import links in bulk.',
+          code: 'PRO_REQUIRED'
+        }),
+        {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     const contentType = request.headers.get('content-type') || '';
 
     let csvData: string;
@@ -106,18 +121,19 @@ export async function handleBulkImport(
       );
     }
 
-    // Check limits
+    // Check limits using PlanLimitsService
     const userLinksCount = await env.DB.prepare(
       'SELECT COUNT(*) as count FROM links WHERE user_id = ?'
     ).bind(userId).first();
 
     const currentCount = (userLinksCount?.count as number) || 0;
-    const limit = plan === 'pro' ? 5000 : 500;
+    const planLimits = PlanLimitsService.getLimits(plan);
+    const maxLinks = planLimits.maxLinks;
 
-    if (currentCount + rows.length > limit) {
+    if (currentCount + rows.length > maxLinks) {
       return new Response(
         JSON.stringify({
-          error: `Import would exceed your plan limit. Current: ${currentCount}, Limit: ${limit}`,
+          error: `Import would exceed your plan limit. Current: ${currentCount}, Importing: ${rows.length}, Limit: ${maxLinks.toLocaleString()}. ${plan === 'free' ? 'Upgrade to Pro for 100,000 links.' : 'Contact us for Enterprise pricing.'}`,
           code: 'LIMIT_EXCEEDED'
         }),
         {

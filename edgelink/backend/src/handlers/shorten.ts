@@ -7,6 +7,7 @@ import type { Env, ShortenRequest, ShortenResponse, JWTPayload, LinkKVValue } fr
 import { generateSlugWithRetry } from '../utils/slug';
 import { isValidURL } from '../utils/validation';
 import { hashPassword } from '../utils/password';
+import { PlanLimitsService } from '../services/payments/planLimits';
 
 /**
  * Handle POST /api/shorten
@@ -87,6 +88,21 @@ export async function handleShorten(
     }
 
     // Authenticated user link creation
+    // Check if user can create more links
+    const canCreate = await PlanLimitsService.canCreateLink(env, user.sub, user.plan);
+    if (!canCreate.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: canCreate.reason,
+          code: 'LINK_LIMIT_REACHED'
+        }),
+        {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     // Add advanced features if provided
     if (body.expires_at) {
       // Convert from user's timezone to UTC

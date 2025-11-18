@@ -6,6 +6,7 @@
 
 import type { Env } from '../types';
 import { hashPassword } from '../utils/password';
+import { PlanLimitsService } from '../services/payments/planLimits';
 
 export interface APIKey {
   key_id: string;
@@ -26,9 +27,24 @@ export interface APIKey {
 export async function handleGenerateAPIKey(
   request: Request,
   env: Env,
-  userId: string
+  userId: string,
+  plan: string = 'free'
 ): Promise<Response> {
   try {
+    // Check if user has API access feature
+    if (!PlanLimitsService.hasFeatureAccess(plan, 'apiAccess')) {
+      return new Response(
+        JSON.stringify({
+          error: 'API access is a Pro feature. Upgrade to Pro to generate API keys.',
+          code: 'PRO_REQUIRED'
+        }),
+        {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     const body = await request.json() as { name?: string; expires_in_days?: number };
 
     const keyName = body.name || 'API Key';

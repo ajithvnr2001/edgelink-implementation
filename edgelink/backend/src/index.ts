@@ -420,7 +420,7 @@ export default {
           return addCorsHeaders(error, corsHeaders);
         }
 
-        const response = await handleGenerateAPIKey(request, env, user.sub);
+        const response = await handleGenerateAPIKey(request, env, user.sub, user.plan);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -660,7 +660,7 @@ export default {
         }
 
         const format = (url.searchParams.get('format') as 'csv' | 'json') || 'json';
-        const response = await handleExportLinks(env, user.sub, format);
+        const response = await handleExportLinks(env, user.sub, format, user.plan);
         return addCorsHeaders(response, corsHeaders);
       }
 

@@ -4,6 +4,7 @@
  */
 
 import type { Env } from '../types';
+import { PlanLimitsService } from '../services/payments/planLimits';
 
 /**
  * Handle GET /api/export/analytics/:slug
@@ -114,9 +115,24 @@ export async function handleExportAnalytics(
 export async function handleExportLinks(
   env: Env,
   userId: string,
-  format: 'csv' | 'json'
+  format: 'csv' | 'json',
+  plan: string = 'free'
 ): Promise<Response> {
   try {
+    // Check if user has bulk operations feature
+    if (!PlanLimitsService.hasFeatureAccess(plan, 'bulkOperations')) {
+      return new Response(
+        JSON.stringify({
+          error: 'Link export is a Pro feature. Upgrade to Pro to export your links.',
+          code: 'PRO_REQUIRED'
+        }),
+        {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     // Fetch all user links with group information
     const result = await env.DB.prepare(`
       SELECT
