@@ -170,7 +170,7 @@ export default function GroupAnalyticsPage() {
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={analytics.time_series}>
+                  <LineChart data={analytics.time_series || []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                     <XAxis
                       dataKey="date"
@@ -214,7 +214,7 @@ export default function GroupAnalyticsPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={analytics.devices}
+                        data={analytics.devices || []}
                         dataKey="clicks"
                         nameKey="device"
                         cx="50%"
@@ -225,7 +225,7 @@ export default function GroupAnalyticsPage() {
                         }
                         labelLine={false}
                       >
-                        {analytics.devices.map((_: any, index: number) => (
+                        {(analytics.devices || []).map((_: any, index: number) => (
                           <Cell
                             key={`cell-${index}`}
                             fill={CHART_COLORS[index % CHART_COLORS.length]}
@@ -252,7 +252,7 @@ export default function GroupAnalyticsPage() {
                 </h3>
                 <div className="h-48">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={analytics.countries.slice(0, 5)} layout="vertical">
+                    <BarChart data={(analytics.countries || []).slice(0, 5)} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                       <XAxis type="number" stroke="#9CA3AF" fontSize={12} />
                       <YAxis
@@ -283,7 +283,7 @@ export default function GroupAnalyticsPage() {
                 Top Performing Links
               </h3>
               <div className="space-y-2">
-                {analytics.top_links.map((link: any, index: number) => (
+                {(analytics.top_links || []).map((link: any, index: number) => (
                   <div
                     key={link.slug}
                     className="flex items-center justify-between py-2 border-b border-gray-700 last:border-0"
@@ -302,20 +302,20 @@ export default function GroupAnalyticsPage() {
                     </span>
                   </div>
                 ))}
-                {analytics.top_links.length === 0 && (
+                {(!analytics.top_links || analytics.top_links.length === 0) && (
                   <p className="text-gray-400 text-center py-4">No data available</p>
                 )}
               </div>
             </div>
 
             {/* Referrers */}
-            {analytics.referrers.length > 0 && (
+            {analytics.referrers && analytics.referrers.length > 0 && (
               <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
                 <h3 className="text-lg font-semibold text-white mb-4">
                   Top Referrers
                 </h3>
                 <div className="space-y-2">
-                  {analytics.referrers.map((ref: any, index: number) => (
+                  {(analytics.referrers || []).map((ref: any, index: number) => (
                     <div
                       key={ref.referrer}
                       className="flex items-center justify-between py-2 border-b border-gray-700 last:border-0"

@@ -54,6 +54,11 @@ export default function DashboardPage() {
   const [moveToGroupLink, setMoveToGroupLink] = useState<LinkType | null>(null)
   const [moveToGroupLoading, setMoveToGroupLoading] = useState(false)
 
+  // Bulk selection state
+  const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set())
+  const [bulkActionLoading, setBulkActionLoading] = useState(false)
+  const [showBulkGroupModal, setShowBulkGroupModal] = useState(false)
+
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('')
   const [searchField, setSearchField] = useState<'all' | 'slug' | 'destination' | 'date'>('all')
@@ -156,6 +161,105 @@ export default function DashboardPage() {
       alert(err instanceof Error ? err.message : 'Failed to move link')
     } finally {
       setMoveToGroupLoading(false)
+    }
+  }
+
+  // Bulk selection functions
+  const toggleSelectLink = (slug: string) => {
+    const newSelected = new Set(selectedLinks)
+    if (newSelected.has(slug)) {
+      newSelected.delete(slug)
+    } else {
+      newSelected.add(slug)
+    }
+    setSelectedLinks(newSelected)
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedLinks.size === currentLinks.length) {
+      setSelectedLinks(new Set())
+    } else {
+      setSelectedLinks(new Set(currentLinks.map(link => link.slug)))
+    }
+  }
+
+  const clearSelection = () => {
+    setSelectedLinks(new Set())
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedLinks.size === 0) return
+
+    const count = selectedLinks.size
+    if (!confirm(`Are you sure you want to delete ${count} link${count > 1 ? 's' : ''}? This action cannot be undone.`)) {
+      return
+    }
+
+    setBulkActionLoading(true)
+    try {
+      const slugsToDelete = Array.from(selectedLinks)
+      let deleted = 0
+      let failed = 0
+
+      for (const slug of slugsToDelete) {
+        try {
+          await deleteLink(slug)
+          deleted++
+        } catch (err) {
+          failed++
+          console.error(`Failed to delete ${slug}:`, err)
+        }
+      }
+
+      // Update local state
+      setLinks(links.filter(link => !selectedLinks.has(link.slug)))
+      setSelectedLinks(new Set())
+
+      if (failed > 0) {
+        alert(`Deleted ${deleted} links. ${failed} failed.`)
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete links')
+    } finally {
+      setBulkActionLoading(false)
+    }
+  }
+
+  const handleBulkAddToGroup = async (groupId: string | null) => {
+    if (selectedLinks.size === 0) return
+
+    setBulkActionLoading(true)
+    try {
+      const slugsToMove = Array.from(selectedLinks)
+      let moved = 0
+      let failed = 0
+
+      for (const slug of slugsToMove) {
+        try {
+          await moveLink(slug, groupId)
+          moved++
+        } catch (err) {
+          failed++
+          console.error(`Failed to move ${slug}:`, err)
+        }
+      }
+
+      // Update local state
+      setLinks(links.map(link =>
+        selectedLinks.has(link.slug)
+          ? { ...link, group_id: groupId }
+          : link
+      ))
+      setSelectedLinks(new Set())
+      setShowBulkGroupModal(false)
+
+      if (failed > 0) {
+        alert(`Moved ${moved} links. ${failed} failed.`)
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to move links')
+    } finally {
+      setBulkActionLoading(false)
     }
   }
 
@@ -1025,6 +1129,41 @@ export default function DashboardPage() {
             )}
           </div>
 
+          {/* Bulk Actions Bar */}
+          {selectedLinks.size > 0 && (
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <span className="text-white font-medium">
+                  {selectedLinks.size} link{selectedLinks.size > 1 ? 's' : ''} selected
+                </span>
+                <button
+                  onClick={clearSelection}
+                  className="text-gray-400 hover:text-white text-sm"
+                >
+                  Clear selection
+                </button>
+              </div>
+              <div className="flex items-center gap-3">
+                {user?.plan === 'pro' && (
+                  <button
+                    onClick={() => setShowBulkGroupModal(true)}
+                    disabled={bulkActionLoading}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 text-white rounded-lg text-sm font-medium transition-colors"
+                  >
+                    {bulkActionLoading ? 'Moving...' : '📁 Add to Group'}
+                  </button>
+                )}
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={bulkActionLoading}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  {bulkActionLoading ? 'Deleting...' : '🗑️ Delete'}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Error Message */}
           {error && (
             <div className="bg-error-50 dark:bg-error-900/20 border border-error-500 text-error-600 dark:text-error-400 px-4 py-3 rounded-lg mb-6">
@@ -1053,13 +1192,39 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
+              {/* Select All Header */}
+              <div className="flex items-center gap-3 mb-4 px-2">
+                <input
+                  type="checkbox"
+                  checked={selectedLinks.size === currentLinks.length && currentLinks.length > 0}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-400">
+                  {selectedLinks.size === currentLinks.length && currentLinks.length > 0
+                    ? 'Deselect all'
+                    : `Select all (${currentLinks.length})`}
+                </span>
+              </div>
+
               <div className="space-y-4">
                 {currentLinks.map((link) => (
-                <div key={link.slug} className="card p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      {/* Short URL */}
-                      <div className="flex items-center space-x-3 mb-2">
+                <div key={link.slug} className={`card p-6 ${selectedLinks.has(link.slug) ? 'ring-2 ring-blue-500' : ''}`}>
+                  <div className="flex items-start gap-4">
+                    {/* Checkbox */}
+                    <div className="pt-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedLinks.has(link.slug)}
+                        onChange={() => toggleSelectLink(link.slug)}
+                        className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-0 flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        {/* Short URL */}
+                        <div className="flex items-center space-x-3 mb-2">
                         <div className="flex items-center gap-2">
                           <code className="text-primary-500 font-mono text-lg">
                             {getDisplayDomain(link)}/{link.slug}
@@ -1105,11 +1270,11 @@ export default function DashboardPage() {
                             <span>Expires {formatDate(link.expires_at)}</span>
                           </>
                         )}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center space-x-2 ml-4">
+                      {/* Actions */}
+                      <div className="flex items-center space-x-2 ml-4">
                       <button
                         onClick={() => openEditModal(link)}
                         className="btn-secondary text-sm"
@@ -1168,6 +1333,7 @@ export default function DashboardPage() {
                       >
                         Delete
                       </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2170,6 +2336,70 @@ export default function DashboardPage() {
                 onClick={() => setMoveToGroupLink(null)}
                 className="btn-secondary"
                 disabled={moveToGroupLoading}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Add to Group Modal */}
+      {showBulkGroupModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md border border-gray-700">
+            <h3 className="text-xl font-bold text-white mb-4">Add to Group</h3>
+            <p className="text-gray-400 mb-4">
+              Move {selectedLinks.size} selected link{selectedLinks.size > 1 ? 's' : ''} to a group
+            </p>
+
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {/* Ungrouped option */}
+              <button
+                onClick={() => handleBulkAddToGroup(null)}
+                disabled={bulkActionLoading}
+                className="w-full text-left px-4 py-3 rounded-lg border bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500 transition-colors disabled:opacity-50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded bg-gray-600 flex items-center justify-center">
+                    <span>📁</span>
+                  </div>
+                  <span>Ungrouped</span>
+                </div>
+              </button>
+
+              {/* Group options */}
+              {groups.map((group) => (
+                <button
+                  key={group.group_id}
+                  onClick={() => handleBulkAddToGroup(group.group_id)}
+                  disabled={bulkActionLoading}
+                  className="w-full text-left px-4 py-3 rounded-lg border bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500 transition-colors disabled:opacity-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-8 h-8 rounded flex items-center justify-center"
+                      style={{ backgroundColor: group.color }}
+                    >
+                      <span>📁</span>
+                    </div>
+                    <span>{group.name}</span>
+                  </div>
+                </button>
+              ))}
+
+              {groups.length === 0 && (
+                <p className="text-gray-400 text-center py-4">
+                  No groups yet. <Link href="/groups" className="text-primary-400 hover:underline">Create one</Link>
+                </p>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowBulkGroupModal(false)}
+                className="btn-secondary"
+                disabled={bulkActionLoading}
               >
                 Cancel
               </button>
