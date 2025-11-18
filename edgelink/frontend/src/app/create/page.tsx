@@ -37,6 +37,12 @@ interface Domain {
   created_at: string;
 }
 
+interface LinkGroup {
+  group_id: string;
+  name: string;
+  color: string;
+}
+
 export default function CreateLinkPage() {
   const router = useRouter();
   const { isLoaded, isSignedIn, getToken, user } = useAuth();
@@ -44,7 +50,9 @@ export default function CreateLinkPage() {
   const [url, setUrl] = useState('');
   const [customSlug, setCustomSlug] = useState('');
   const [customDomain, setCustomDomain] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState('');
   const [domains, setDomains] = useState<Domain[]>([]);
+  const [groups, setGroups] = useState<LinkGroup[]>([]);
   const [slugSuggestions, setSlugSuggestions] = useState<string[]>([]);
   const [linkPreview, setLinkPreview] = useState<LinkPreview | null>(null);
   const [showUTMBuilder, setShowUTMBuilder] = useState(false);
@@ -74,6 +82,7 @@ export default function CreateLinkPage() {
 
     if (user) {
       loadDomains();
+      loadGroups();
     }
   }, [isLoaded, isSignedIn, user, router]);
 
@@ -101,6 +110,26 @@ export default function CreateLinkPage() {
       }
     } catch (error) {
       console.error('Failed to load domains:', error);
+    }
+  };
+
+  const loadGroups = async () => {
+    try {
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/api/groups`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGroups(data.groups || []);
+      }
+    } catch (error) {
+      // Groups feature might not be available for free users
+      console.log('Could not load groups:', error);
     }
   };
 
@@ -196,6 +225,7 @@ export default function CreateLinkPage() {
         url: finalUrl,
         custom_slug: customSlug || undefined,
         custom_domain: customDomain || undefined,
+        group_id: selectedGroup || undefined,
         expires_at: expiresAt || undefined,
         timezone: timezone || undefined,
         max_clicks: maxClicks ? parseInt(maxClicks) : undefined,
@@ -370,6 +400,36 @@ export default function CreateLinkPage() {
                 </p>
               )}
             </div>
+
+            {/* Group Selector (Pro feature) */}
+            {user?.plan === 'pro' && (
+              <div className="bg-gray-800 rounded-lg p-6">
+                <label className="block text-sm font-medium mb-2">
+                  Group (Optional)
+                </label>
+                <select
+                  value={selectedGroup}
+                  onChange={(e) => setSelectedGroup(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+                >
+                  <option value="">Ungrouped</option>
+                  {groups.map((group) => (
+                    <option key={group.group_id} value={group.group_id}>
+                      {group.name}
+                    </option>
+                  ))}
+                </select>
+                {groups.length === 0 ? (
+                  <p className="text-sm text-gray-400 mt-2">
+                    No groups yet. <a href="/groups" className="text-blue-400 hover:text-blue-300">Create a group</a>
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-400 mt-2">
+                    Organize your link into a group for better management
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* UTM Builder */}
             <div className="bg-gray-800 rounded-lg p-6">
