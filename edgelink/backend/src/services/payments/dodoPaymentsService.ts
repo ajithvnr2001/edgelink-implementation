@@ -225,7 +225,7 @@ export class DodoPaymentsService {
     customerId: string;
     returnUrl: string;
   }): Promise<{ url: string }> {
-    const url = `${this.baseUrl}/customer-portal/sessions`;
+    const url = `${this.baseUrl}/customer-portal`;
     console.log('[DodoPayments] Creating customer portal session at:', url);
     console.log('[DodoPayments] Customer ID:', params.customerId);
     console.log('[DodoPayments] Return URL:', params.returnUrl);
