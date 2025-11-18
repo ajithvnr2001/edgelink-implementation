@@ -1,9 +1,13 @@
 'use client'
 
+export const runtime = 'edge';
+
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { getLinks, deleteLink, updateLink, getUser, logout, getAccessToken, type Link as LinkType, setDeviceRouting, getRouting, deleteRouting, type DeviceRouting, type RoutingConfig, setGeoRouting, type GeoRouting, setReferrerRouting, type ReferrerRouting } from '@/lib/api'
+import { getLinks, deleteLink, updateLink, getUser, logout, getAccessToken, type Link as LinkType, setDeviceRouting, getRouting, deleteRouting, type DeviceRouting, type RoutingConfig, setGeoRouting, type GeoRouting, setReferrerRouting, type ReferrerRouting, getGroups, moveLink, type LinkGroup } from '@/lib/api'
+import MobileNav from '@/components/MobileNav'
+import BottomNav from '@/components/BottomNav'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -45,6 +49,11 @@ export default function DashboardPage() {
   const [referrerRoutingLoading, setReferrerRoutingLoading] = useState(false)
   const [referrerRoutes, setReferrerRoutes] = useState<Array<{ domain: string; url: string }>>([])
 
+  // Groups state
+  const [groups, setGroups] = useState<LinkGroup[]>([])
+  const [moveToGroupLink, setMoveToGroupLink] = useState<LinkType | null>(null)
+  const [moveToGroupLoading, setMoveToGroupLoading] = useState(false)
+
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('')
   const [searchField, setSearchField] = useState<'all' | 'slug' | 'destination' | 'date'>('all')
@@ -65,6 +74,7 @@ export default function DashboardPage() {
 
     loadUserData()
     loadLinks()
+    loadGroups()
 
     // Listen for auth changes (e.g., after email verification)
     const handleAuthChange = () => {
@@ -116,6 +126,36 @@ export default function DashboardPage() {
       setError(err instanceof Error ? err.message : 'Failed to load links')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadGroups = async () => {
+    try {
+      const data = await getGroups()
+      setGroups(data.groups)
+    } catch (err) {
+      // Groups feature might not be available for free users
+      console.log('Could not load groups:', err)
+    }
+  }
+
+  const handleMoveToGroup = async (groupId: string | null) => {
+    if (!moveToGroupLink) return
+
+    setMoveToGroupLoading(true)
+    try {
+      await moveLink(moveToGroupLink.slug, groupId)
+      // Update local state
+      setLinks(links.map(link =>
+        link.slug === moveToGroupLink.slug
+          ? { ...link, group_id: groupId }
+          : link
+      ))
+      setMoveToGroupLink(null)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to move link')
+    } finally {
+      setMoveToGroupLoading(false)
     }
   }
 
@@ -812,8 +852,10 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      {/* Header */}
-      <header className="border-b border-gray-700">
+      <MobileNav onLogout={handleLogout} />
+
+      {/* Header - Hidden on mobile */}
+      <header className="border-b border-gray-700 hidden lg:block">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <Link href="/" className="flex items-center space-x-2">
@@ -824,6 +866,12 @@ export default function DashboardPage() {
           <nav className="flex items-center space-x-4">
             <Link href="/create" className="text-gray-300 hover:text-white transition-colors">
               ➕ Create Link
+            </Link>
+            <Link href="/groups" className="text-gray-300 hover:text-white transition-colors">
+              📁 Groups
+            </Link>
+            <Link href="/analytics/overview" className="text-gray-300 hover:text-white transition-colors">
+              📊 Analytics
             </Link>
             <Link href="/import-export" className="text-gray-300 hover:text-white transition-colors">
               📦 Import/Export
@@ -1106,6 +1154,13 @@ export default function DashboardPage() {
                         title={user?.plan !== 'pro' ? 'Referrer routing is a Pro feature' : 'Configure referrer-based routing'}
                       >
                         {user?.plan === 'pro' ? '🔗 Referrer' : '🔒 Referrer'}
+                      </button>
+                      <button
+                        onClick={() => setMoveToGroupLink(link)}
+                        className="btn-secondary text-sm"
+                        title={user?.plan !== 'pro' ? 'Groups is a Pro feature' : 'Move to group'}
+                      >
+                        {user?.plan === 'pro' ? '📁 Group' : '🔒 Group'}
                       </button>
                       <button
                         onClick={() => handleDelete(link.slug)}
@@ -2042,12 +2097,95 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="border-t border-gray-700 mt-16">
+      {/* Move to Group Modal */}
+      {moveToGroupLink && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md border border-gray-700">
+            <h3 className="text-xl font-bold text-white mb-4">Move to Group</h3>
+            <p className="text-gray-400 mb-4">
+              Select a group for <span className="text-primary-400 font-mono">{moveToGroupLink.slug}</span>
+            </p>
+
+            {user?.plan !== 'pro' ? (
+              <div className="text-center py-4">
+                <p className="text-gray-400 mb-4">Groups is a Pro feature.</p>
+                <Link href="/pricing" className="btn-primary">
+                  Upgrade to Pro
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {/* Ungrouped option */}
+                <button
+                  onClick={() => handleMoveToGroup(null)}
+                  disabled={moveToGroupLoading}
+                  className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
+                    !moveToGroupLink.group_id
+                      ? 'bg-gray-700 border-primary-500 text-white'
+                      : 'bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
+                  } disabled:opacity-50`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded bg-gray-600 flex items-center justify-center">
+                      <span>📁</span>
+                    </div>
+                    <span>Ungrouped</span>
+                  </div>
+                </button>
+
+                {/* Group options */}
+                {groups.map((group) => (
+                  <button
+                    key={group.group_id}
+                    onClick={() => handleMoveToGroup(group.group_id)}
+                    disabled={moveToGroupLoading}
+                    className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
+                      moveToGroupLink.group_id === group.group_id
+                        ? 'bg-gray-700 border-primary-500 text-white'
+                        : 'bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500'
+                    } disabled:opacity-50`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-8 h-8 rounded flex items-center justify-center"
+                        style={{ backgroundColor: group.color }}
+                      >
+                        <span>📁</span>
+                      </div>
+                      <span>{group.name}</span>
+                    </div>
+                  </button>
+                ))}
+
+                {groups.length === 0 && (
+                  <p className="text-gray-400 text-center py-4">
+                    No groups yet. <Link href="/groups" className="text-primary-400 hover:underline">Create one</Link>
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setMoveToGroupLink(null)}
+                className="btn-secondary"
+                disabled={moveToGroupLoading}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Footer - hidden on mobile */}
+      <footer className="hidden lg:block border-t border-gray-700 mt-16">
         <div className="container mx-auto px-4 py-8 text-center text-gray-400">
           <p>© 2025 EdgeLink. Built with Cloudflare Workers.</p>
         </div>
       </footer>
+
+      <BottomNav />
     </div>
   )
 }
