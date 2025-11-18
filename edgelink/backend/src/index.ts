@@ -23,6 +23,8 @@ import { handleExportAnalytics, handleExportLinks } from './handlers/export';
 import { handleBulkImport } from './handlers/bulk-import';
 import { handleCreateABTest, handleGetABTestResults, handleDeleteABTest } from './handlers/ab-testing';
 import { handleSetDeviceRouting, handleSetGeoRouting, handleSetTimeRouting, handleSetReferrerRouting, handleGetRouting, handleDeleteRouting } from './handlers/routing';
+import { handleCreateGroup, handleGetGroups, handleGetGroup, handleUpdateGroup, handleDeleteGroup, handleAddLinksToGroup, handleRemoveLinksFromGroup, handleMoveLink, handleBulkMoveLinks } from './handlers/groups';
+import { handleGetGroupAnalytics, handleGetOverallAnalytics, handleCompareGroups } from './handlers/group-analytics';
 import { handleVerifyEmail } from './handlers/auth/verify-email';
 import { handleResendVerification } from './handlers/auth/resend-verification';
 import { handleRequestPasswordReset } from './handlers/auth/request-reset';
@@ -477,6 +479,148 @@ export default {
 
         const webhookId = path.split('/')[3];
         const response = await handleDeleteWebhook(env, user.sub, webhookId);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Link Groups endpoints (Pro feature)
+      // POST /api/groups - Create new group
+      if (path === '/api/groups' && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleCreateGroup(request, env, user.sub, user.plan);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/groups - Get all user's groups
+      if (path === '/api/groups' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGetGroups(env, user.sub, user.plan);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/groups/:groupId - Get single group with links
+      if (path.startsWith('/api/groups/') && !path.includes('/links') && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const groupId = path.split('/')[3];
+        const response = await handleGetGroup(env, user.sub, groupId, url.searchParams);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // PUT /api/groups/:groupId - Update group
+      if (path.startsWith('/api/groups/') && !path.includes('/links') && method === 'PUT') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const groupId = path.split('/')[3];
+        const response = await handleUpdateGroup(request, env, user.sub, groupId);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // DELETE /api/groups/:groupId - Delete group
+      if (path.startsWith('/api/groups/') && !path.includes('/links') && method === 'DELETE') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const groupId = path.split('/')[3];
+        const response = await handleDeleteGroup(env, user.sub, groupId);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // POST /api/groups/:groupId/links - Add links to group
+      if (path.startsWith('/api/groups/') && path.endsWith('/links') && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const groupId = path.split('/')[3];
+        const response = await handleAddLinksToGroup(request, env, user.sub, groupId);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // DELETE /api/groups/:groupId/links - Remove links from group
+      if (path.startsWith('/api/groups/') && path.endsWith('/links') && method === 'DELETE') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const groupId = path.split('/')[3];
+        const response = await handleRemoveLinksFromGroup(request, env, user.sub, groupId);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // PUT /api/links/:slug/group - Move single link to group
+      if (path.startsWith('/api/links/') && path.endsWith('/group') && method === 'PUT') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const slug = path.split('/')[3];
+        const response = await handleMoveLink(request, env, user.sub, slug);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // POST /api/links/bulk-group - Bulk move links to group
+      if (path === '/api/links/bulk-group' && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleBulkMoveLinks(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/groups/:groupId/analytics - Get group analytics
+      if (path.startsWith('/api/groups/') && path.endsWith('/analytics') && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const groupId = path.split('/')[3];
+        const timeRange = (url.searchParams.get('range') as '7d' | '30d') || '7d';
+        const response = await handleGetGroupAnalytics(env, user.sub, groupId, timeRange);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/analytics/overview - Get overall analytics for all links
+      if (path === '/api/analytics/overview' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const timeRange = (url.searchParams.get('range') as '7d' | '30d') || '7d';
+        const response = await handleGetOverallAnalytics(env, user.sub, user.plan, timeRange);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/analytics/groups/compare - Compare analytics between groups
+      if (path === '/api/analytics/groups/compare' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleCompareGroups(request, env, user.sub, user.plan);
         return addCorsHeaders(response, corsHeaders);
       }
 

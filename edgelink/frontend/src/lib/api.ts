@@ -22,11 +22,26 @@ export interface Link {
   slug: string
   destination: string
   custom_domain?: string
+  group_id?: string | null
   created_at: string
   expires_at?: string
   timezone?: string
   click_count: number
   last_clicked_at?: string  // Track last click for inactive link detection
+}
+
+export interface LinkGroup {
+  group_id: string
+  user_id: string
+  name: string
+  description: string | null
+  color: string
+  icon: string
+  created_at: string
+  updated_at: string
+  archived_at: string | null
+  link_count?: number
+  total_clicks?: number
 }
 
 export interface ShortenRequest {
@@ -583,4 +598,200 @@ export async function getPaymentHistory(): Promise<{
   return apiRequest('/api/payments/history', {
     method: 'GET',
   })
+}
+
+/**
+ * Link Groups API Functions (Pro feature)
+ */
+
+/**
+ * Get all user's groups
+ */
+export async function getGroups(): Promise<{
+  groups: LinkGroup[];
+  ungrouped_count: number;
+  ungrouped_clicks: number;
+  max_groups: number;
+}> {
+  return apiRequest('/api/groups')
+}
+
+/**
+ * Create a new group
+ */
+export async function createGroup(data: {
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+}): Promise<{ message: string; group: LinkGroup }> {
+  return apiRequest('/api/groups', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Get a single group with its links
+ */
+export async function getGroup(groupId: string, params?: {
+  page?: number;
+  limit?: number;
+}): Promise<{
+  group: LinkGroup;
+  links: Link[];
+  total: number;
+  total_clicks: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+}> {
+  let endpoint = `/api/groups/${groupId}`;
+
+  if (params) {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.set('page', params.page.toString());
+    if (params.limit) queryParams.set('limit', params.limit.toString());
+
+    const queryString = queryParams.toString();
+    if (queryString) {
+      endpoint += `?${queryString}`;
+    }
+  }
+
+  return apiRequest(endpoint)
+}
+
+/**
+ * Update a group
+ */
+export async function updateGroup(groupId: string, data: {
+  name?: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+}): Promise<{ message: string; group: LinkGroup }> {
+  return apiRequest(`/api/groups/${groupId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Delete a group (moves links to ungrouped)
+ */
+export async function deleteGroup(groupId: string): Promise<{
+  message: string;
+  links_moved: number;
+}> {
+  return apiRequest(`/api/groups/${groupId}`, {
+    method: 'DELETE',
+  })
+}
+
+/**
+ * Add links to a group
+ */
+export async function addLinksToGroup(groupId: string, slugs: string[]): Promise<{
+  message: string;
+  added: number;
+}> {
+  return apiRequest(`/api/groups/${groupId}/links`, {
+    method: 'POST',
+    body: JSON.stringify({ slugs }),
+  })
+}
+
+/**
+ * Remove links from a group
+ */
+export async function removeLinksFromGroup(groupId: string, slugs: string[]): Promise<{
+  message: string;
+  removed: number;
+}> {
+  return apiRequest(`/api/groups/${groupId}/links`, {
+    method: 'DELETE',
+    body: JSON.stringify({ slugs }),
+  })
+}
+
+/**
+ * Move a single link to a group (or ungrouped if group_id is null)
+ */
+export async function moveLink(slug: string, groupId: string | null): Promise<{
+  message: string;
+  slug: string;
+  group_id: string | null;
+}> {
+  return apiRequest(`/api/links/${slug}/group`, {
+    method: 'PUT',
+    body: JSON.stringify({ group_id: groupId }),
+  })
+}
+
+/**
+ * Bulk move links to a group
+ */
+export async function bulkMoveLinks(slugs: string[], groupId: string | null): Promise<{
+  message: string;
+  moved: number;
+}> {
+  return apiRequest('/api/links/bulk-group', {
+    method: 'POST',
+    body: JSON.stringify({ slugs, group_id: groupId }),
+  })
+}
+
+/**
+ * Get analytics for a group
+ */
+export async function getGroupAnalytics(groupId: string, range: '7d' | '30d' = '7d'): Promise<{
+  group: LinkGroup;
+  total_clicks: number;
+  time_series: Array<{ date: string; clicks: number }>;
+  countries: Array<{ country: string; clicks: number }>;
+  devices: Array<{ device: string; clicks: number }>;
+  browsers: Array<{ browser: string; clicks: number }>;
+  referrers: Array<{ referrer: string; clicks: number }>;
+  top_links: Array<{ slug: string; clicks: number }>;
+  time_range: string;
+}> {
+  return apiRequest(`/api/groups/${groupId}/analytics?range=${range}`)
+}
+
+/**
+ * Get overall analytics for all user's links
+ */
+export async function getOverallAnalytics(range: '7d' | '30d' = '7d'): Promise<{
+  total_clicks: number;
+  total_links: number;
+  time_series: Array<{ date: string; clicks: number }>;
+  countries: Array<{ country: string; clicks: number }>;
+  devices: Array<{ device: string; clicks: number }>;
+  browsers: Array<{ browser: string; clicks: number }>;
+  referrers: Array<{ referrer: string; clicks: number }>;
+  top_links: Array<{ slug: string; clicks: number }>;
+  groups_breakdown: Array<{
+    group_name: string;
+    group_id: string | null;
+    color: string | null;
+    clicks: number;
+  }>;
+  time_range: string;
+}> {
+  return apiRequest(`/api/analytics/overview?range=${range}`)
+}
+
+/**
+ * Compare analytics between groups
+ */
+export async function compareGroups(groupIds: string[], range: '7d' | '30d' = '7d'): Promise<{
+  comparisons: Array<{
+    group: LinkGroup;
+    total_clicks: number;
+    link_count: number;
+  }>;
+  time_range: string;
+}> {
+  return apiRequest(`/api/analytics/groups/compare?groups=${groupIds.join(',')}&range=${range}`)
 }
