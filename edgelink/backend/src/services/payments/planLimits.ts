@@ -9,6 +9,7 @@ export interface PlanLimits {
   maxLinks: number;                    // Total active links allowed
   maxClicksPerMonth: number;           // Total clicks per month across all links
   maxCustomDomains: number;            // Number of custom domains allowed
+  maxGroups: number;                   // Number of link groups allowed
   analytics: boolean;                  // Advanced analytics access
   apiAccess: boolean;                  // API access
   linkExpiration: boolean;             // Link expiration feature
@@ -22,6 +23,7 @@ export interface PlanLimits {
   referrerRouting: boolean;            // Referrer-based routing
   webhooks: boolean;                   // Webhook support
   bulkOperations: boolean;             // Import/Export bulk operations
+  groups: boolean;                     // Link groups feature
 }
 
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
@@ -29,6 +31,7 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     maxLinks: 1000,                    // 1,000 total active links
     maxClicksPerMonth: 10000,          // 10,000 clicks per month
     maxCustomDomains: 0,               // No custom domains
+    maxGroups: 0,                      // No link groups
     analytics: false,                  // Basic click count only
     apiAccess: false,                  // No API access (or very limited)
     linkExpiration: true,              // Allow link expiration
@@ -41,12 +44,14 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     deviceRouting: false,              // No device routing
     referrerRouting: false,            // No referrer routing
     webhooks: false,                   // No webhooks
-    bulkOperations: false              // No import/export
+    bulkOperations: false,             // No import/export
+    groups: false                      // No link groups
   },
   'pro': {
     maxLinks: 100000,                  // 100,000 total active links
     maxClicksPerMonth: 500000,         // 500,000 clicks per month
     maxCustomDomains: 2,               // 2 custom domains with SSL
+    maxGroups: 50,                     // 50 link groups
     analytics: true,                   // Advanced analytics with charts
     apiAccess: true,                   // Full API access
     linkExpiration: true,              // Link expiration
@@ -59,7 +64,8 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     deviceRouting: true,               // Device routing
     referrerRouting: true,             // Referrer routing
     webhooks: true,                    // Webhook support
-    bulkOperations: true               // Import/Export operations
+    bulkOperations: true,              // Import/Export operations
+    groups: true                       // Link groups feature
   }
 };
 
@@ -154,5 +160,44 @@ export class PlanLimitsService {
   static getCustomDomainLimit(plan: string): number {
     const limits = this.getLimits(plan);
     return limits.maxCustomDomains;
+  }
+
+  /**
+   * Get group limit for plan
+   */
+  static getGroupLimit(plan: string): number {
+    const limits = this.getLimits(plan);
+    return limits.maxGroups;
+  }
+
+  /**
+   * Check if user can create a new group
+   */
+  static async canCreateGroup(env: Env, userId: string, plan: string): Promise<{ allowed: boolean; reason?: string }> {
+    const limits = this.getLimits(plan);
+
+    // Check if groups feature is available
+    if (!limits.groups) {
+      return {
+        allowed: false,
+        reason: 'Link groups are a Pro feature. Upgrade to Pro to organize your links into groups.'
+      };
+    }
+
+    // Check current group count
+    const result = await env.DB.prepare(`
+      SELECT COUNT(*) as count
+      FROM link_groups
+      WHERE user_id = ? AND archived_at IS NULL
+    `).bind(userId).first();
+
+    if (result && (result.count as number) >= limits.maxGroups) {
+      return {
+        allowed: false,
+        reason: `Group limit reached: ${limits.maxGroups} groups. Delete or archive existing groups to create new ones.`
+      };
+    }
+
+    return { allowed: true };
   }
 }

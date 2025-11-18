@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS links (
   user_id TEXT NOT NULL,
   destination TEXT NOT NULL,
   custom_domain TEXT,
+  group_id TEXT, -- Optional group for organization (Pro feature)
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   expires_at TIMESTAMP,
@@ -38,7 +39,8 @@ CREATE TABLE IF NOT EXISTS links (
   referrer_routing TEXT, -- JSON: {"twitter.com": "url", "linkedin.com": "url", "default": "url"}
   ab_testing TEXT, -- JSON: {"variant_a": "url", "variant_b": "url", "split": 50}
   utm_params TEXT, -- UTM parameters to auto-append
-  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (group_id) REFERENCES link_groups(group_id) ON DELETE SET NULL
 );
 
 -- Refresh tokens table: JWT refresh token storage
@@ -111,6 +113,20 @@ CREATE TABLE IF NOT EXISTS api_keys (
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
+-- Link Groups table: Organize links into groups (Pro feature)
+CREATE TABLE IF NOT EXISTS link_groups (
+  group_id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  color TEXT DEFAULT '#3B82F6',
+  icon TEXT DEFAULT 'folder',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  archived_at TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
 -- Indexes for performance optimization
 CREATE INDEX IF NOT EXISTS idx_user_links ON links(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_domains ON custom_domains(user_id);
@@ -121,6 +137,8 @@ CREATE INDEX IF NOT EXISTS idx_anonymous_links_expires_at ON anonymous_links(exp
 CREATE INDEX IF NOT EXISTS idx_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id);
 CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys(key_prefix);
+CREATE INDEX IF NOT EXISTS idx_link_groups_user ON link_groups(user_id);
+CREATE INDEX IF NOT EXISTS idx_links_group ON links(group_id);
 
 -- Triggers for updated_at timestamp
 CREATE TRIGGER IF NOT EXISTS update_users_timestamp
@@ -133,6 +151,12 @@ CREATE TRIGGER IF NOT EXISTS update_links_timestamp
 AFTER UPDATE ON links
 BEGIN
   UPDATE links SET updated_at = CURRENT_TIMESTAMP WHERE slug = NEW.slug;
+END;
+
+CREATE TRIGGER IF NOT EXISTS update_link_groups_timestamp
+AFTER UPDATE ON link_groups
+BEGIN
+  UPDATE link_groups SET updated_at = CURRENT_TIMESTAMP WHERE group_id = NEW.group_id;
 END;
 
 -- Week 6: Team Collaboration Tables
