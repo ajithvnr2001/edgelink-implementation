@@ -1212,7 +1212,7 @@ export default function DashboardPage() {
 
               <div className="space-y-4">
                 {currentLinks.map((link) => (
-                <div key={link.slug} className={`card p-6 ${selectedLinks.has(link.slug) ? 'ring-2 ring-blue-500' : ''}`}>
+                <div key={link.slug} className={`card p-6 group hover:bg-gray-800/50 transition-colors ${selectedLinks.has(link.slug) ? 'ring-2 ring-blue-500' : ''}`}>
                   <div className="flex items-start gap-4">
                     {/* Checkbox */}
                     <div className="pt-1">
@@ -1276,8 +1276,8 @@ export default function DashboardPage() {
                         </div>
                       </div>
 
-                      {/* Actions */}
-                      <div className="flex items-center space-x-2 ml-4">
+                      {/* Actions - Hidden by default, shown on hover */}
+                      <div className="flex items-center space-x-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <button
                         onClick={() => openEditModal(link)}
                         className="btn-secondary text-sm"
@@ -1300,41 +1300,41 @@ export default function DashboardPage() {
                         className="btn-secondary text-sm"
                         title={user?.plan !== 'pro' ? 'QR code generation is a Pro feature' : 'Generate QR code'}
                       >
-                        {user?.plan === 'pro' ? '📱 QR Code' : '🔒 QR Code'}
+                        {user?.plan === 'pro' ? '📱 QR' : '🔒 QR'}
                       </button>
                       <button
                         onClick={() => openRoutingModal(link)}
                         className="btn-secondary text-sm"
                         title={user?.plan !== 'pro' ? 'Device routing is a Pro feature' : 'Configure device routing'}
                       >
-                        {user?.plan === 'pro' ? '🔀 Device' : '🔒 Device'}
+                        {user?.plan === 'pro' ? '🔀' : '🔒'}
                       </button>
                       <button
                         onClick={() => openGeoRoutingModal(link)}
                         className="btn-secondary text-sm"
                         title={user?.plan !== 'pro' ? 'Geographic routing is a Pro feature' : 'Configure geographic routing'}
                       >
-                        {user?.plan === 'pro' ? '🌍 Geo' : '🔒 Geo'}
+                        {user?.plan === 'pro' ? '🌍' : '🔒'}
                       </button>
                       <button
                         onClick={() => openReferrerRoutingModal(link)}
                         className="btn-secondary text-sm"
                         title={user?.plan !== 'pro' ? 'Referrer routing is a Pro feature' : 'Configure referrer-based routing'}
                       >
-                        {user?.plan === 'pro' ? '🔗 Referrer' : '🔒 Referrer'}
+                        {user?.plan === 'pro' ? '🔗' : '🔒'}
                       </button>
                       <button
                         onClick={() => setMoveToGroupLink(link)}
                         className="btn-secondary text-sm"
                         title={user?.plan !== 'pro' ? 'Groups is a Pro feature' : 'Move to group'}
                       >
-                        {user?.plan === 'pro' ? '📁 Group' : '🔒 Group'}
+                        {user?.plan === 'pro' ? '📁' : '🔒'}
                       </button>
                       <button
                         onClick={() => handleDelete(link.slug)}
                         className="btn-secondary text-sm text-error-500 hover:bg-error-500/10"
                       >
-                        Delete
+                        🗑️
                       </button>
                       </div>
                     </div>
