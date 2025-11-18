@@ -117,22 +117,25 @@ export async function handleExportLinks(
   format: 'csv' | 'json'
 ): Promise<Response> {
   try {
-    // Fetch all user links
+    // Fetch all user links with group information
     const result = await env.DB.prepare(`
       SELECT
-        slug,
-        destination,
-        custom_domain,
-        created_at,
-        updated_at,
-        expires_at,
-        max_clicks,
-        click_count,
-        password_hash,
-        utm_params
-      FROM links
-      WHERE user_id = ?
-      ORDER BY created_at DESC
+        l.slug,
+        l.destination,
+        l.custom_domain,
+        l.group_id,
+        g.name as group_name,
+        l.created_at,
+        l.updated_at,
+        l.expires_at,
+        l.max_clicks,
+        l.click_count,
+        l.password_hash,
+        l.utm_params
+      FROM links l
+      LEFT JOIN link_groups g ON l.group_id = g.group_id
+      WHERE l.user_id = ?
+      ORDER BY l.created_at DESC
     `).bind(userId).all();
 
     const links = result.results;
@@ -152,9 +155,18 @@ export async function handleExportLinks(
         total_links: links.length,
         exported_at: new Date().toISOString(),
         links: links.map(link => ({
-          ...link,
+          slug: link.slug,
+          destination: link.destination,
+          custom_domain: link.custom_domain || null,
+          group_id: link.group_id || null,
+          group_name: link.group_name || null,
+          created_at: link.created_at,
+          updated_at: link.updated_at,
+          expires_at: link.expires_at || null,
+          max_clicks: link.max_clicks || null,
+          click_count: link.click_count || 0,
           password_protected: !!link.password_hash,
-          password_hash: undefined // Don't export password hashes
+          utm_params: link.utm_params || null
         }))
       };
 
@@ -287,7 +299,7 @@ function convertLinksToCSV(links: any[]): string {
 
   // Header
   lines.push(
-    'Slug,Destination,Custom Domain,Created At,Updated At,Expires At,Max Clicks,Click Count,Password Protected,UTM Params'
+    'Slug,Destination,Custom Domain,Group ID,Group Name,Created At,Updated At,Expires At,Max Clicks,Click Count,Password Protected,UTM Params'
   );
 
   // Data rows
@@ -296,6 +308,8 @@ function convertLinksToCSV(links: any[]): string {
       escapeCSV(link.slug),
       escapeCSV(link.destination),
       escapeCSV(link.custom_domain || ''),
+      escapeCSV(link.group_id || ''),
+      escapeCSV(link.group_name || ''),
       escapeCSV(link.created_at),
       escapeCSV(link.updated_at || ''),
       escapeCSV(link.expires_at || ''),
