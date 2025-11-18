@@ -12,6 +12,7 @@ import { handleShorten } from './handlers/shorten';
 import { handleRedirect } from './handlers/redirect';
 import { handleSignup, handleLogin, handleRefresh, handleLogout } from './handlers/auth';
 import { handleGetProfile, handleUpdateProfile, handleDeleteAccount, handleRequestAccountDeletion, handleCancelAccountDeletion, handleExportUserData } from './handlers/user';
+import { handleGetUsage } from './handlers/usage';
 import { handleGetAnalytics, handleGetAnalyticsSummary } from './handlers/analytics';
 import { handleAddDomain, handleVerifyDomain, handleGetDomains, handleDeleteDomain } from './handlers/domains';
 import { handleGenerateAPIKey, handleGetAPIKeys, handleRevokeAPIKey } from './handlers/apikeys';
@@ -739,6 +740,17 @@ export default {
         }
 
         const response = await handleExportUserData(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/usage - Get user's usage and plan limits
+      if (path === '/api/usage' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGetUsage(request, env, user.sub, user.plan);
         return addCorsHeaders(response, corsHeaders);
       }
 

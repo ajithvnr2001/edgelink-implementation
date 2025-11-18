@@ -10,6 +10,7 @@ import {
   PlusIcon,
   FolderIcon,
   ChartBarIcon,
+  ChartBarSquareIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   GlobeAltIcon,
@@ -54,6 +55,7 @@ export default function MobileNav({ onLogout }: MobileNavProps) {
     { href: '/webhooks', label: 'Webhooks', icon: BellIcon, pro: true },
     { href: '/import-export', label: 'Import/Export', icon: ArrowsRightLeftIcon, pro: true },
     { href: '/billing/settings', label: 'Billing', icon: CreditCardIcon },
+    { href: '/usage', label: 'Usage', icon: ChartBarSquareIcon },
     { href: '/settings/account', label: 'Settings', icon: Cog6ToothIcon },
   ]
 

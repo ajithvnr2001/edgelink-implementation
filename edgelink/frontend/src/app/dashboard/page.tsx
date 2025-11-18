@@ -992,6 +992,9 @@ export default function DashboardPage() {
             <Link href="/billing/settings" className="text-gray-300 hover:text-white transition-colors">
               💳 Billing
             </Link>
+            <Link href="/usage" className="text-gray-300 hover:text-white transition-colors">
+              📈 Usage
+            </Link>
             <span className="text-gray-400">
               {user.email}
             </span>

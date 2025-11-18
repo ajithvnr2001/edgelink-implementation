@@ -601,6 +601,49 @@ export async function getPaymentHistory(): Promise<{
 }
 
 /**
+ * Usage API - Get user's current usage and plan limits
+ */
+export interface UsageData {
+  plan: string;
+  limits: {
+    maxLinks: number;
+    maxClicksPerMonth: number;
+    maxCustomDomains: number;
+    maxGroups: number;
+  };
+  usage: {
+    links: number;
+    monthlyClicks: number;
+    customDomains: number;
+    groups: number;
+    apiKeys: number;
+  };
+  features: {
+    analytics: boolean;
+    apiAccess: boolean;
+    linkExpiration: boolean;
+    passwordProtection: boolean;
+    customSlug: boolean;
+    editSlug: boolean;
+    editDestination: boolean;
+    qrCode: boolean;
+    geoRouting: boolean;
+    deviceRouting: boolean;
+    referrerRouting: boolean;
+    webhooks: boolean;
+    bulkOperations: boolean;
+    groups: boolean;
+  };
+  resetDate: string;
+}
+
+export async function getUsage(): Promise<UsageData> {
+  return apiRequest('/api/usage', {
+    method: 'GET',
+  })
+}
+
+/**
  * Link Groups API Functions (Pro feature)
  */
 
