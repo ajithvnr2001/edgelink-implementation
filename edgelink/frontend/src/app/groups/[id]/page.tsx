@@ -43,7 +43,7 @@ export default function GroupDetailPage() {
   const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set())
   const [bulkRemoving, setBulkRemoving] = useState(false)
 
-  const shortDomain = process.env.NEXT_PUBLIC_SHORT_DOMAIN || 'https://edgelink.dev'
+  const shortDomain = process.env.NEXT_PUBLIC_SHORT_DOMAIN || 'https://go.shortedbro.xyz'
 
   useEffect(() => {
     const userData = getUser()
