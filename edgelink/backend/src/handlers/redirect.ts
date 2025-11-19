@@ -6,6 +6,7 @@
 import type { Env, LinkKVValue, AnalyticsEvent } from '../types';
 import { verifyPassword } from '../utils/password';
 import { determineVariant } from './ab-testing';
+import type { R2LogService } from '../services/logs/r2LogService';
 
 /**
  * Handle GET /{slug}
@@ -19,7 +20,9 @@ export async function handleRedirect(
   request: Request,
   env: Env,
   slug: string,
-  ctx: ExecutionContext
+  ctx: ExecutionContext,
+  logger?: R2LogService,
+  requestId?: string
 ): Promise<Response> {
   try {
     const requestUrl = new URL(request.url);
@@ -251,6 +254,50 @@ export async function handleRedirect(
         console.error('Click count increment failed:', err)
       )
     );
+
+    // Log redirect to R2 (async, don't block redirect)
+    if (logger && linkData.user_id !== 'anonymous') {
+      const userAgent = request.headers.get('user-agent') || '';
+      const country = request.headers.get('cf-ipcountry') || 'XX';
+      const city = request.headers.get('cf-ipcity') || '';
+      const referrer = request.headers.get('referer') || 'direct';
+      const clientIpForLog = request.headers.get('cf-connecting-ip') || '0.0.0.0';
+
+      // Parse device info
+      const isMobile = /Mobile|Android|iPhone/i.test(userAgent);
+      const isTablet = /iPad|Tablet/i.test(userAgent);
+      const device = isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop';
+
+      // Parse browser
+      let browser = 'unknown';
+      if (userAgent.includes('Chrome')) browser = 'Chrome';
+      else if (userAgent.includes('Safari')) browser = 'Safari';
+      else if (userAgent.includes('Firefox')) browser = 'Firefox';
+      else if (userAgent.includes('Edge')) browser = 'Edge';
+
+      // Parse OS
+      let os = 'unknown';
+      if (userAgent.includes('Windows')) os = 'Windows';
+      else if (userAgent.includes('Mac')) os = 'macOS';
+      else if (userAgent.includes('Linux')) os = 'Linux';
+      else if (userAgent.includes('Android')) os = 'Android';
+      else if (userAgent.includes('iOS')) os = 'iOS';
+
+      ctx.waitUntil(
+        logger.logRedirect(linkData.user_id, {
+          request_id: requestId,
+          slug,
+          destination,
+          visitor_ip: clientIpForLog,
+          country,
+          city,
+          device,
+          browser,
+          os,
+          referrer
+        }).catch(err => console.error('R2 redirect log failed:', err))
+      );
+    }
 
     // Return redirect (FR-2.1: 302 temporary for editable links)
     // Using 302 instead of 301 to prevent aggressive browser caching

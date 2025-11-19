@@ -36,10 +36,10 @@ database_id = "d5f676e0-b43f-4ac9-ab2c-acd1ddcda86b"
 binding = "ANALYTICS_ENGINE"
 dataset = "edgelink_analytics"
 
-# R2 Bucket for file storage (exports, imports) (temporarily disabled - needs to be created)
-# [[r2_buckets]]
-# binding = "R2_BUCKET"
-# bucket_name = "edgelink-storage"
+# R2 Bucket for file storage (exports, imports, logs)
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "edgelink-storage"
 
 # Environment variables
 [vars]
