@@ -56,13 +56,13 @@ Limited functionality without authentication (10 requests/hour, 30-day link expi
 | Plan | Requests per Day | Links Limit | Clicks Tracked |
 |------|-----------------|-------------|----------------|
 | Anonymous | 10/hour | N/A | N/A |
-| Free | 1,000 | 500 | 50,000/month |
-| Pro | 10,000 | 5,000 | 500,000/month |
+| Free | 100 | 500 | 50,000/month |
+| Pro | 5,000 | 5,000 | 500,000/month |
 
 Rate limit headers are included in every response:
 ```
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 999
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 99
 X-RateLimit-Reset: 1700000000
 ```
 
