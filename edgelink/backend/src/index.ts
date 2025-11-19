@@ -7,7 +7,7 @@
 
 import type { Env } from './types';
 import { authenticate, requireAuth } from './middleware/auth';
-import { checkRateLimit, addRateLimitHeaders } from './middleware/ratelimit';
+import { checkRateLimit, checkAuthRateLimit, addRateLimitHeaders } from './middleware/ratelimit';
 import { handleShorten } from './handlers/shorten';
 import { handleRedirect } from './handlers/redirect';
 import { handleSignup, handleLogin, handleRefresh, handleLogout } from './handlers/auth';
@@ -148,13 +148,25 @@ export default {
         }
       }
 
-      // Authentication endpoints (no auth required)
+      // Authentication endpoints (no auth required, but rate limited)
       if (path === '/auth/signup' && method === 'POST') {
+        // Check auth rate limit for signup
+        const { success, error: rateLimitError } = await checkAuthRateLimit(request, env, 'signup');
+        if (!success && rateLimitError) {
+          return addCorsHeaders(rateLimitError, corsHeaders);
+        }
+
         const response = await handleSignup(request, env);
         return addCorsHeaders(response, corsHeaders);
       }
 
       if (path === '/auth/login' && method === 'POST') {
+        // Check auth rate limit for login
+        const { success, error: rateLimitError } = await checkAuthRateLimit(request, env, 'login');
+        if (!success && rateLimitError) {
+          return addCorsHeaders(rateLimitError, corsHeaders);
+        }
+
         const response = await handleLogin(request, env);
         return addCorsHeaders(response, corsHeaders);
       }
@@ -181,6 +193,12 @@ export default {
       }
 
       if (path === '/auth/request-reset' && method === 'POST') {
+        // Check auth rate limit for password reset
+        const { success, error: rateLimitError } = await checkAuthRateLimit(request, env, 'reset');
+        if (!success && rateLimitError) {
+          return addCorsHeaders(rateLimitError, corsHeaders);
+        }
+
         const response = await handleRequestPasswordReset(request, env);
         return addCorsHeaders(response, corsHeaders);
       }
