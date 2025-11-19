@@ -1,6 +1,6 @@
 /**
  * Rate Limiting Middleware
- * Updated API call limits: 100/day free, 5,000/day pro
+ * API call limits: 100/day free, 5,000/day pro
  */
 
 import type { Env, JWTPayload, RateLimitInfo } from '../types';
@@ -9,9 +9,18 @@ import type { Env, JWTPayload, RateLimitInfo } from '../types';
  * Rate limit configuration by plan
  */
 const RATE_LIMITS = {
-  anonymous: { limit: 10, period: 3600 },      // 10 per hour for anonymous
-  free: { limit: 100, period: 86400 },         // 100 per day (3,000/month)
-  pro: { limit: 5000, period: 86400 }          // 5,000 per day (150,000/month)
+  anonymous: { limit: 10, period: 3600 },       // 10 per hour for anonymous
+  free: { limit: 100, period: 86400 },          // 100 per day
+  pro: { limit: 5000, period: 86400 }           // 5,000 per day
+};
+
+/**
+ * Auth endpoint rate limits (stricter for security)
+ */
+const AUTH_RATE_LIMITS = {
+  login: { limit: 10, period: 900 },            // 10 per 15 minutes
+  signup: { limit: 5, period: 3600 },           // 5 per hour
+  reset: { limit: 5, period: 3600 }             // 5 per hour
 };
 
 /**
@@ -131,4 +140,92 @@ export function addRateLimitHeaders(response: Response, info: RateLimitInfo): Re
   newResponse.headers.set('X-RateLimit-Remaining', info.remaining.toString());
 
   return newResponse;
+}
+
+/**
+ * Check rate limit for auth endpoints (stricter limits for security)
+ *
+ * @param request - Incoming request
+ * @param env - Environment bindings
+ * @param authType - Type of auth action (login, signup, reset)
+ * @returns Rate limit info or error response
+ */
+export async function checkAuthRateLimit(
+  request: Request,
+  env: Env,
+  authType: 'login' | 'signup' | 'reset'
+): Promise<{ success: boolean; info: RateLimitInfo; error?: Response }> {
+  // Use IP address as identifier for auth rate limiting
+  const ip = request.headers.get('cf-connecting-ip') || 'unknown';
+  const config = AUTH_RATE_LIMITS[authType];
+  const key = `auth_ratelimit:${authType}:${ip}`;
+
+  try {
+    const now = Date.now();
+    const windowStart = Math.floor(now / (config.period * 1000)) * config.period * 1000;
+
+    // Get current count from KV
+    const countStr = await env.LINKS_KV.get(key);
+    const currentCount = countStr ? parseInt(countStr, 10) : 0;
+
+    // Check if limit exceeded
+    if (currentCount >= config.limit) {
+      const resetAfter = windowStart + (config.period * 1000) - now;
+
+      const error = new Response(
+        JSON.stringify({
+          error: 'Too many attempts. Please try again later.',
+          code: 'AUTH_RATE_LIMIT_EXCEEDED',
+          limit: config.limit,
+          remaining: 0,
+          resetAfter: Math.ceil(resetAfter / 1000)
+        }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': Math.ceil(resetAfter / 1000).toString()
+          }
+        }
+      );
+
+      return {
+        success: false,
+        info: {
+          success: false,
+          limit: config.limit,
+          remaining: 0,
+          resetAfter: Math.ceil(resetAfter / 1000)
+        },
+        error
+      };
+    }
+
+    // Increment counter
+    const newCount = currentCount + 1;
+    await env.LINKS_KV.put(key, newCount.toString(), {
+      expirationTtl: config.period
+    });
+
+    return {
+      success: true,
+      info: {
+        success: true,
+        limit: config.limit,
+        remaining: config.limit - newCount,
+        resetAfter: Math.ceil((windowStart + (config.period * 1000) - now) / 1000)
+      }
+    };
+  } catch (error) {
+    console.error('Auth rate limiting error:', error);
+    return {
+      success: true,
+      info: {
+        success: true,
+        limit: config.limit,
+        remaining: config.limit,
+        resetAfter: config.period
+      }
+    };
+  }
 }
