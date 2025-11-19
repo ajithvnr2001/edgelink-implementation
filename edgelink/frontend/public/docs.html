@@ -1,0 +1,2514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EdgeLink Documentation - Complete API Guide</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .header h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 2rem;
+        }
+
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        .header-links {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .header-link {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: white;
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: background 0.2s;
+        }
+
+        .header-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container {
+            display: flex;
+            min-height: calc(100vh - 120px);
+        }
+
+        .sidebar {
+            width: 280px;
+            background: #1e293b;
+            padding: 1.5rem;
+            overflow-y: auto;
+            position: sticky;
+            top: 120px;
+            height: calc(100vh - 120px);
+            border-right: 1px solid #334155;
+        }
+
+        .sidebar h3 {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin: 1.5rem 0 0.5rem 0;
+        }
+
+        .sidebar h3:first-child {
+            margin-top: 0;
+        }
+
+        .sidebar a {
+            display: block;
+            color: #cbd5e1;
+            text-decoration: none;
+            padding: 0.4rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            margin: 0.1rem 0;
+            transition: all 0.2s;
+        }
+
+        .sidebar a:hover {
+            background: #334155;
+            color: #fff;
+        }
+
+        .sidebar a.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 2rem 3rem;
+            max-width: 900px;
+        }
+
+        section {
+            margin-bottom: 4rem;
+            scroll-margin-top: 140px;
+        }
+
+        h2 {
+            color: #f8fafc;
+            font-size: 1.75rem;
+            margin: 0 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #334155;
+        }
+
+        h3 {
+            color: #f1f5f9;
+            font-size: 1.25rem;
+            margin: 1.5rem 0 0.75rem 0;
+        }
+
+        h4 {
+            color: #e2e8f0;
+            font-size: 1rem;
+            margin: 1rem 0 0.5rem 0;
+        }
+
+        p {
+            color: #cbd5e1;
+            margin: 0.75rem 0;
+        }
+
+        .code-block {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .code-header {
+            background: #1e293b;
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .code-header .method {
+            font-weight: 600;
+        }
+
+        .code-header .method.get { color: #22c55e; }
+        .code-header .method.post { color: #3b82f6; }
+        .code-header .method.put { color: #f59e0b; }
+        .code-header .method.delete { color: #ef4444; }
+
+        .code-content {
+            padding: 1rem;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        .code-content pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .copy-btn {
+            background: #334155;
+            border: none;
+            color: #94a3b8;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+
+        .copy-btn:hover {
+            background: #475569;
+            color: #fff;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.25rem;
+            margin-bottom: 1rem;
+            background: #1e293b;
+            padding: 0.25rem;
+            border-radius: 6px;
+            width: fit-content;
+        }
+
+        .tab {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: #fff;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .param-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+        }
+
+        .param-table th,
+        .param-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #334155;
+        }
+
+        .param-table th {
+            background: #1e293b;
+            color: #f1f5f9;
+            font-weight: 600;
+        }
+
+        .param-table td {
+            color: #cbd5e1;
+        }
+
+        .param-name {
+            font-family: monospace;
+            color: #a78bfa;
+        }
+
+        .param-type {
+            color: #94a3b8;
+            font-size: 0.75rem;
+        }
+
+        .param-required {
+            color: #ef4444;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .badge-pro {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .badge-free {
+            background: #22c55e;
+            color: white;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #3b82f6;
+            color: #93c5fd;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid #f59e0b;
+            color: #fcd34d;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            color: #86efac;
+        }
+
+        .response-example {
+            margin: 1rem 0;
+        }
+
+        .response-example h5 {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            margin: 0 0 0.5rem 0;
+            text-transform: uppercase;
+        }
+
+        .endpoint {
+            background: #1e293b;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .endpoint-method {
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        .endpoint-path {
+            font-family: monospace;
+            color: #f8fafc;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                top: 0;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>EdgeLink API Documentation</h1>
+        <p>Complete guide to all features and endpoints</p>
+        <div class="header-links">
+            <a href="/" class="header-link">Home</a>
+            <a href="/api-docs.html" class="header-link">Swagger UI</a>
+            <a href="/apikeys" class="header-link">API Keys</a>
+            <a href="/dashboard" class="header-link">Dashboard</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <nav class="sidebar">
+            <h3>Getting Started</h3>
+            <a href="#overview">Overview</a>
+            <a href="#authentication">Authentication</a>
+            <a href="#rate-limits">Rate Limits</a>
+            <a href="#errors">Error Handling</a>
+
+            <h3>Core Features</h3>
+            <a href="#create-link">Create Short Links</a>
+            <a href="#manage-links">Manage Links</a>
+            <a href="#edit-slug">Edit Slug & Destination</a>
+            <a href="#link-expiration">Link Expiration</a>
+            <a href="#password-protection">Password Protection</a>
+
+            <h3>Analytics</h3>
+            <a href="#analytics-overview">Analytics Overview</a>
+            <a href="#link-analytics">Link Analytics</a>
+            <a href="#group-analytics">Group Analytics</a>
+            <a href="#realtime-analytics">Real-time Analytics</a>
+
+            <h3>Smart Routing</h3>
+            <a href="#device-routing">Device Routing</a>
+            <a href="#geo-routing">Geographic Routing</a>
+            <a href="#time-routing">Time-based Routing</a>
+            <a href="#referrer-routing">Referrer Routing</a>
+
+            <h3>Advanced Features</h3>
+            <a href="#utm-parameters">UTM Parameters</a>
+            <a href="#ab-testing">A/B Testing</a>
+            <a href="#qr-codes">QR Codes</a>
+            <a href="#custom-domains">Custom Domains</a>
+
+            <h3>Organization</h3>
+            <a href="#link-groups">Link Groups</a>
+            <a href="#bulk-operations">Bulk Operations</a>
+            <a href="#import-export">Import & Export</a>
+
+            <h3>Automation</h3>
+            <a href="#api-keys">API Keys</a>
+            <a href="#webhooks">Webhooks</a>
+        </nav>
+
+        <main class="main-content">
+            <!-- Overview Section -->
+            <section id="overview">
+                <h2>Overview</h2>
+                <p>EdgeLink is a developer-first URL shortener built on Cloudflare's edge network. It provides powerful features for link management, analytics, and smart routing.</p>
+
+                <h3>Base URL</h3>
+                <div class="code-block">
+                    <div class="code-content">
+                        <pre>https://go.shortedbro.xyz</pre>
+                    </div>
+                </div>
+
+                <h3>Features by Plan</h3>
+                <table class="param-table">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Free</th>
+                            <th>Pro</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Short Links</td>
+                            <td>25</td>
+                            <td>Unlimited</td>
+                        </tr>
+                        <tr>
+                            <td>Monthly Clicks</td>
+                            <td>1,000</td>
+                            <td>100,000</td>
+                        </tr>
+                        <tr>
+                            <td>Analytics</td>
+                            <td>Basic (7 days)</td>
+                            <td>Advanced (30 days)</td>
+                        </tr>
+                        <tr>
+                            <td>Custom Slugs</td>
+                            <td>Yes</td>
+                            <td>Yes</td>
+                        </tr>
+                        <tr>
+                            <td>Link Expiration</td>
+                            <td>Yes</td>
+                            <td>Yes</td>
+                        </tr>
+                        <tr>
+                            <td>Device Routing</td>
+                            <td>No</td>
+                            <td>Yes</td>
+                        </tr>
+                        <tr>
+                            <td>Geographic Routing</td>
+                            <td>No</td>
+                            <td>Yes</td>
+                        </tr>
+                        <tr>
+                            <td>A/B Testing</td>
+                            <td>No</td>
+                            <td>Yes</td>
+                        </tr>
+                        <tr>
+                            <td>Custom Domains</td>
+                            <td>No</td>
+                            <td>3 domains</td>
+                        </tr>
+                        <tr>
+                            <td>Webhooks</td>
+                            <td>No</td>
+                            <td>Yes</td>
+                        </tr>
+                        <tr>
+                            <td>Link Groups</td>
+                            <td>No</td>
+                            <td>10 groups</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Authentication Section -->
+            <section id="authentication">
+                <h2>Authentication</h2>
+                <p>EdgeLink supports two authentication methods:</p>
+
+                <h3>1. JWT Tokens (Recommended for Users)</h3>
+                <p>Short-lived tokens (24 hours) for user sessions. Get a token by signing up or logging in.</p>
+
+                <h4>Sign Up</h4>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span><span class="method post">POST</span> /auth/signup</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "you@example.com",
+    "password": "SecurePass123",
+    "name": "Your Name"
+  }'</pre>
+                    </div>
+                </div>
+
+                <div class="response-example">
+                    <h5>Response</h5>
+                    <div class="code-block">
+                        <div class="code-content">
+                            <pre>{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "refresh_token": "rt_abc123...",
+  "expires_in": 86400,
+  "token_type": "Bearer",
+  "user": {
+    "user_id": "usr_abc123",
+    "email": "you@example.com",
+    "plan": "free"
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <h4>Login</h4>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span><span class="method post">POST</span> /auth/login</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "you@example.com",
+    "password": "SecurePass123"
+  }'</pre>
+                    </div>
+                </div>
+
+                <h4>Refresh Token</h4>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span><span class="method post">POST</span> /auth/refresh</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{
+    "refresh_token": "rt_abc123..."
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>2. API Keys (Recommended for Automation)</h3>
+                <p>Long-lived tokens (1 year) for programmatic access. Generate from the dashboard or API.</p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>Using API Key</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/shorten \
+  -H "Authorization: Bearer elk_abc123..." \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com"}'</pre>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Note:</strong> All API keys start with <code>elk_</code> prefix. JWT tokens start with <code>eyJ</code>.
+                </div>
+            </section>
+
+            <!-- Rate Limits Section -->
+            <section id="rate-limits">
+                <h2>Rate Limits</h2>
+                <p>Rate limits are applied per user/IP based on plan:</p>
+
+                <table class="param-table">
+                    <thead>
+                        <tr>
+                            <th>Plan</th>
+                            <th>Limit</th>
+                            <th>Period</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Anonymous</td>
+                            <td>10 requests</td>
+                            <td>Per hour</td>
+                        </tr>
+                        <tr>
+                            <td>Free</td>
+                            <td>100 requests</td>
+                            <td>Per day</td>
+                        </tr>
+                        <tr>
+                            <td>Pro</td>
+                            <td>5,000 requests</td>
+                            <td>Per day</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Rate Limit Headers</h3>
+                <p>Every response includes rate limit information:</p>
+                <div class="code-block">
+                    <div class="code-content">
+                        <pre>X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1699920000</pre>
+                    </div>
+                </div>
+
+                <h3>Rate Limit Exceeded Response</h3>
+                <div class="code-block">
+                    <div class="code-content">
+                        <pre>{
+  "error": "Rate limit exceeded",
+  "code": "RATE_LIMIT_EXCEEDED",
+  "retry_after": 3600
+}</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Error Handling Section -->
+            <section id="errors">
+                <h2>Error Handling</h2>
+                <p>All errors return a consistent JSON format:</p>
+
+                <div class="code-block">
+                    <div class="code-content">
+                        <pre>{
+  "error": "Human-readable error message",
+  "code": "ERROR_CODE",
+  "details": { }
+}</pre>
+                    </div>
+                </div>
+
+                <h3>Common Error Codes</h3>
+                <table class="param-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Status</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>INVALID_INPUT</code></td>
+                            <td>400</td>
+                            <td>Request body validation failed</td>
+                        </tr>
+                        <tr>
+                            <td><code>UNAUTHORIZED</code></td>
+                            <td>401</td>
+                            <td>Missing or invalid authentication</td>
+                        </tr>
+                        <tr>
+                            <td><code>FORBIDDEN</code></td>
+                            <td>403</td>
+                            <td>Feature requires Pro plan</td>
+                        </tr>
+                        <tr>
+                            <td><code>NOT_FOUND</code></td>
+                            <td>404</td>
+                            <td>Resource not found</td>
+                        </tr>
+                        <tr>
+                            <td><code>SLUG_EXISTS</code></td>
+                            <td>409</td>
+                            <td>Custom slug already taken</td>
+                        </tr>
+                        <tr>
+                            <td><code>RATE_LIMIT_EXCEEDED</code></td>
+                            <td>429</td>
+                            <td>Too many requests</td>
+                        </tr>
+                        <tr>
+                            <td><code>PLAN_LIMIT_EXCEEDED</code></td>
+                            <td>403</td>
+                            <td>Plan usage limit reached</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Create Link Section -->
+            <section id="create-link">
+                <h2>Create Short Links</h2>
+                <p>Create shortened URLs with optional customization.</p>
+
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #3b82f6;">POST</span>
+                    <span class="endpoint-path">/api/shorten</span>
+                </div>
+
+                <h3>Basic Example</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/shorten \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/very-long-url"
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>With Custom Slug</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/shorten \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/product-launch",
+    "custom_slug": "launch2024"
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>All Parameters</h3>
+                <table class="param-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">url</span></td>
+                            <td><span class="param-type">string</span></td>
+                            <td><span class="param-required">Required</span></td>
+                            <td>Destination URL (must be valid URL)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">custom_slug</span></td>
+                            <td><span class="param-type">string</span></td>
+                            <td>Optional</td>
+                            <td>Custom short code (3-50 chars, alphanumeric + hyphens)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">custom_domain</span></td>
+                            <td><span class="param-type">string</span></td>
+                            <td>Optional</td>
+                            <td>Your verified custom domain <span class="badge badge-pro">Pro</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">expires_at</span></td>
+                            <td><span class="param-type">string</span></td>
+                            <td>Optional</td>
+                            <td>ISO 8601 expiration date</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">timezone</span></td>
+                            <td><span class="param-type">string</span></td>
+                            <td>Optional</td>
+                            <td>IANA timezone (e.g., "Asia/Kolkata")</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">max_clicks</span></td>
+                            <td><span class="param-type">number</span></td>
+                            <td>Optional</td>
+                            <td>Expire after N clicks</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">password</span></td>
+                            <td><span class="param-type">string</span></td>
+                            <td>Optional</td>
+                            <td>Password protect the link <span class="badge badge-pro">Pro</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">utm_template</span></td>
+                            <td><span class="param-type">string</span></td>
+                            <td>Optional</td>
+                            <td>UTM parameters to append</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">device_routing</span></td>
+                            <td><span class="param-type">object</span></td>
+                            <td>Optional</td>
+                            <td>Device-based destinations <span class="badge badge-pro">Pro</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">geo_routing</span></td>
+                            <td><span class="param-type">object</span></td>
+                            <td>Optional</td>
+                            <td>Country-based destinations <span class="badge badge-pro">Pro</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Full Example with All Options</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/shorten \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/campaign",
+    "custom_slug": "summer-sale",
+    "custom_domain": "links.yourdomain.com",
+    "expires_at": "2024-12-31T23:59:59Z",
+    "timezone": "America/New_York",
+    "max_clicks": 1000,
+    "password": "secret123",
+    "utm_template": "?utm_source=social&utm_medium=twitter&utm_campaign=summer"
+  }'</pre>
+                    </div>
+                </div>
+
+                <div class="response-example">
+                    <h5>Response</h5>
+                    <div class="code-block">
+                        <div class="code-content">
+                            <pre>{
+  "slug": "summer-sale",
+  "short_url": "https://links.yourdomain.com/summer-sale",
+  "expires_in": 2592000,
+  "qr_code_url": "/api/qr/summer-sale"
+}</pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Manage Links Section -->
+            <section id="manage-links">
+                <h2>Manage Links</h2>
+
+                <h3>List All Links</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #22c55e;">GET</span>
+                    <span class="endpoint-path">/api/links</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET "https://go.shortedbro.xyz/api/links?page=1&limit=20&search=campaign" \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+
+                <h4>Query Parameters</h4>
+                <table class="param-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">page</span></td>
+                            <td><span class="param-type">number</span></td>
+                            <td>Page number (default: 1)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">limit</span></td>
+                            <td><span class="param-type">number</span></td>
+                            <td>Results per page (default: 20, max: 100)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">search</span></td>
+                            <td><span class="param-type">string</span></td>
+                            <td>Search in slug or destination</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">searchField</span></td>
+                            <td><span class="param-type">string</span></td>
+                            <td>Field to search: "slug", "destination", or "all"</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Get Single Link</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #22c55e;">GET</span>
+                    <span class="endpoint-path">/api/links/{slug}</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET https://go.shortedbro.xyz/api/links/my-link \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+
+                <h3>Delete Link</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #ef4444;">DELETE</span>
+                    <span class="endpoint-path">/api/links/{slug}</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X DELETE https://go.shortedbro.xyz/api/links/my-link \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Edit Slug Section -->
+            <section id="edit-slug">
+                <h2>Edit Slug & Destination</h2>
+                <p>Update the destination URL or change the slug of an existing link.</p>
+
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #f59e0b;">PUT</span>
+                    <span class="endpoint-path">/api/links/{slug}</span>
+                </div>
+
+                <h3>Update Destination Only</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X PUT https://go.shortedbro.xyz/api/links/my-link \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "destination": "https://new-destination.com/page"
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>Change Slug (Rename Link)</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X PUT https://go.shortedbro.xyz/api/links/old-slug \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "destination": "https://example.com",
+    "new_slug": "new-slug"
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>Update Both</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X PUT https://go.shortedbro.xyz/api/links/old-campaign \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "destination": "https://example.com/new-campaign",
+    "new_slug": "campaign-2024"
+  }'</pre>
+                    </div>
+                </div>
+
+                <div class="response-example">
+                    <h5>Response</h5>
+                    <div class="code-block">
+                        <div class="code-content">
+                            <pre>{
+  "message": "Link updated successfully",
+  "slug": "campaign-2024",
+  "destination": "https://example.com/new-campaign",
+  "short_url": "https://go.shortedbro.xyz/campaign-2024"
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <strong>Important:</strong> Changing the slug will break existing links. The old URL will no longer work. Make sure to update any places where the old link is shared.
+                </div>
+            </section>
+
+            <!-- Link Expiration Section -->
+            <section id="link-expiration">
+                <h2>Link Expiration</h2>
+                <p>Set links to expire after a specific date/time or after a certain number of clicks.</p>
+
+                <h3>Time-based Expiration</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/shorten \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/flash-sale",
+    "custom_slug": "flash-sale",
+    "expires_at": "2024-12-31T23:59:59Z",
+    "timezone": "Asia/Kolkata"
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>Click-based Expiration</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/shorten \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/limited-offer",
+    "custom_slug": "limited",
+    "max_clicks": 100
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>Both Expiration Types</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/shorten \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/exclusive",
+    "custom_slug": "exclusive",
+    "expires_at": "2024-06-30T23:59:59Z",
+    "max_clicks": 500
+  }'</pre>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Timezone Support:</strong> Use IANA timezone identifiers like "America/New_York", "Europe/London", "Asia/Tokyo", etc. If not specified, UTC is used.
+                </div>
+            </section>
+
+            <!-- Password Protection Section -->
+            <section id="password-protection">
+                <h2>Password Protection <span class="badge badge-pro">Pro</span></h2>
+                <p>Protect sensitive links with a password that visitors must enter.</p>
+
+                <h3>Create Password-Protected Link</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/shorten \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/confidential",
+    "custom_slug": "secret-doc",
+    "password": "MySecretPassword123"
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>Accessing Password-Protected Links</h3>
+                <p>When a visitor clicks a password-protected link, they'll see a password form. After entering the correct password, they're redirected to the destination.</p>
+
+                <h3>Programmatic Access</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/secret-doc \
+  -H "Content-Type: application/json" \
+  -d '{
+    "password": "MySecretPassword123"
+  }'</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics Overview Section -->
+            <section id="analytics-overview">
+                <h2>Analytics Overview</h2>
+                <p>Get a summary of all your link performance metrics.</p>
+
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #22c55e;">GET</span>
+                    <span class="endpoint-path">/api/analytics/summary</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET https://go.shortedbro.xyz/api/analytics/summary \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+
+                <div class="response-example">
+                    <h5>Response</h5>
+                    <div class="code-block">
+                        <div class="code-content">
+                            <pre>{
+  "total_links": 45,
+  "total_clicks": 12500,
+  "clicks_today": 234,
+  "clicks_this_week": 1890,
+  "clicks_this_month": 5670,
+  "top_links": [
+    {"slug": "promo", "clicks": 2340},
+    {"slug": "launch", "clicks": 1890},
+    {"slug": "sale", "clicks": 1456}
+  ],
+  "top_countries": [
+    {"country": "US", "clicks": 4500},
+    {"country": "IN", "clicks": 2340},
+    {"country": "GB", "clicks": 1200}
+  ]
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Overall Analytics</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #22c55e;">GET</span>
+                    <span class="endpoint-path">/api/analytics/overview</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET "https://go.shortedbro.xyz/api/analytics/overview?range=30d" \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Link Analytics Section -->
+            <section id="link-analytics">
+                <h2>Link Analytics</h2>
+                <p>Get detailed analytics for a specific link.</p>
+
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #22c55e;">GET</span>
+                    <span class="endpoint-path">/api/analytics/{slug}</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET "https://go.shortedbro.xyz/api/analytics/my-link?range=7d" \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+
+                <h4>Query Parameters</h4>
+                <table class="param-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">range</span></td>
+                            <td><span class="param-type">string</span></td>
+                            <td>"7d" (7 days) or "30d" (30 days, Pro only)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="response-example">
+                    <h5>Response</h5>
+                    <div class="code-block">
+                        <div class="code-content">
+                            <pre>{
+  "slug": "my-link",
+  "total_clicks": 1234,
+  "unique_visitors": 987,
+  "time_series": [
+    {"date": "2024-01-01", "clicks": 45},
+    {"date": "2024-01-02", "clicks": 67},
+    {"date": "2024-01-03", "clicks": 89}
+  ],
+  "countries": [
+    {"country": "US", "clicks": 456, "percentage": 37},
+    {"country": "IN", "clicks": 234, "percentage": 19},
+    {"country": "GB", "clicks": 123, "percentage": 10}
+  ],
+  "devices": [
+    {"device": "mobile", "clicks": 678, "percentage": 55},
+    {"device": "desktop", "clicks": 456, "percentage": 37},
+    {"device": "tablet", "clicks": 100, "percentage": 8}
+  ],
+  "browsers": [
+    {"browser": "Chrome", "clicks": 567, "percentage": 46},
+    {"browser": "Safari", "clicks": 345, "percentage": 28},
+    {"browser": "Firefox", "clicks": 123, "percentage": 10}
+  ],
+  "referrers": [
+    {"referrer": "twitter.com", "clicks": 345},
+    {"referrer": "facebook.com", "clicks": 234},
+    {"referrer": "direct", "clicks": 456}
+  ],
+  "time_range": "7d"
+}</pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Group Analytics Section -->
+            <section id="group-analytics">
+                <h2>Group Analytics <span class="badge badge-pro">Pro</span></h2>
+                <p>Get analytics for all links in a group.</p>
+
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #22c55e;">GET</span>
+                    <span class="endpoint-path">/api/groups/{group_id}/analytics</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET "https://go.shortedbro.xyz/api/groups/grp_abc123/analytics?range=30d" \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+
+                <h3>Compare Groups</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #22c55e;">GET</span>
+                    <span class="endpoint-path">/api/analytics/groups/compare</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET "https://go.shortedbro.xyz/api/analytics/groups/compare?groups=grp_abc,grp_def&range=7d" \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Real-time Analytics Section -->
+            <section id="realtime-analytics">
+                <h2>Real-time Analytics <span class="badge badge-pro">Pro</span></h2>
+                <p>Get live click data as it happens.</p>
+
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #22c55e;">GET</span>
+                    <span class="endpoint-path">/api/analytics/{slug}/realtime</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET https://go.shortedbro.xyz/api/analytics/my-link/realtime \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+
+                <div class="response-example">
+                    <h5>Response</h5>
+                    <div class="code-block">
+                        <div class="code-content">
+                            <pre>{
+  "slug": "my-link",
+  "active_visitors": 23,
+  "clicks_last_minute": 5,
+  "clicks_last_hour": 145,
+  "recent_clicks": [
+    {
+      "timestamp": "2024-01-15T10:30:45Z",
+      "country": "US",
+      "device": "mobile",
+      "referrer": "twitter.com"
+    },
+    {
+      "timestamp": "2024-01-15T10:30:42Z",
+      "country": "GB",
+      "device": "desktop",
+      "referrer": "direct"
+    }
+  ]
+}</pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Device Routing Section -->
+            <section id="device-routing">
+                <h2>Device Routing <span class="badge badge-pro">Pro</span></h2>
+                <p>Route visitors to different destinations based on their device type (mobile, tablet, desktop).</p>
+
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #3b82f6;">POST</span>
+                    <span class="endpoint-path">/api/links/{slug}/routing/device</span>
+                </div>
+
+                <h3>Set Device Routing</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/links/my-app/routing/device \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mobile": "https://apps.apple.com/app/myapp",
+    "tablet": "https://play.google.com/store/apps/details?id=myapp",
+    "desktop": "https://myapp.com/download"
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>Create Link with Device Routing</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/shorten \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://myapp.com",
+    "custom_slug": "get-app",
+    "device_routing": {
+      "mobile": "https://apps.apple.com/app/myapp",
+      "tablet": "https://play.google.com/store/apps/details?id=myapp",
+      "desktop": "https://myapp.com/download"
+    }
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>Get Current Device Routing</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET https://go.shortedbro.xyz/api/links/my-app/routing \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Note:</strong> The default destination (set in the main URL) is used when no device-specific route matches or when device routing is not configured for that device type.
+                </div>
+            </section>
+
+            <!-- Geographic Routing Section -->
+            <section id="geo-routing">
+                <h2>Geographic Routing <span class="badge badge-pro">Pro</span></h2>
+                <p>Route visitors to different destinations based on their country.</p>
+
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #3b82f6;">POST</span>
+                    <span class="endpoint-path">/api/links/{slug}/routing/geo</span>
+                </div>
+
+                <h3>Set Geographic Routing</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/links/global-store/routing/geo \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "routes": {
+      "US": "https://store.com/us",
+      "GB": "https://store.com/uk",
+      "DE": "https://store.com/de",
+      "FR": "https://store.com/fr",
+      "IN": "https://store.com/in",
+      "JP": "https://store.com/jp",
+      "AU": "https://store.com/au"
+    }
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>Create Link with Geo Routing</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/shorten \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://store.com/global",
+    "custom_slug": "shop",
+    "geo_routing": {
+      "US": "https://store.com/us",
+      "CA": "https://store.com/ca",
+      "GB": "https://store.com/uk"
+    }
+  }'</pre>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Country Codes:</strong> Use ISO 3166-1 alpha-2 country codes (e.g., US, GB, DE, FR, IN, JP, AU, CA, BR).
+                </div>
+            </section>
+
+            <!-- Time-based Routing Section -->
+            <section id="time-routing">
+                <h2>Time-based Routing <span class="badge badge-pro">Pro</span></h2>
+                <p>Route visitors to different destinations based on time of day or day of week.</p>
+
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #3b82f6;">POST</span>
+                    <span class="endpoint-path">/api/links/{slug}/routing/time</span>
+                </div>
+
+                <h3>Set Time-based Routing</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/links/restaurant/routing/time \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rules": [
+      {
+        "start_hour": 6,
+        "end_hour": 11,
+        "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        "timezone": "America/New_York",
+        "destination": "https://restaurant.com/breakfast"
+      },
+      {
+        "start_hour": 11,
+        "end_hour": 15,
+        "timezone": "America/New_York",
+        "destination": "https://restaurant.com/lunch"
+      },
+      {
+        "start_hour": 17,
+        "end_hour": 22,
+        "timezone": "America/New_York",
+        "destination": "https://restaurant.com/dinner"
+      },
+      {
+        "start_hour": 10,
+        "end_hour": 14,
+        "days": ["Saturday", "Sunday"],
+        "timezone": "America/New_York",
+        "destination": "https://restaurant.com/brunch"
+      }
+    ]
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>Rule Parameters</h3>
+                <table class="param-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">start_hour</span></td>
+                            <td><span class="param-type">number</span></td>
+                            <td>Start hour (0-23)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">end_hour</span></td>
+                            <td><span class="param-type">number</span></td>
+                            <td>End hour (0-23)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">days</span></td>
+                            <td><span class="param-type">array</span></td>
+                            <td>Days of week (optional, all days if not specified)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">timezone</span></td>
+                            <td><span class="param-type">string</span></td>
+                            <td>IANA timezone identifier</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">destination</span></td>
+                            <td><span class="param-type">string</span></td>
+                            <td>URL to redirect to</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Referrer Routing Section -->
+            <section id="referrer-routing">
+                <h2>Referrer Routing <span class="badge badge-pro">Pro</span></h2>
+                <p>Route visitors to different destinations based on where they came from.</p>
+
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #3b82f6;">POST</span>
+                    <span class="endpoint-path">/api/links/{slug}/routing/referrer</span>
+                </div>
+
+                <h3>Set Referrer Routing</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/links/campaign/routing/referrer \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "routes": {
+      "twitter.com": "https://mysite.com/welcome-twitter",
+      "facebook.com": "https://mysite.com/welcome-facebook",
+      "linkedin.com": "https://mysite.com/welcome-linkedin",
+      "instagram.com": "https://mysite.com/welcome-instagram",
+      "youtube.com": "https://mysite.com/welcome-youtube",
+      "reddit.com": "https://mysite.com/welcome-reddit"
+    }
+  }'</pre>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Tip:</strong> Use referrer routing to create personalized landing pages based on traffic source. This can significantly improve conversion rates.
+                </div>
+            </section>
+
+            <!-- UTM Parameters Section -->
+            <section id="utm-parameters">
+                <h2>UTM Parameters</h2>
+                <p>Automatically append UTM tracking parameters to your destination URLs for analytics tracking.</p>
+
+                <h3>Create Link with UTM Parameters</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/shorten \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://mysite.com/landing",
+    "custom_slug": "twitter-promo",
+    "utm_template": "?utm_source=twitter&utm_medium=social&utm_campaign=summer2024&utm_content=banner"
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>UTM Parameters Explained</h3>
+                <table class="param-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Purpose</th>
+                            <th>Example</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">utm_source</span></td>
+                            <td>Traffic source</td>
+                            <td>google, facebook, twitter, newsletter</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">utm_medium</span></td>
+                            <td>Marketing medium</td>
+                            <td>cpc, social, email, banner</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">utm_campaign</span></td>
+                            <td>Campaign name</td>
+                            <td>summer_sale, product_launch</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">utm_term</span></td>
+                            <td>Paid keywords</td>
+                            <td>running+shoes</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">utm_content</span></td>
+                            <td>Content variant</td>
+                            <td>logo_link, text_link</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Example with All UTM Parameters</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/shorten \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://shop.com/products",
+    "custom_slug": "fb-sale",
+    "utm_template": "?utm_source=facebook&utm_medium=paid_social&utm_campaign=black_friday_2024&utm_term=shoes&utm_content=carousel_ad_1"
+  }'</pre>
+                    </div>
+                </div>
+
+                <p>When someone clicks <code>go.shortedbro.xyz/fb-sale</code>, they'll be redirected to:</p>
+                <div class="code-block">
+                    <div class="code-content">
+                        <pre>https://shop.com/products?utm_source=facebook&utm_medium=paid_social&utm_campaign=black_friday_2024&utm_term=shoes&utm_content=carousel_ad_1</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- A/B Testing Section -->
+            <section id="ab-testing">
+                <h2>A/B Testing <span class="badge badge-pro">Pro</span></h2>
+                <p>Split test different destinations to optimize conversion rates.</p>
+
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #3b82f6;">POST</span>
+                    <span class="endpoint-path">/api/links/{slug}/ab-test</span>
+                </div>
+
+                <h3>Create A/B Test</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/links/landing/ab-test \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "variant_a": "https://mysite.com/landing-v1",
+    "variant_b": "https://mysite.com/landing-v2"
+  }'</pre>
+                    </div>
+                </div>
+
+                <p>Traffic is automatically split 50/50 between variants. Each visitor consistently sees the same variant (using cookies).</p>
+
+                <h3>Get A/B Test Results</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET https://go.shortedbro.xyz/api/links/landing/ab-test \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+
+                <div class="response-example">
+                    <h5>Response</h5>
+                    <div class="code-block">
+                        <div class="code-content">
+                            <pre>{
+  "slug": "landing",
+  "variant_a": {
+    "url": "https://mysite.com/landing-v1",
+    "clicks": 567,
+    "percentage": 48.2
+  },
+  "variant_b": {
+    "url": "https://mysite.com/landing-v2",
+    "clicks": 609,
+    "percentage": 51.8
+  },
+  "total_clicks": 1176,
+  "started_at": "2024-01-01T00:00:00Z"
+}</pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- QR Codes Section -->
+            <section id="qr-codes">
+                <h2>QR Codes <span class="badge badge-pro">Pro</span></h2>
+                <p>Generate QR codes for your short links.</p>
+
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #22c55e;">GET</span>
+                    <span class="endpoint-path">/api/qr/{slug}</span>
+                </div>
+
+                <h3>Get QR Code (SVG)</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET "https://go.shortedbro.xyz/api/qr/my-link?format=svg" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -o qrcode.svg</pre>
+                    </div>
+                </div>
+
+                <h3>Get QR Code (PNG)</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET "https://go.shortedbro.xyz/api/qr/my-link?format=png&size=500" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -o qrcode.png</pre>
+                    </div>
+                </div>
+
+                <h3>Query Parameters</h3>
+                <table class="param-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">format</span></td>
+                            <td><span class="param-type">string</span></td>
+                            <td>"svg" or "png" (default: svg)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">size</span></td>
+                            <td><span class="param-type">number</span></td>
+                            <td>Size in pixels for PNG (default: 300, max: 1000)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">color</span></td>
+                            <td><span class="param-type">string</span></td>
+                            <td>QR code color (hex without #, default: 000000)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">bg</span></td>
+                            <td><span class="param-type">string</span></td>
+                            <td>Background color (hex without #, default: ffffff)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Custom Styled QR Code</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET "https://go.shortedbro.xyz/api/qr/my-link?format=png&size=500&color=667eea&bg=f8fafc" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -o branded-qr.png</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Custom Domains Section -->
+            <section id="custom-domains">
+                <h2>Custom Domains <span class="badge badge-pro">Pro</span></h2>
+                <p>Use your own domain for short links (e.g., links.yourdomain.com).</p>
+
+                <h3>Add Custom Domain</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #3b82f6;">POST</span>
+                    <span class="endpoint-path">/api/domains</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/domains \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "domain_name": "links.yourdomain.com"
+  }'</pre>
+                    </div>
+                </div>
+
+                <div class="response-example">
+                    <h5>Response</h5>
+                    <div class="code-block">
+                        <div class="code-content">
+                            <pre>{
+  "domain_id": "dom_abc123",
+  "domain_name": "links.yourdomain.com",
+  "status": "pending",
+  "dns_records": [
+    {
+      "type": "CNAME",
+      "name": "links",
+      "value": "go.shortedbro.xyz",
+      "required": true
+    },
+    {
+      "type": "TXT",
+      "name": "_edgelink-verify",
+      "value": "verify=abc123xyz",
+      "required": true
+    }
+  ]
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Verify Domain</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #3b82f6;">POST</span>
+                    <span class="endpoint-path">/api/domains/{domain_id}/verify</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/domains/dom_abc123/verify \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+
+                <h3>List Domains</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET https://go.shortedbro.xyz/api/domains \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+
+                <h3>Delete Domain</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X DELETE https://go.shortedbro.xyz/api/domains/dom_abc123 \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Link Groups Section -->
+            <section id="link-groups">
+                <h2>Link Groups <span class="badge badge-pro">Pro</span></h2>
+                <p>Organize your links into groups/folders for better management.</p>
+
+                <h3>Create Group</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #3b82f6;">POST</span>
+                    <span class="endpoint-path">/api/groups</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/groups \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Marketing Campaigns",
+    "description": "All marketing campaign links",
+    "color": "#667eea",
+    "icon": "megaphone"
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>List Groups</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET https://go.shortedbro.xyz/api/groups \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+
+                <h3>Add Links to Group</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #3b82f6;">POST</span>
+                    <span class="endpoint-path">/api/groups/{group_id}/links</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/groups/grp_abc123/links \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "slugs": ["campaign-1", "campaign-2", "promo-link"]
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>Move Link to Group</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #f59e0b;">PUT</span>
+                    <span class="endpoint-path">/api/links/{slug}/group</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X PUT https://go.shortedbro.xyz/api/links/my-link/group \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "group_id": "grp_abc123"
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>Remove from Group (Move to Ungrouped)</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X PUT https://go.shortedbro.xyz/api/links/my-link/group \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "group_id": null
+  }'</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Bulk Operations Section -->
+            <section id="bulk-operations">
+                <h2>Bulk Operations <span class="badge badge-pro">Pro</span></h2>
+                <p>Perform operations on multiple links at once.</p>
+
+                <h3>Bulk Move Links</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #3b82f6;">POST</span>
+                    <span class="endpoint-path">/api/links/bulk-group</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/links/bulk-group \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "slugs": ["link-1", "link-2", "link-3", "link-4", "link-5"],
+    "group_id": "grp_abc123"
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>Bulk Delete Links</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #ef4444;">DELETE</span>
+                    <span class="endpoint-path">/api/links/bulk</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X DELETE https://go.shortedbro.xyz/api/links/bulk \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "slugs": ["old-link-1", "old-link-2", "old-link-3"]
+  }'</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Import & Export Section -->
+            <section id="import-export">
+                <h2>Import & Export</h2>
+                <p>Import links from CSV or export your links for backup.</p>
+
+                <h3>Export Links (CSV)</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #22c55e;">GET</span>
+                    <span class="endpoint-path">/api/links/export</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET https://go.shortedbro.xyz/api/links/export \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -o links_export.csv</pre>
+                    </div>
+                </div>
+
+                <h3>Export Format</h3>
+                <div class="code-block">
+                    <div class="code-content">
+                        <pre>slug,destination,created_at,click_count,expires_at,group
+promo,https://example.com/promo,2024-01-01T10:00:00Z,1234,,Marketing
+sale,https://example.com/sale,2024-01-02T15:30:00Z,567,2024-12-31T23:59:59Z,Sales</pre>
+                    </div>
+                </div>
+
+                <h3>Import Links (CSV)</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #3b82f6;">POST</span>
+                    <span class="endpoint-path">/api/links/import</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/links/import \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "file=@links_to_import.csv"</pre>
+                    </div>
+                </div>
+
+                <h3>Import CSV Format</h3>
+                <p>Required columns: <code>url</code> (destination URL)</p>
+                <p>Optional columns: <code>slug</code>, <code>expires_at</code>, <code>group</code></p>
+
+                <div class="code-block">
+                    <div class="code-content">
+                        <pre>url,slug,expires_at,group
+https://example.com/page1,page1,,
+https://example.com/page2,page2,2024-12-31,Marketing
+https://example.com/page3,,,Sales</pre>
+                    </div>
+                </div>
+
+                <div class="response-example">
+                    <h5>Response</h5>
+                    <div class="code-block">
+                        <div class="code-content">
+                            <pre>{
+  "imported": 3,
+  "failed": 0,
+  "errors": [],
+  "links": [
+    {"slug": "page1", "short_url": "https://go.shortedbro.xyz/page1"},
+    {"slug": "page2", "short_url": "https://go.shortedbro.xyz/page2"},
+    {"slug": "abc123", "short_url": "https://go.shortedbro.xyz/abc123"}
+  ]
+}</pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- API Keys Section -->
+            <section id="api-keys">
+                <h2>API Keys</h2>
+                <p>Generate long-lived API keys for programmatic access.</p>
+
+                <h3>Generate API Key</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #3b82f6;">POST</span>
+                    <span class="endpoint-path">/api/keys</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/keys \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Production API Key"
+  }'</pre>
+                    </div>
+                </div>
+
+                <div class="response-example">
+                    <h5>Response</h5>
+                    <div class="code-block">
+                        <div class="code-content">
+                            <pre>{
+  "key_id": "key_abc123",
+  "api_key": "elk_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "name": "Production API Key",
+  "created_at": "2024-01-15T10:30:00Z",
+  "expires_at": "2025-01-15T10:30:00Z"
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <strong>Important:</strong> The full API key is only shown once. Store it securely - you cannot retrieve it later.
+                </div>
+
+                <h3>List API Keys</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET https://go.shortedbro.xyz/api/keys \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+
+                <h3>Revoke API Key</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #ef4444;">DELETE</span>
+                    <span class="endpoint-path">/api/keys/{key_id}</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X DELETE https://go.shortedbro.xyz/api/keys/key_abc123 \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Webhooks Section -->
+            <section id="webhooks">
+                <h2>Webhooks <span class="badge badge-pro">Pro</span></h2>
+                <p>Receive real-time notifications when events occur on your links.</p>
+
+                <h3>Create Webhook</h3>
+                <div class="endpoint">
+                    <span class="endpoint-method" style="color: #3b82f6;">POST</span>
+                    <span class="endpoint-path">/api/webhooks</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X POST https://go.shortedbro.xyz/api/webhooks \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://yourserver.com/webhook",
+    "events": ["link.clicked", "link.created", "link.deleted"],
+    "secret": "your-webhook-secret"
+  }'</pre>
+                    </div>
+                </div>
+
+                <h3>Webhook Events</h3>
+                <table class="param-table">
+                    <thead>
+                        <tr>
+                            <th>Event</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>link.clicked</code></td>
+                            <td>A link was clicked</td>
+                        </tr>
+                        <tr>
+                            <td><code>link.created</code></td>
+                            <td>A new link was created</td>
+                        </tr>
+                        <tr>
+                            <td><code>link.updated</code></td>
+                            <td>A link was updated</td>
+                        </tr>
+                        <tr>
+                            <td><code>link.deleted</code></td>
+                            <td>A link was deleted</td>
+                        </tr>
+                        <tr>
+                            <td><code>link.expired</code></td>
+                            <td>A link expired</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Webhook Payload Example</h3>
+                <div class="code-block">
+                    <div class="code-content">
+                        <pre>{
+  "event": "link.clicked",
+  "timestamp": "2024-01-15T10:30:45Z",
+  "data": {
+    "slug": "my-link",
+    "destination": "https://example.com",
+    "click": {
+      "country": "US",
+      "city": "New York",
+      "device": "mobile",
+      "browser": "Chrome",
+      "os": "iOS",
+      "referrer": "twitter.com",
+      "ip_hash": "abc123..."
+    }
+  }
+}</pre>
+                    </div>
+                </div>
+
+                <h3>Verifying Webhook Signatures</h3>
+                <p>All webhooks include a signature in the <code>X-EdgeLink-Signature</code> header for verification.</p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>Node.js</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>const crypto = require('crypto');
+
+function verifyWebhook(payload, signature, secret) {
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+
+  return crypto.timingSafeEquals(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+
+// Express middleware
+app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
+  const signature = req.headers['x-edgelink-signature'];
+  const payload = req.body.toString();
+
+  if (!verifyWebhook(payload, signature, 'your-webhook-secret')) {
+    return res.status(401).send('Invalid signature');
+  }
+
+  const event = JSON.parse(payload);
+  console.log('Received event:', event.event);
+
+  // Process the webhook...
+
+  res.status(200).send('OK');
+});</pre>
+                    </div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>Python</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>import hmac
+import hashlib
+from flask import Flask, request
+
+app = Flask(__name__)
+
+def verify_webhook(payload, signature, secret):
+    expected = hmac.new(
+        secret.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(signature, expected)
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    signature = request.headers.get('X-EdgeLink-Signature')
+    payload = request.get_data()
+
+    if not verify_webhook(payload, signature, 'your-webhook-secret'):
+        return 'Invalid signature', 401
+
+    event = request.get_json()
+    print(f"Received event: {event['event']}")
+
+    # Process the webhook...
+
+    return 'OK', 200</pre>
+                    </div>
+                </div>
+
+                <h3>List Webhooks</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X GET https://go.shortedbro.xyz/api/webhooks \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+
+                <h3>Delete Webhook</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>cURL</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre>curl -X DELETE https://go.shortedbro.xyz/api/webhooks/wh_abc123 \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+                    </div>
+                </div>
+
+                <p>For complete webhook documentation with examples in multiple languages, see <a href="/WEBHOOK_DOCUMENTATION.md" style="color: #667eea;">Webhook Documentation</a>.</p>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Copy code functionality
+        function copyCode(button) {
+            const codeBlock = button.closest('.code-block');
+            const code = codeBlock.querySelector('.code-content pre').textContent;
+
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = '#22c55e';
+
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '';
+                }, 2000);
+            });
+        }
+
+        // Active sidebar link highlighting
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.sidebar a');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (scrollY >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
