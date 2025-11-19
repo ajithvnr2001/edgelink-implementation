@@ -27,6 +27,7 @@ import { handleCreateABTest, handleGetABTestResults, handleDeleteABTest } from '
 import { handleSetDeviceRouting, handleSetGeoRouting, handleSetTimeRouting, handleSetReferrerRouting, handleGetRouting, handleDeleteRouting } from './handlers/routing';
 import { handleCreateGroup, handleGetGroups, handleGetGroup, handleUpdateGroup, handleDeleteGroup, handleAddLinksToGroup, handleRemoveLinksFromGroup, handleMoveLink, handleBulkMoveLinks } from './handlers/groups';
 import { handleGetGroupAnalytics, handleGetOverallAnalytics, handleCompareGroups } from './handlers/group-analytics';
+import { handleGetLogs, handleGetLogStorage, handleDeleteOldLogs } from './handlers/logs';
 import { handleVerifyEmail } from './handlers/auth/verify-email';
 import { handleResendVerification } from './handlers/auth/resend-verification';
 import { handleRequestPasswordReset } from './handlers/auth/request-reset';
@@ -832,6 +833,40 @@ export default {
         }
 
         const response = await handleExportUserData(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Log viewer endpoints
+      // GET /api/logs - Get user's logs
+      if (path === '/api/logs' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGetLogs(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/logs/storage - Get log storage usage
+      if (path === '/api/logs/storage' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGetLogStorage(env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // DELETE /api/logs - Delete old logs
+      if (path === '/api/logs' && method === 'DELETE') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleDeleteOldLogs(request, env, user.sub);
         return addCorsHeaders(response, corsHeaders);
       }
 
