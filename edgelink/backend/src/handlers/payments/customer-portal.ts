@@ -26,8 +26,8 @@ export async function handleCreateCustomerPortal(request: Request, env: Env, use
       );
     }
 
-    // Default to test mode URL - use DODO_BASE_URL env var to override
-    const baseUrl = env.DODO_BASE_URL || 'https://test.dodopayments.com';
+    // Default to live mode URL - use DODO_BASE_URL env var to override
+    const baseUrl = env.DODO_BASE_URL || 'https://live.dodopayments.com';
 
     const dodoPayments = new DodoPaymentsService({
       apiKey: env.DODO_API_KEY,

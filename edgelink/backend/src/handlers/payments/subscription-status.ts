@@ -9,8 +9,8 @@ import { DodoPaymentsService } from '../../services/payments/dodoPaymentsService
 
 export async function handleGetSubscriptionStatus(env: Env, userId: string): Promise<Response> {
   try {
-    // Default to test mode URL - use DODO_BASE_URL env var to override
-    const baseUrl = env.DODO_BASE_URL || 'https://test.dodopayments.com';
+    // Default to live mode URL - use DODO_BASE_URL env var to override
+    const baseUrl = env.DODO_BASE_URL || 'https://live.dodopayments.com';
 
     const dodoPayments = new DodoPaymentsService({
       apiKey: env.DODO_API_KEY,
