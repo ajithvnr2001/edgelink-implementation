@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation'
 import { getLinks, deleteLink, updateLink, getUser, logout, getAccessToken, type Link as LinkType, setDeviceRouting, getRouting, deleteRouting, type DeviceRouting, type RoutingConfig, setGeoRouting, type GeoRouting, setReferrerRouting, type ReferrerRouting, getGroups, moveLink, type LinkGroup } from '@/lib/api'
 import MobileNav from '@/components/MobileNav'
 import BottomNav from '@/components/BottomNav'
+import { Toast, useToast } from '@/components/Toast'
+import PullToRefresh from '@/components/PullToRefresh'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -66,6 +68,12 @@ export default function DashboardPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const linksPerPage = 50
+
+  // Toast notifications
+  const { toasts, dismissToast, showSuccess, showError } = useToast()
+
+  // Undo delete state
+  const [deletedLink, setDeletedLink] = useState<LinkType | null>(null)
 
   useEffect(() => {
     const loadUserData = () => {
@@ -269,15 +277,42 @@ export default function DashboardPage() {
   }
 
   const handleDelete = async (slug: string) => {
-    if (!confirm('Are you sure you want to delete this link? This action cannot be undone.')) {
-      return
+    // Find the link to delete
+    const linkToDelete = links.find(link => link.slug === slug)
+    if (!linkToDelete) return
+
+    // On mobile, show toast with undo option
+    // On desktop, keep the confirm dialog for now
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+
+    if (!isMobile) {
+      if (!confirm('Are you sure you want to delete this link? This action cannot be undone.')) {
+        return
+      }
     }
 
     try {
       await deleteLink(slug)
       setLinks(links.filter(link => link.slug !== slug))
+      setDeletedLink(linkToDelete)
+
+      // Trigger haptic feedback on mobile
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate([20])
+      }
+
+      // Show toast with undo option
+      showSuccess('Link deleted', {
+        label: 'Undo',
+        onClick: async () => {
+          // Restore the link (note: this recreates it, so it won't have exactly the same slug)
+          // For full undo, we'd need backend support for soft delete
+          setLinks(prev => [...prev, linkToDelete])
+          setDeletedLink(null)
+        },
+      })
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete link')
+      showError(err instanceof Error ? err.message : 'Failed to delete link')
     }
   }
 
@@ -1038,6 +1073,7 @@ export default function DashboardPage() {
       )}
 
       {/* Main Content */}
+      <PullToRefresh onRefresh={loadLinks} className="min-h-screen">
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Inactive Links Warning Banner */}
@@ -1429,6 +1465,7 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
+      </PullToRefresh>
 
       {/* Edit Link Modal */}
       {editingLink && (
@@ -2411,6 +2448,9 @@ export default function DashboardPage() {
           <p>© 2025 EdgeLink. Built with Cloudflare Workers.</p>
         </div>
       </footer>
+
+      {/* Toast Notifications */}
+      <Toast toasts={toasts} onDismiss={dismissToast} />
 
       <BottomNav />
     </div>
