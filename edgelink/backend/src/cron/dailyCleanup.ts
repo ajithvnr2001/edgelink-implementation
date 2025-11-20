@@ -6,8 +6,9 @@
  * 1. Send warnings to unverified accounts (80 days old)
  * 2. Delete unverified accounts (90+ days old)
  * 3. Clean up expired tokens (7+ days old)
- * 4. Clean up inactive links (free: 90/180 days, pro: 365 days)
- * 5. Clean up old R2 logs (30+ days old)
+ * 4. Downgrade expired subscriptions to free
+ * 5. Clean up inactive links (free: 90/180 days, pro: 365 days)
+ * 6. Clean up old R2 logs (30+ days old)
  */
 
 import type { Env } from '../types';
@@ -26,6 +27,7 @@ export async function dailyCleanup(env: Env): Promise<void> {
   let warningsSent = 0;
   let accountsDeleted = 0;
   let tokensDeleted = 0;
+  let subscriptionsDowngraded = 0;
   let inactiveLinksDeleted = 0;
   let logsDeleted = 0;
 
@@ -120,7 +122,54 @@ export async function dailyCleanup(env: Env): Promise<void> {
     tokensDeleted = (verificationResult.meta.changes || 0) + (resetResult.meta.changes || 0);
 
     // ========================================
-    // TASK 4: Clean up inactive links
+    // TASK 4: Downgrade expired subscriptions
+    // ========================================
+    // Find all users with active/cancelled subscriptions that have expired
+    // subscription_current_period_end is Unix timestamp
+    const expiredSubscriptions = await env.DB.prepare(`
+      SELECT user_id, email, subscription_plan, subscription_current_period_end
+      FROM users
+      WHERE subscription_current_period_end IS NOT NULL
+        AND subscription_current_period_end < ?
+        AND subscription_status IN ('active', 'cancelled')
+        AND lifetime_access = 0
+    `).bind(now).all();
+
+    console.log(`[Cron] Found ${expiredSubscriptions.results.length} expired subscriptions`);
+
+    for (const user of expiredSubscriptions.results) {
+      try {
+        // Downgrade to free plan
+        await env.DB.prepare(`
+          UPDATE users
+          SET subscription_status = 'expired',
+              subscription_plan = 'free',
+              plan = 'free',
+              subscription_id = NULL,
+              subscription_current_period_start = NULL,
+              subscription_current_period_end = NULL,
+              subscription_cancel_at_period_end = 0,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = ?
+        `).bind(user.user_id).run();
+
+        subscriptionsDowngraded++;
+        console.log(`[Cron] Downgraded expired subscription for user ${user.email} (ended: ${new Date((user.subscription_current_period_end as number) * 1000).toISOString()})`);
+
+        // Optional: Send email notification about subscription expiration
+        // You can uncomment this if you want to notify users
+        // try {
+        //   await emailService.sendSubscriptionExpired(user.email as string);
+        // } catch (emailError) {
+        //   console.error(`[Cron] Failed to send expiration email to ${user.email}:`, emailError);
+        // }
+      } catch (error) {
+        console.error(`[Cron] Failed to downgrade subscription for user ${user.user_id}:`, error);
+      }
+    }
+
+    // ========================================
+    // TASK 5: Clean up inactive links
     // ========================================
     const inactiveLinkCleanup = new InactiveLinkCleanupService(env);
     const inactiveLinkResult = await inactiveLinkCleanup.run();
@@ -134,7 +183,7 @@ export async function dailyCleanup(env: Env): Promise<void> {
     `);
 
     // ========================================
-    // TASK 5: Clean up old R2 logs (30+ days old)
+    // TASK 6: Clean up old R2 logs (30+ days old)
     // ========================================
     if (env.R2_BUCKET) {
       const logger = createR2LogService(env);
@@ -191,6 +240,7 @@ export async function dailyCleanup(env: Env): Promise<void> {
       - Account warnings sent: ${warningsSent}
       - Accounts deleted: ${accountsDeleted}
       - Expired tokens cleaned: ${tokensDeleted}
+      - Subscriptions downgraded: ${subscriptionsDowngraded}
       - Inactive links deleted: ${inactiveLinksDeleted}
       - Old log files deleted: ${logsDeleted}
     `);

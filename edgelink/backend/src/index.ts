@@ -155,6 +155,77 @@ export default {
         }
       }
 
+      // Manual subscription expiration check (for testing)
+      if (path === '/api/cleanup/subscriptions' && method === 'POST') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        try {
+          const now = Math.floor(Date.now() / 1000);
+
+          // Find all users with active/cancelled subscriptions that have expired
+          const expiredSubscriptions = await env.DB.prepare(`
+            SELECT user_id, email, subscription_plan, subscription_current_period_end
+            FROM users
+            WHERE subscription_current_period_end IS NOT NULL
+              AND subscription_current_period_end < ?
+              AND subscription_status IN ('active', 'cancelled')
+              AND lifetime_access = 0
+          `).bind(now).all();
+
+          let subscriptionsDowngraded = 0;
+
+          for (const usr of expiredSubscriptions.results) {
+            try {
+              // Downgrade to free plan
+              await env.DB.prepare(`
+                UPDATE users
+                SET subscription_status = 'expired',
+                    subscription_plan = 'free',
+                    plan = 'free',
+                    subscription_id = NULL,
+                    subscription_current_period_start = NULL,
+                    subscription_current_period_end = NULL,
+                    subscription_cancel_at_period_end = 0,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = ?
+              `).bind(usr.user_id).run();
+
+              subscriptionsDowngraded++;
+              console.log(`[ManualCleanup] Downgraded expired subscription for user ${usr.email}`);
+            } catch (err) {
+              console.error(`[ManualCleanup] Failed to downgrade subscription for user ${usr.user_id}:`, err);
+            }
+          }
+
+          return new Response(
+            JSON.stringify({
+              message: 'Subscription cleanup completed successfully',
+              found: expiredSubscriptions.results.length,
+              downgraded: subscriptionsDowngraded
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        } catch (error) {
+          console.error('[ManualCleanup] Error:', error);
+          return new Response(
+            JSON.stringify({
+              error: 'Subscription cleanup failed',
+              code: 'SUBSCRIPTION_CLEANUP_FAILED'
+            }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+      }
+
       // Authentication endpoints (no auth required, but rate limited)
       if (path === '/auth/signup' && method === 'POST') {
         // Check auth rate limit for signup
