@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { getLinks, deleteLink, updateLink, getUser, logout, getAccessToken, type Link as LinkType, setDeviceRouting, getRouting, deleteRouting, type DeviceRouting, type RoutingConfig, setGeoRouting, type GeoRouting, setReferrerRouting, type ReferrerRouting, getGroups, moveLink, type LinkGroup } from '@/lib/api'
 import MobileNav from '@/components/MobileNav'
 import BottomNav from '@/components/BottomNav'
+import LinkCard from '@/components/LinkCard'
 import { Toast, useToast } from '@/components/Toast'
 import PullToRefresh from '@/components/PullToRefresh'
 
@@ -1251,132 +1252,28 @@ export default function DashboardPage() {
 
               <div className="space-y-4">
                 {currentLinks.map((link) => (
-                <div key={link.slug} className={`card p-6 group hover:bg-gray-800/50 transition-colors ${selectedLinks.has(link.slug) ? 'ring-2 ring-blue-500' : ''}`}>
-                  <div className="flex items-start gap-4">
-                    {/* Checkbox */}
-                    <div className="pt-1">
-                      <input
-                        type="checkbox"
-                        checked={selectedLinks.has(link.slug)}
-                        onChange={() => toggleSelectLink(link.slug)}
-                        className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
-                      />
-                    </div>
+                <div key={link.slug} className={`flex items-start gap-3 ${selectedLinks.has(link.slug) ? 'ring-2 ring-blue-500 rounded-lg p-2' : ''}`}>
+                  {/* Checkbox */}
+                  <div className="pt-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedLinks.has(link.slug)}
+                      onChange={() => toggleSelectLink(link.slug)}
+                      className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
+                    />
+                  </div>
 
-                    <div className="flex-1 min-w-0 flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        {/* Short URL */}
-                        <div className="flex items-center space-x-3 mb-2">
-                        <div className="flex items-center gap-2">
-                          <code className="text-primary-500 font-mono text-lg">
-                            {getDisplayDomain(link)}/{link.slug}
-                          </code>
-                          {link.custom_domain && (
-                            <span className="px-2 py-1 bg-blue-900/50 text-blue-300 text-xs font-medium rounded border border-blue-700">
-                              Custom Domain
-                            </span>
-                          )}
-                          {isLinkInactive(link) ? (
-                            <span className="px-2 py-1 bg-warning-500/20 text-warning-400 text-xs font-medium rounded border border-warning-500/40">
-                              ⚠️ Inactive
-                            </span>
-                          ) : (
-                            <span className="px-2 py-1 bg-green-900/30 text-green-400 text-xs font-medium rounded border border-green-700/40">
-                              ✓ Active
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => copyToClipboard(getShortUrl(link), link.slug)}
-                          className="text-gray-400 hover:text-white text-sm"
-                        >
-                          {copied === link.slug ? '✓ Copied' : '📋 Copy'}
-                        </button>
-                      </div>
-
-                      {/* Destination */}
-                      <div className="text-gray-400 text-sm truncate mb-3">
-                        → {link.destination}
-                      </div>
-
-                      {/* Metadata */}
-                      <div className="flex items-center space-x-4 text-xs text-gray-500">
-                        <span>Created {formatDate(link.created_at)}</span>
-                        <span>•</span>
-                        <span className="font-medium text-primary-400">
-                          {link.click_count} clicks
-                        </span>
-                        {link.expires_at && (
-                          <>
-                            <span>•</span>
-                            <span>Expires {formatDate(link.expires_at)}</span>
-                          </>
-                        )}
-                        </div>
-                      </div>
-
-                      {/* Actions - Hidden by default, shown on hover */}
-                      <div className="flex items-center space-x-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <button
-                        onClick={() => openEditModal(link)}
-                        className="btn-secondary text-sm"
-                      >
-                        ✏️ Edit
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          console.log('Analytics button clicked for slug:', link.slug)
-                          router.push(`/analytics/${link.slug}`)
-                        }}
-                        className="btn-secondary text-sm"
-                      >
-                        📊 Analytics
-                      </button>
-                      <button
-                        onClick={() => handleGenerateQR(link, 'svg')}
-                        className="btn-secondary text-sm"
-                        title={user?.plan !== 'pro' ? 'QR code generation is a Pro feature' : 'Generate QR code'}
-                      >
-                        {user?.plan === 'pro' ? '📱 QR' : '🔒 QR'}
-                      </button>
-                      <button
-                        onClick={() => openRoutingModal(link)}
-                        className="btn-secondary text-sm"
-                        title={user?.plan !== 'pro' ? 'Device routing is a Pro feature' : 'Configure device routing'}
-                      >
-                        {user?.plan === 'pro' ? '🔀' : '🔒'}
-                      </button>
-                      <button
-                        onClick={() => openGeoRoutingModal(link)}
-                        className="btn-secondary text-sm"
-                        title={user?.plan !== 'pro' ? 'Geographic routing is a Pro feature' : 'Configure geographic routing'}
-                      >
-                        {user?.plan === 'pro' ? '🌍' : '🔒'}
-                      </button>
-                      <button
-                        onClick={() => openReferrerRoutingModal(link)}
-                        className="btn-secondary text-sm"
-                        title={user?.plan !== 'pro' ? 'Referrer routing is a Pro feature' : 'Configure referrer-based routing'}
-                      >
-                        {user?.plan === 'pro' ? '🔗' : '🔒'}
-                      </button>
-                      <button
-                        onClick={() => setMoveToGroupLink(link)}
-                        className="btn-secondary text-sm"
-                        title={user?.plan !== 'pro' ? 'Groups is a Pro feature' : 'Move to group'}
-                      >
-                        {user?.plan === 'pro' ? '📁' : '🔒'}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(link.slug)}
-                        className="btn-secondary text-sm text-error-500 hover:bg-error-500/10"
-                      >
-                        🗑️
-                      </button>
-                      </div>
-                    </div>
+                  {/* LinkCard Component */}
+                  <div className="flex-1">
+                    <LinkCard
+                      link={link}
+                      shortDomain={getShortUrl(link).replace(`/${link.slug}`, '')}
+                      onDelete={(slug) => handleDelete(slug)}
+                      onEdit={(slug) => openEditModal(link)}
+                      onMoveToGroup={(slug) => setMoveToGroupLink(link)}
+                      onViewQR={(slug) => handleGenerateQR(link, 'svg')}
+                      isPro={user?.plan === 'pro'}
+                    />
                   </div>
                 </div>
               ))}

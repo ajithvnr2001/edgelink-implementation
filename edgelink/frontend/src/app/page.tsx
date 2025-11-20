@@ -70,6 +70,9 @@ export default function HomePage() {
             <Link href="/faq" className="text-gray-300 hover:text-white">
               FAQ
             </Link>
+            <Link href="/privacy" className="text-gray-300 hover:text-white">
+              Privacy
+            </Link>
             {isLoaded && isSignedIn ? (
               <Link href="/dashboard" className="btn-primary">
                 Dashboard
