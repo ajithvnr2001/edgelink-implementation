@@ -1280,6 +1280,9 @@ export default function DashboardPage() {
                       onEdit={(slug) => openEditModal(link)}
                       onMoveToGroup={(slug) => setMoveToGroupLink(link)}
                       onViewQR={(slug) => handleGenerateQR(link, 'svg')}
+                      onDeviceRouting={(slug) => setRoutingLink(link)}
+                      onGeoRouting={(slug) => setGeoRoutingLink(link)}
+                      onRefererRouting={(slug) => setReferrerRoutingLink(link)}
                       isPro={user?.plan === 'pro'}
                     />
                   </div>
