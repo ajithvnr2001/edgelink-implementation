@@ -10,8 +10,8 @@ import type { Env, JWTPayload, RateLimitInfo } from '../types';
  */
 const RATE_LIMITS = {
   anonymous: { limit: 10, period: 3600 },       // 10 per hour for anonymous
-  free: { limit: 50, period: 86400 },           // 50 per day (TESTING)
-  pro: { limit: 60, period: 86400 }             // 60 per day (TESTING)
+  free: { limit: 100, period: 86400 },          // 100 per day
+  pro: { limit: 5000, period: 86400 }           // 5,000 per day
 };
 
 /**
