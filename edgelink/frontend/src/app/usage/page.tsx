@@ -17,7 +17,8 @@ import {
   KeyIcon,
   CheckCircleIcon,
   XCircleIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  CodeBracketIcon
 } from '@heroicons/react/24/outline'
 
 export default function UsagePage() {
@@ -105,6 +106,13 @@ export default function UsagePage() {
       max: usage.limits.maxClicksPerMonth,
       icon: CursorArrowRaysIcon,
       description: 'Clicks across all links this month'
+    },
+    {
+      name: 'API Calls Today',
+      used: usage.usage.apiCallsToday,
+      max: usage.limits.maxApiCallsPerDay,
+      icon: CodeBracketIcon,
+      description: 'API requests made today'
     },
     {
       name: 'Custom Domains',

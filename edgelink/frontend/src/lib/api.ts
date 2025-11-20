@@ -610,6 +610,7 @@ export interface UsageData {
     maxClicksPerMonth: number;
     maxCustomDomains: number;
     maxGroups: number;
+    maxApiCallsPerDay: number;
   };
   usage: {
     links: number;
@@ -617,6 +618,7 @@ export interface UsageData {
     customDomains: number;
     groups: number;
     apiKeys: number;
+    apiCallsToday: number;
   };
   features: {
     analytics: boolean;
