@@ -7,6 +7,7 @@ import type { Env, LinkKVValue, AnalyticsEvent } from '../types';
 import { verifyPassword } from '../utils/password';
 import { determineVariant } from './ab-testing';
 import type { R2LogService } from '../services/logs/r2LogService';
+import { PlanLimitsService } from '../services/payments/planLimits';
 
 /**
  * Handle GET /{slug}
@@ -110,6 +111,27 @@ export async function handleRedirect(
         status: 410,
         headers: { 'Content-Type': 'text/html' }
       });
+    }
+
+    // Check monthly click limit for the user (skip for anonymous links)
+    if (linkData.user_id !== 'anonymous') {
+      // Get user's plan from database
+      const userResult = await env.DB.prepare(`
+        SELECT plan FROM users WHERE id = ?
+      `).bind(linkData.user_id).first();
+
+      if (userResult) {
+        const userPlan = (userResult.plan as string) || 'free';
+        const clickLimitCheck = await PlanLimitsService.checkMonthlyClickLimit(env, linkData.user_id, userPlan);
+
+        if (!clickLimitCheck.allowed) {
+          console.log(`⚠️  [handleRedirect] Monthly click limit exceeded for user ${linkData.user_id}: ${clickLimitCheck.current}/${clickLimitCheck.limit}`);
+          return new Response(generateMonthlyLimitPage(userPlan, clickLimitCheck.current || 0, clickLimitCheck.limit || 0), {
+            status: 429,
+            headers: { 'Content-Type': 'text/html' }
+          });
+        }
+      }
     }
 
     // Check password protection (Pro feature)
@@ -813,6 +835,131 @@ function generateExpiredPage(reason: 'time' | 'clicks'): string {
     <div class="info">
       If you believe this is an error, please contact the link owner.
     </div>
+  </div>
+</body>
+</html>`;
+}
+
+/**
+ * Generate HTML monthly limit exceeded page
+ */
+function generateMonthlyLimitPage(plan: string, current: number, limit: number): string {
+  const upgradeMessage = plan === 'free'
+    ? 'Upgrade to Pro for 20 clicks per month.'
+    : 'Your monthly click limit has been reached. It will reset next month.';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monthly Limit Reached - EdgeLink</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 40px;
+    }
+    h1 {
+      font-size: 28px;
+      color: #1a202c;
+      margin-bottom: 16px;
+    }
+    p {
+      color: #718096;
+      margin-bottom: 20px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .stats {
+      background: #f7fafc;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .stats-row:last-child {
+      border-bottom: none;
+    }
+    .stats-label {
+      color: #4a5568;
+      font-weight: 500;
+    }
+    .stats-value {
+      color: #ed8936;
+      font-weight: 600;
+    }
+    .btn {
+      display: inline-block;
+      padding: 14px 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 16px;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">⚠️</div>
+    <h1>Monthly Click Limit Reached</h1>
+    <p>This link owner has reached their monthly click limit.</p>
+
+    <div class="stats">
+      <div class="stats-row">
+        <span class="stats-label">Plan:</span>
+        <span class="stats-value">${plan.toUpperCase()}</span>
+      </div>
+      <div class="stats-row">
+        <span class="stats-label">Clicks Used:</span>
+        <span class="stats-value">${current.toLocaleString()} / ${limit.toLocaleString()}</span>
+      </div>
+    </div>
+
+    <p style="font-size: 14px;">${upgradeMessage}</p>
+
+    <a href="/" class="btn">Go to EdgeLink</a>
   </div>
 </body>
 </html>`;
