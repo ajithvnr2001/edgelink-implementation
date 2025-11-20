@@ -560,8 +560,10 @@ def run_complete_test(api_key=None):
 
     client = EdgeLinkClient(api_key=api_key)
 
-    # Generate unique timestamp for test slugs
+    # Generate unique short ID for test slugs (max 20 chars for slug)
+    # Using last 6 digits of timestamp to keep slugs under 20 chars
     timestamp = int(time.time())
+    short_id = str(timestamp)[-6:]  # Last 6 digits
     test_slugs = []
 
     # ==========================================
@@ -590,7 +592,7 @@ def run_complete_test(api_key=None):
     print("-" * 80)
     basic_link = client.shorten(
         "https://example.com/basic-test",
-        custom_slug=f"test-basic-{timestamp}"
+        custom_slug=f"basic-{short_id}"  # Max 12 chars
     )
     if basic_link:
         test_slugs.append(basic_link['slug'])
@@ -599,7 +601,7 @@ def run_complete_test(api_key=None):
     print("-" * 80)
     expiring_link = client.shorten(
         "https://example.com/expires",
-        custom_slug=f"test-expire-{timestamp}",
+        custom_slug=f"expire-{short_id}",  # Max 13 chars
         expires_at="2025-12-31T23:59:59Z"
     )
     if expiring_link:
@@ -609,7 +611,7 @@ def run_complete_test(api_key=None):
     print("-" * 80)
     limited_link = client.shorten(
         "https://example.com/limited",
-        custom_slug=f"test-limited-{timestamp}",
+        custom_slug=f"limit-{short_id}",  # Max 12 chars
         max_clicks=100
     )
     if limited_link:
@@ -619,7 +621,7 @@ def run_complete_test(api_key=None):
     print("-" * 80)
     protected_link = client.shorten(
         "https://example.com/secret",
-        custom_slug=f"test-protected-{timestamp}",
+        custom_slug=f"secret-{short_id}",  # Max 13 chars
         password="test123"
     )
     if protected_link:
@@ -675,7 +677,7 @@ def run_complete_test(api_key=None):
     print("-" * 80)
     routing_link = client.shorten(
         "https://example.com/default",
-        custom_slug=f"test-routing-{timestamp}"
+        custom_slug=f"route-{short_id}"  # Max 12 chars
     )
     if routing_link:
         routing_slug = routing_link['slug']
@@ -744,7 +746,7 @@ def run_complete_test(api_key=None):
     print("-" * 80)
     ab_link = client.shorten(
         "https://example.com/ab-default",
-        custom_slug=f"test-ab-{timestamp}"
+        custom_slug=f"abtest-{short_id}"  # Max 13 chars
     )
     if ab_link:
         ab_slug = ab_link['slug']
@@ -816,20 +818,20 @@ def run_complete_test(api_key=None):
     bulk_data = [
         {
             "url": "https://example.com/bulk-1",
-            "custom_slug": f"bulk-1-{timestamp}"
+            "custom_slug": f"bulk1-{short_id}"  # Max 12 chars
         },
         {
             "url": "https://example.com/bulk-2",
-            "custom_slug": f"bulk-2-{timestamp}"
+            "custom_slug": f"bulk2-{short_id}"  # Max 12 chars
         },
         {
             "url": "https://example.com/bulk-3",
-            "custom_slug": f"bulk-3-{timestamp}"
+            "custom_slug": f"bulk3-{short_id}"  # Max 12 chars
         }
     ]
     bulk_result = client.bulk_import(bulk_data)
     if bulk_result:
-        test_slugs.extend([f"bulk-1-{timestamp}", f"bulk-2-{timestamp}", f"bulk-3-{timestamp}"])
+        test_slugs.extend([f"bulk1-{short_id}", f"bulk2-{short_id}", f"bulk3-{short_id}"])
 
     # ==========================================
     # SECTION 9: Cleanup (Optional)
@@ -899,13 +901,13 @@ def run_complete_test(api_key=None):
 def quick_create_test_links(api_key, count=5):
     """Quickly create test links"""
     client = EdgeLinkClient(api_key=api_key)
-    timestamp = int(time.time())
+    short_id = str(int(time.time()))[-6:]
 
     print(f"Creating {count} test links...")
     for i in range(count):
         client.shorten(
             f"https://example.com/test-{i}",
-            custom_slug=f"quick-test-{i}-{timestamp}"
+            custom_slug=f"quick{i}-{short_id}"  # Max 13 chars
         )
         time.sleep(0.5)
 
@@ -920,13 +922,13 @@ def quick_test_limits(api_key):
     usage = client.get_usage()
 
     print("\n🔗 Testing Link Creation Limit:")
-    timestamp = int(time.time())
+    short_id = str(int(time.time()))[-6:]
     created = 0
 
     while created < 60:  # Try to create more than limit
         result = client.shorten(
             f"https://example.com/limit-test-{created}",
-            custom_slug=f"limit-{created}-{timestamp}"
+            custom_slug=f"lim{created:02d}-{short_id}"  # Max 13 chars (lim00-652564)
         )
         if not result:
             print(f"\n❌ Link limit reached at {created} links")
