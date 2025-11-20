@@ -106,15 +106,16 @@ export class PlanLimitsService {
   static async checkMonthlyClickLimit(env: Env, userId: string, plan: string): Promise<{ allowed: boolean; reason?: string; current?: number; limit?: number }> {
     const limits = this.getLimits(plan);
 
-    // Get current month's click count
+    // Get current month's click count from persistent tracking table
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth() + 1; // 1-12
 
     const result = await env.DB.prepare(`
-      SELECT COALESCE(SUM(click_count), 0) as total_clicks
-      FROM links
-      WHERE user_id = ? AND created_at >= ?
-    `).bind(userId, monthStart).first() as { total_clicks: number } | null;
+      SELECT total_clicks
+      FROM user_monthly_stats
+      WHERE user_id = ? AND year = ? AND month = ?
+    `).bind(userId, year, month).first() as { total_clicks: number } | null;
 
     const currentClicks = result?.total_clicks || 0;
 

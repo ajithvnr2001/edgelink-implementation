@@ -69,6 +69,8 @@ export default function DashboardPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const linksPerPage = 50
+  const [totalLinks, setTotalLinks] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
 
   // Toast notifications
   const { toasts, dismissToast, showSuccess, showError } = useToast()
@@ -102,40 +104,46 @@ export default function DashboardPage() {
     }
   }, [router])
 
-  // Search and filter effect
+  // Search effect - trigger server-side search
   useEffect(() => {
-    if (!searchQuery) {
-      setFilteredLinks(links)
-      return
-    }
+    // Debounce search to avoid excessive API calls
+    const timeoutId = setTimeout(() => {
+      loadLinks(1, searchQuery)
+    }, 300) // 300ms debounce
 
-    const query = searchQuery.toLowerCase()
-    const filtered = links.filter(link => {
-      if (searchField === 'slug') {
-        return link.slug.toLowerCase().includes(query)
-      } else if (searchField === 'destination') {
-        return link.destination.toLowerCase().includes(query)
-      } else if (searchField === 'date') {
-        return formatDate(link.created_at).toLowerCase().includes(query)
-      } else {
-        // 'all' - search in all fields
-        return (
-          link.slug.toLowerCase().includes(query) ||
-          link.destination.toLowerCase().includes(query) ||
-          formatDate(link.created_at).toLowerCase().includes(query)
-        )
-      }
-    })
-    setFilteredLinks(filtered)
-    setCurrentPage(1) // Reset to first page on search
-  }, [searchQuery, searchField, links])
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, searchField])
 
-  const loadLinks = async () => {
+  const loadLinks = async (page: number = 1, search: string = '', append: boolean = false) => {
     try {
-      setLoading(true)
-      const data = await getLinks()
-      setLinks(data.links)
-      setFilteredLinks(data.links)
+      if (!append) setLoading(true)
+
+      const params: any = {
+        page,
+        limit: linksPerPage
+      }
+
+      if (search) {
+        params.search = search
+        if (searchField !== 'all') {
+          params.searchField = searchField
+        }
+      }
+
+      const data = await getLinks(params)
+
+      if (append) {
+        // Append for "Load More"
+        setLinks(prev => [...prev, ...data.links])
+        setFilteredLinks(prev => [...prev, ...data.links])
+      } else {
+        setLinks(data.links)
+        setFilteredLinks(data.links)
+      }
+
+      setTotalLinks(data.total)
+      setTotalPages(data.totalPages || Math.ceil(data.total / linksPerPage))
+      setCurrentPage(page)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load links')
     } finally {
@@ -976,14 +984,14 @@ export default function DashboardPage() {
   // Count inactive links
   const inactiveLinksCount = links.filter(isLinkInactive).length
 
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredLinks.length / linksPerPage)
-  const startIndex = (currentPage - 1) * linksPerPage
-  const endIndex = startIndex + linksPerPage
-  const currentLinks = filteredLinks.slice(startIndex, endIndex)
+  // Server-side pagination - no client-side slicing needed
+  const currentLinks = filteredLinks
+  const startIndex = (currentPage - 1) * linksPerPage + 1
+  const endIndex = Math.min(currentPage * linksPerPage, totalLinks)
 
   const goToPage = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)))
+    const targetPage = Math.max(1, Math.min(page, totalPages))
+    loadLinks(targetPage, searchQuery)
   }
 
   if (!user) {
@@ -1108,7 +1116,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="card p-6">
               <div className="text-gray-400 text-sm mb-1">Total Links</div>
-              <div className="text-3xl font-bold text-white">{links.length}</div>
+              <div className="text-3xl font-bold text-white">{totalLinks.toLocaleString()}</div>
             </div>
             <div className="card p-6">
               <div className="text-gray-400 text-sm mb-1">Total Clicks</div>
@@ -1283,7 +1291,7 @@ export default function DashboardPage() {
             {totalPages > 1 && (
               <div className="card p-4 mt-6 flex items-center justify-between">
                 <div className="text-sm text-gray-400">
-                  Showing {startIndex + 1}-{Math.min(endIndex, filteredLinks.length)} of {filteredLinks.length} links
+                  Showing {startIndex}-{endIndex} of {totalLinks.toLocaleString()} links
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
