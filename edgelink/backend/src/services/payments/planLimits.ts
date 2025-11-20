@@ -28,8 +28,8 @@ export interface PlanLimits {
 
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
   'free': {
-    maxLinks: 1000,                    // 1,000 total active links
-    maxClicksPerMonth: 10000,          // 10,000 clicks per month
+    maxLinks: 10,                      // 10 total active links (TESTING)
+    maxClicksPerMonth: 10,             // 10 clicks per month (TESTING)
     maxCustomDomains: 0,               // No custom domains
     maxGroups: 0,                      // No link groups
     analytics: false,                  // Basic click count only
@@ -48,8 +48,8 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     groups: false                      // No link groups
   },
   'pro': {
-    maxLinks: 100000,                  // 100,000 total active links
-    maxClicksPerMonth: 500000,         // 500,000 clicks per month
+    maxLinks: 20,                      // 20 total active links (TESTING)
+    maxClicksPerMonth: 20,             // 20 clicks per month (TESTING)
     maxCustomDomains: 2,               // 2 custom domains with SSL
     maxGroups: 50,                     // 50 link groups
     analytics: true,                   // Advanced analytics with charts
