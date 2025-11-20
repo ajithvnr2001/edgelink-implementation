@@ -539,13 +539,10 @@ class EdgeLinkClient:
             print(f"   Plan: {data.get('plan', 'unknown').upper()}")
             print(f"   Links: {usage.get('links', 0)} / {limits.get('maxLinks', 0)}")
             print(f"   Clicks this month: {usage.get('monthlyClicks', 0)} / {limits.get('maxClicksPerMonth', 0)}")
+            print(f"   API calls today: {usage.get('apiCallsToday', 0)} / {limits.get('maxApiCallsPerDay', 0)}")
             print(f"   Custom Domains: {usage.get('customDomains', 0)} / {limits.get('maxCustomDomains', 0)}")
             print(f"   Groups: {usage.get('groups', 0)} / {limits.get('maxGroups', 0)}")
             print(f"   API Keys: {usage.get('apiKeys', 0)}")
-
-            # Show rate limit info (this needs separate tracking)
-            print(f"\n   Note: API call rate limits are tracked per-day, not shown here")
-            print(f"   Rate limit: 50/day (free) or 60/day (pro)")
 
             return data
         else:

@@ -12,6 +12,7 @@ interface UsageData {
     maxClicksPerMonth: number;
     maxCustomDomains: number;
     maxGroups: number;
+    maxApiCallsPerDay: number;
   };
   usage: {
     links: number;
@@ -19,6 +20,7 @@ interface UsageData {
     customDomains: number;
     groups: number;
     apiKeys: number;
+    apiCallsToday: number;
   };
   features: {
     analytics: boolean;
@@ -108,6 +110,16 @@ export async function handleGetUsage(
       WHERE user_id = ?
     `).bind(userId).first() as { count: number } | null;
 
+    // Get API rate limit usage from KV
+    const rateLimitKey = `ratelimit:${userId}`;
+    let apiCallsToday = 0;
+    try {
+      const rateLimitStr = await env.LINKS_KV.get(rateLimitKey);
+      apiCallsToday = rateLimitStr ? parseInt(rateLimitStr, 10) : 0;
+    } catch (error) {
+      console.error('Failed to get rate limit from KV:', error);
+    }
+
     // Calculate reset date based on subscription period for Pro users
     let resetDate: Date;
 
@@ -122,6 +134,14 @@ export async function handleGetUsage(
       resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     }
 
+    // Get API rate limit for user's plan (from ratelimit.ts)
+    const apiRateLimits: Record<string, number> = {
+      'free': 50,
+      'pro': 60,
+      'lifetime': 60
+    };
+    const maxApiCallsPerDay = apiRateLimits[plan] || 50;
+
     const usageData: UsageData = {
       plan: userResult?.lifetime_access === 1 ? 'lifetime' : plan,
       limits: {
@@ -129,6 +149,7 @@ export async function handleGetUsage(
         maxClicksPerMonth: limits.maxClicksPerMonth,
         maxCustomDomains: limits.maxCustomDomains,
         maxGroups: limits.maxGroups,
+        maxApiCallsPerDay: maxApiCallsPerDay,
       },
       usage: {
         links: linksResult?.count || 0,
@@ -136,6 +157,7 @@ export async function handleGetUsage(
         customDomains: domainsResult?.count || 0,
         groups: groupsResult?.count || 0,
         apiKeys: apiKeysResult?.count || 0,
+        apiCallsToday: apiCallsToday,
       },
       features: {
         analytics: limits.analytics,
