@@ -33,7 +33,7 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     maxCustomDomains: 0,               // No custom domains
     maxGroups: 0,                      // No link groups
     analytics: false,                  // Basic click count only
-    apiAccess: false,                  // No API access (or very limited)
+    apiAccess: true,                   // API access enabled
     linkExpiration: true,              // Allow link expiration
     passwordProtection: true,          // Allow password protection
     customSlug: true,                  // Allow custom slug on creation
