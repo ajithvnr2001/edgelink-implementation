@@ -13,6 +13,9 @@ import {
   EllipsisVerticalIcon,
   XMarkIcon,
   ShareIcon,
+  DevicePhoneMobileIcon,
+  GlobeAltIcon,
+  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline'
 
 interface LinkCardProps {
@@ -30,6 +33,9 @@ interface LinkCardProps {
   onEdit?: (slug: string) => void
   onMoveToGroup?: (slug: string) => void
   onViewQR?: (slug: string) => void
+  onDeviceRouting?: (slug: string) => void
+  onGeoRouting?: (slug: string) => void
+  onRefererRouting?: (slug: string) => void
   isPro?: boolean
 }
 
@@ -52,6 +58,9 @@ export default function LinkCard({
   onEdit,
   onMoveToGroup,
   onViewQR,
+  onDeviceRouting,
+  onGeoRouting,
+  onRefererRouting,
   isPro = false,
 }: LinkCardProps) {
   const [copied, setCopied] = useState(false)
@@ -293,6 +302,33 @@ export default function LinkCard({
                   <QrCodeIcon className="h-4 w-4" />
                 </button>
               )}
+              {isPro && onDeviceRouting && (
+                <button
+                  onClick={() => onDeviceRouting(link.slug)}
+                  className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+                  title="Device Routing"
+                >
+                  <DevicePhoneMobileIcon className="h-4 w-4" />
+                </button>
+              )}
+              {isPro && onGeoRouting && (
+                <button
+                  onClick={() => onGeoRouting(link.slug)}
+                  className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+                  title="Geo Routing"
+                >
+                  <GlobeAltIcon className="h-4 w-4" />
+                </button>
+              )}
+              {isPro && onRefererRouting && (
+                <button
+                  onClick={() => onRefererRouting(link.slug)}
+                  className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+                  title="Referer Routing"
+                >
+                  <ArrowRightOnRectangleIcon className="h-4 w-4" />
+                </button>
+              )}
               {onDelete && (
                 <button
                   onClick={handleDeleteClick}
@@ -453,6 +489,51 @@ export default function LinkCard({
                 >
                   <QrCodeIcon className="h-6 w-6" />
                   <span className="text-base">QR Code</span>
+                </button>
+              )}
+
+              {/* Device Routing (Pro) */}
+              {isPro && onDeviceRouting && (
+                <button
+                  onClick={() => {
+                    triggerHaptic('light')
+                    onDeviceRouting(link.slug)
+                    setShowBottomSheet(false)
+                  }}
+                  className="flex items-center gap-4 w-full px-6 py-4 text-gray-200 hover:bg-gray-700 active:bg-gray-600 min-h-[56px]"
+                >
+                  <DevicePhoneMobileIcon className="h-6 w-6" />
+                  <span className="text-base">Device Routing</span>
+                </button>
+              )}
+
+              {/* Geo Routing (Pro) */}
+              {isPro && onGeoRouting && (
+                <button
+                  onClick={() => {
+                    triggerHaptic('light')
+                    onGeoRouting(link.slug)
+                    setShowBottomSheet(false)
+                  }}
+                  className="flex items-center gap-4 w-full px-6 py-4 text-gray-200 hover:bg-gray-700 active:bg-gray-600 min-h-[56px]"
+                >
+                  <GlobeAltIcon className="h-6 w-6" />
+                  <span className="text-base">Geo Routing</span>
+                </button>
+              )}
+
+              {/* Referer Routing (Pro) */}
+              {isPro && onRefererRouting && (
+                <button
+                  onClick={() => {
+                    triggerHaptic('light')
+                    onRefererRouting(link.slug)
+                    setShowBottomSheet(false)
+                  }}
+                  className="flex items-center gap-4 w-full px-6 py-4 text-gray-200 hover:bg-gray-700 active:bg-gray-600 min-h-[56px]"
+                >
+                  <ArrowRightOnRectangleIcon className="h-6 w-6" />
+                  <span className="text-base">Referer Routing</span>
                 </button>
               )}
 
