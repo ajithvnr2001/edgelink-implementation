@@ -117,7 +117,7 @@ export async function handleRedirect(
     if (linkData.user_id !== 'anonymous') {
       // Get user's plan from database
       const userResult = await env.DB.prepare(`
-        SELECT plan FROM users WHERE id = ?
+        SELECT plan FROM users WHERE user_id = ?
       `).bind(linkData.user_id).first();
 
       if (userResult) {
