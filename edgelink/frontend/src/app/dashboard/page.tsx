@@ -1030,6 +1030,9 @@ export default function DashboardPage() {
             <Link href="/usage" className="text-gray-300 hover:text-white transition-colors">
               📈 Usage
             </Link>
+            <Link href="/settings/account" className="text-gray-300 hover:text-white transition-colors">
+              ⚙️ Settings
+            </Link>
             <span className="text-gray-400">
               {user.email}
             </span>
