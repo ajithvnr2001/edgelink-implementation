@@ -45,7 +45,7 @@ export class InactiveLinkCleanupService {
       // ====================================
       // Delete links with 0 clicks after 90 days OR inactive for 180 days
       const freeInactiveLinks = await this.env.DB.prepare(`
-        SELECT slug, user_id
+        SELECT l.slug, l.user_id
         FROM links l
         JOIN users u ON l.user_id = u.user_id
         WHERE u.plan = 'free'
@@ -79,7 +79,7 @@ export class InactiveLinkCleanupService {
       // ====================================
       // Delete links inactive for 365 days (1 year)
       const proInactiveLinks = await this.env.DB.prepare(`
-        SELECT slug, user_id
+        SELECT l.slug, l.user_id
         FROM links l
         JOIN users u ON l.user_id = u.user_id
         WHERE u.plan = 'pro'
