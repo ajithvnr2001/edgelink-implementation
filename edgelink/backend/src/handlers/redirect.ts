@@ -476,6 +476,22 @@ async function incrementClickCount(
       `).bind(slug).run();
       console.log(`[incrementClickCount] Updated D1 database, rows affected: ${dbResult.meta.changes}`);
 
+      // Update persistent monthly click counter (survives link deletion)
+      const now = new Date();
+      const year = now.getUTCFullYear();
+      const month = now.getUTCMonth() + 1; // 1-12
+      const statId = `${userId}-${year}-${month}`;
+
+      await env.DB.prepare(`
+        INSERT INTO user_monthly_stats (stat_id, user_id, year, month, total_clicks, updated_at)
+        VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, year, month)
+        DO UPDATE SET
+          total_clicks = total_clicks + 1,
+          updated_at = CURRENT_TIMESTAMP
+      `).bind(statId, userId, year, month).run();
+      console.log(`[incrementClickCount] Updated monthly stats for ${userId}: ${year}-${month}`);
+
       // Update KV store to keep it in sync
       const linkDataStr = await env.LINKS_KV.get(`slug:${slug}`);
       if (linkDataStr) {

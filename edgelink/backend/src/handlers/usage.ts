@@ -82,12 +82,15 @@ export async function handleGetUsage(
     `).bind(userId).first() as { count: number } | null;
 
     const now = new Date();
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth() + 1; // 1-12
 
+    // Get monthly clicks from persistent tracking table
     const clicksResult = await env.DB.prepare(`
-      SELECT COALESCE(SUM(click_count), 0) as total_clicks
-      FROM links
-      WHERE user_id = ?
-    `).bind(userId).first() as { total_clicks: number } | null;
+      SELECT total_clicks
+      FROM user_monthly_stats
+      WHERE user_id = ? AND year = ? AND month = ?
+    `).bind(userId, year, month).first() as { total_clicks: number } | null;
 
     // Get custom domains count
     const domainsResult = await env.DB.prepare(`
