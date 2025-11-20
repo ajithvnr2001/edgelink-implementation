@@ -201,30 +201,45 @@ export async function handleDeleteAccount(request: Request, env: Env, userId: st
       'DELETE FROM custom_domains WHERE user_id = ?'
     ).bind(userId).run();
 
-    // 8. Delete filter presets
-    await env.DB.prepare(
-      'DELETE FROM filter_presets WHERE user_id = ?'
-    ).bind(userId).run();
-
-    // 9. Delete conversion events
-    await env.DB.prepare(
-      'DELETE FROM conversion_events WHERE user_id = ?'
-    ).bind(userId).run();
-
-    // 10. Delete alerts and alert history
-    const userAlerts = await env.DB.prepare(
-      'SELECT alert_id FROM alerts WHERE user_id = ?'
-    ).bind(userId).all();
-
-    for (const alert of userAlerts.results || []) {
+    // 8. Delete filter presets (if table exists)
+    try {
       await env.DB.prepare(
-        'DELETE FROM alert_history WHERE alert_id = ?'
-      ).bind(alert.alert_id).run();
+        'DELETE FROM filter_presets WHERE user_id = ?'
+      ).bind(userId).run();
+    } catch (e) {
+      // Table may not exist, ignore error
+      console.log('filter_presets table not found, skipping...');
     }
 
-    await env.DB.prepare(
-      'DELETE FROM alerts WHERE user_id = ?'
-    ).bind(userId).run();
+    // 9. Delete conversion events
+    try {
+      await env.DB.prepare(
+        'DELETE FROM conversion_events WHERE user_id = ?'
+      ).bind(userId).run();
+    } catch (e) {
+      // Table may not exist, ignore error
+      console.log('conversion_events table not found, skipping...');
+    }
+
+    // 10. Delete alerts and alert history (if tables exist)
+    try {
+      const userAlerts = await env.DB.prepare(
+        'SELECT alert_id FROM alerts WHERE user_id = ?'
+      ).bind(userId).all();
+
+      for (const alert of userAlerts.results || []) {
+        await env.DB.prepare(
+          'DELETE FROM alert_history WHERE alert_id = ?'
+        ).bind(alert.alert_id).run();
+      }
+
+      await env.DB.prepare(
+        'DELETE FROM alerts WHERE user_id = ?'
+      ).bind(userId).run();
+    } catch (e) {
+      // Tables may not exist, ignore error
+      console.log('alerts tables not found, skipping...');
+    }
 
     // 11. Delete team memberships
     await env.DB.prepare(
@@ -395,7 +410,7 @@ export async function handleExportUserData(request: Request, env: Env, userId: s
 
     // Get API keys (without secrets)
     const apiKeys = await env.DB.prepare(
-      'SELECT api_key_id, key_name, created_at, last_used_at FROM api_keys WHERE user_id = ?'
+      'SELECT key_id, name, created_at, last_used_at FROM api_keys WHERE user_id = ?'
     ).bind(userId).all();
 
     // Get webhooks
