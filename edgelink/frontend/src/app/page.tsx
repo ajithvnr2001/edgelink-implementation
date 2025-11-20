@@ -60,12 +60,15 @@ export default function HomePage() {
             <div className="w-8 h-8 bg-primary-500 rounded-lg"></div>
             <h1 className="text-xl font-bold text-white">EdgeLink</h1>
           </div>
-          <nav className="flex items-center space-x-4">
+          <nav className="hidden md:flex items-center space-x-4">
             <Link href="/pricing" className="text-gray-300 hover:text-white">
               Pricing
             </Link>
             <Link href="/docs" className="text-gray-300 hover:text-white">
               Docs
+            </Link>
+            <Link href="/faq" className="text-gray-300 hover:text-white">
+              FAQ
             </Link>
             {isLoaded && isSignedIn ? (
               <Link href="/dashboard" className="btn-primary">
@@ -80,6 +83,18 @@ export default function HomePage() {
                   Sign Up
                 </Link>
               </>
+            )}
+          </nav>
+          {/* Mobile nav links */}
+          <nav className="flex md:hidden items-center space-x-2">
+            {isLoaded && isSignedIn ? (
+              <Link href="/dashboard" className="btn-primary text-sm px-3 py-1.5">
+                Dashboard
+              </Link>
+            ) : (
+              <Link href="/login" className="btn-primary text-sm px-3 py-1.5">
+                Sign In
+              </Link>
             )}
           </nav>
         </div>
@@ -213,8 +228,21 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-700 mt-16">
-        <div className="container mx-auto px-4 py-8 text-center text-gray-400">
-          <p>© 2025 EdgeLink. Built with Cloudflare Workers.</p>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <p className="text-gray-400 text-sm">© 2025 EdgeLink. Built with Cloudflare Workers.</p>
+            <div className="flex items-center space-x-6 mt-4 md:mt-0">
+              <Link href="/privacy" className="text-gray-400 hover:text-white text-sm">
+                Privacy Policy
+              </Link>
+              <Link href="/faq" className="text-gray-400 hover:text-white text-sm">
+                FAQ
+              </Link>
+              <Link href="/docs" className="text-gray-400 hover:text-white text-sm">
+                Documentation
+              </Link>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
