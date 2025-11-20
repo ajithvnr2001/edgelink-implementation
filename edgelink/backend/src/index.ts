@@ -8,6 +8,7 @@
 import type { Env } from './types';
 import { authenticate, requireAuth } from './middleware/auth';
 import { checkRateLimit, checkAuthRateLimit, addRateLimitHeaders } from './middleware/ratelimit';
+import { createR2LogService, R2LogService } from './services/logs/r2LogService';
 import { handleShorten } from './handlers/shorten';
 import { handleRedirect } from './handlers/redirect';
 import { handleSignup, handleLogin, handleRefresh, handleLogout } from './handlers/auth';
@@ -26,6 +27,7 @@ import { handleCreateABTest, handleGetABTestResults, handleDeleteABTest } from '
 import { handleSetDeviceRouting, handleSetGeoRouting, handleSetTimeRouting, handleSetReferrerRouting, handleGetRouting, handleDeleteRouting } from './handlers/routing';
 import { handleCreateGroup, handleGetGroups, handleGetGroup, handleUpdateGroup, handleDeleteGroup, handleAddLinksToGroup, handleRemoveLinksFromGroup, handleMoveLink, handleBulkMoveLinks } from './handlers/groups';
 import { handleGetGroupAnalytics, handleGetOverallAnalytics, handleCompareGroups } from './handlers/group-analytics';
+import { handleGetLogs, handleGetLogStorage, handleDeleteOldLogs } from './handlers/logs';
 import { handleVerifyEmail } from './handlers/auth/verify-email';
 import { handleResendVerification } from './handlers/auth/resend-verification';
 import { handleRequestPasswordReset } from './handlers/auth/request-reset';
@@ -58,6 +60,11 @@ export default {
         headers: corsHeaders
       });
     }
+
+    // Initialize R2 logging service
+    const logger = createR2LogService(env);
+    const requestId = logger.generateRequestId();
+    const startTime = Date.now();
 
     try {
       const url = new URL(request.url);
@@ -283,6 +290,15 @@ export default {
         // Handle shortening
         const response = await handleShorten(request, env, user);
         const finalResponse = addRateLimitHeaders(response, info);
+
+        // Log API request to R2 for authenticated users
+        if (user) {
+          ctx.waitUntil(
+            logApiRequest(logger, user.sub, request, response, requestId, startTime)
+              .catch(err => console.error('R2 API log failed:', err))
+          );
+        }
+
         return addCorsHeaders(finalResponse, corsHeaders);
       }
 
@@ -307,6 +323,13 @@ export default {
         // Pass search parameters for pagination and filtering
         const response = await handleGetLinks(env, user.sub, url.searchParams);
         const finalResponse = addRateLimitHeaders(response, info);
+
+        // Log API request to R2
+        ctx.waitUntil(
+          logApiRequest(logger, user.sub, request, response, requestId, startTime)
+            .catch(err => console.error('R2 API log failed:', err))
+        );
+
         return addCorsHeaders(finalResponse, corsHeaders);
       }
 
@@ -331,6 +354,13 @@ export default {
 
         const slug = path.split('/')[3];
         const response = await handleDeleteLink(env, user.sub, slug);
+
+        // Log API request to R2
+        ctx.waitUntil(
+          logApiRequest(logger, user.sub, request, response, requestId, startTime)
+            .catch(err => console.error('R2 API log failed:', err))
+        );
+
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -675,6 +705,25 @@ export default {
         const format = (url.searchParams.get('format') as 'csv' | 'json') || 'json';
         const timeRange = (url.searchParams.get('range') as '7d' | '30d' | '90d' | 'all') || '30d';
         const response = await handleExportAnalytics(env, user.sub, slug, format, timeRange);
+
+        // Log export action to R2
+        if (response.status === 200) {
+          ctx.waitUntil(
+            logger.logExport(user.sub, {
+              request_id: requestId,
+              export_type: format,
+              record_count: 0, // Would need to get actual count from response
+              filters: { slug, timeRange }
+            }).catch(err => console.error('R2 export log failed:', err))
+          );
+        }
+
+        // Log API request
+        ctx.waitUntil(
+          logApiRequest(logger, user.sub, request, response, requestId, startTime)
+            .catch(err => console.error('R2 API log failed:', err))
+        );
+
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -687,6 +736,25 @@ export default {
 
         const format = (url.searchParams.get('format') as 'csv' | 'json') || 'json';
         const response = await handleExportLinks(env, user.sub, format, user.plan);
+
+        // Log export action to R2
+        if (response.status === 200) {
+          ctx.waitUntil(
+            logger.logExport(user.sub, {
+              request_id: requestId,
+              export_type: format,
+              record_count: 0,
+              filters: { type: 'links' }
+            }).catch(err => console.error('R2 export log failed:', err))
+          );
+        }
+
+        // Log API request
+        ctx.waitUntil(
+          logApiRequest(logger, user.sub, request, response, requestId, startTime)
+            .catch(err => console.error('R2 API log failed:', err))
+        );
+
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -765,6 +833,40 @@ export default {
         }
 
         const response = await handleExportUserData(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // Log viewer endpoints
+      // GET /api/logs - Get user's logs
+      if (path === '/api/logs' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGetLogs(request, env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // GET /api/logs/storage - Get log storage usage
+      if (path === '/api/logs/storage' && method === 'GET') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleGetLogStorage(env, user.sub);
+        return addCorsHeaders(response, corsHeaders);
+      }
+
+      // DELETE /api/logs - Delete old logs
+      if (path === '/api/logs' && method === 'DELETE') {
+        const { user, error } = await requireAuth(request, env);
+        if (error) {
+          return addCorsHeaders(error, corsHeaders);
+        }
+
+        const response = await handleDeleteOldLogs(request, env, user.sub);
         return addCorsHeaders(response, corsHeaders);
       }
 
@@ -899,7 +1001,7 @@ export default {
         }
 
         console.log(`➡️  Calling handleRedirect for slug: ${slug}`);
-        const response = await handleRedirect(request, env, slug, ctx);
+        const response = await handleRedirect(request, env, slug, ctx, logger, requestId);
         console.log(`✅ Redirect response status: ${response.status}`);
         return addCorsHeaders(response, corsHeaders);
       }
@@ -917,6 +1019,18 @@ export default {
       );
     } catch (error) {
       console.error('Worker error:', error);
+
+      // Log system error to R2
+      ctx.waitUntil(
+        logger.logSystemError({
+          request_id: requestId,
+          error_type: error instanceof Error ? error.name : 'UnknownError',
+          message: error instanceof Error ? error.message : String(error),
+          path: new URL(request.url).pathname,
+          stack: error instanceof Error ? error.stack : undefined
+        })
+      );
+
       return new Response(
         JSON.stringify({
           error: 'Internal server error',
@@ -973,6 +1087,33 @@ function addCorsHeaders(response: Response, corsHeaders: Record<string, string>)
     newResponse.headers.set(key, value);
   });
   return newResponse;
+}
+
+/**
+ * Log API request to R2
+ */
+async function logApiRequest(
+  logger: R2LogService,
+  userId: string,
+  request: Request,
+  response: Response,
+  requestId: string,
+  startTime: number
+): Promise<void> {
+  const url = new URL(request.url);
+  await logger.logRequest(userId, {
+    request_id: requestId,
+    method: request.method,
+    path: url.pathname,
+    status: response.status,
+    duration_ms: Date.now() - startTime,
+    ip: request.headers.get('cf-connecting-ip') || '0.0.0.0',
+    country: request.headers.get('cf-ipcountry') || 'XX',
+    city: request.headers.get('cf-ipcity') || undefined,
+    user_agent: request.headers.get('user-agent') || '',
+    referer: request.headers.get('referer') || undefined,
+    query: url.search || undefined
+  });
 }
 
 /**

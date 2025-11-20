@@ -7,12 +7,14 @@
  * 2. Delete unverified accounts (90+ days old)
  * 3. Clean up expired tokens (7+ days old)
  * 4. Clean up inactive links (free: 90/180 days, pro: 365 days)
+ * 5. Clean up old R2 logs (30+ days old)
  */
 
 import type { Env } from '../types';
 import { EmailService } from '../services/email/emailService';
 import { DeletionService } from '../services/cleanup/deletionService';
 import { InactiveLinkCleanupService } from './inactiveLinkCleanup';
+import { createR2LogService } from '../services/logs/r2LogService';
 
 export async function dailyCleanup(env: Env): Promise<void> {
   console.log('[Cron] Starting daily cleanup job');
@@ -25,6 +27,7 @@ export async function dailyCleanup(env: Env): Promise<void> {
   let accountsDeleted = 0;
   let tokensDeleted = 0;
   let inactiveLinksDeleted = 0;
+  let logsDeleted = 0;
 
   try {
     // ========================================
@@ -131,6 +134,57 @@ export async function dailyCleanup(env: Env): Promise<void> {
     `);
 
     // ========================================
+    // TASK 5: Clean up old R2 logs (30+ days old)
+    // ========================================
+    if (env.R2_BUCKET) {
+      const logger = createR2LogService(env);
+      const day30 = 30 * 24 * 60 * 60 * 1000;
+      const beforeDate = new Date(Date.now() - day30);
+
+      // Get all users to clean their logs
+      const allUsers = await env.DB.prepare(`
+        SELECT user_id FROM users
+      `).all();
+
+      for (const user of allUsers.results) {
+        try {
+          const deleted = await logger.cleanupOldLogs(user.user_id as string, beforeDate);
+          logsDeleted += deleted;
+        } catch (error) {
+          console.error(`[Cron] Failed to clean logs for user ${user.user_id}:`, error);
+        }
+      }
+
+      // Also clean system logs
+      try {
+        // List and delete old system logs
+        const systemPrefix = 'logs/system/';
+        const listed = await env.R2_BUCKET.list({ prefix: systemPrefix });
+
+        for (const object of listed.objects) {
+          // Parse date from path: logs/system/{year}/{month}/{day}/{hour}/
+          const pathParts = object.key.split('/');
+          if (pathParts.length >= 5) {
+            const year = parseInt(pathParts[2]);
+            const month = parseInt(pathParts[3]) - 1;
+            const day = parseInt(pathParts[4]);
+
+            const fileDate = new Date(Date.UTC(year, month, day));
+
+            if (fileDate < beforeDate) {
+              await env.R2_BUCKET.delete(object.key);
+              logsDeleted++;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[Cron] Failed to clean system logs:', error);
+      }
+
+      console.log(`[Cron] Cleaned ${logsDeleted} old log files`);
+    }
+
+    // ========================================
     // SUMMARY
     // ========================================
     console.log(`[Cron] Daily cleanup complete:
@@ -138,6 +192,7 @@ export async function dailyCleanup(env: Env): Promise<void> {
       - Accounts deleted: ${accountsDeleted}
       - Expired tokens cleaned: ${tokensDeleted}
       - Inactive links deleted: ${inactiveLinksDeleted}
+      - Old log files deleted: ${logsDeleted}
     `);
   } catch (error) {
     console.error('[Cron] Daily cleanup failed:', error);
