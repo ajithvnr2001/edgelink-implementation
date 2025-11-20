@@ -136,11 +136,11 @@ export async function handleGetUsage(
 
     // Get API rate limit for user's plan (from ratelimit.ts)
     const apiRateLimits: Record<string, number> = {
-      'free': 50,
-      'pro': 60,
-      'lifetime': 60
+      'free': 100,
+      'pro': 5000,
+      'lifetime': 5000
     };
-    const maxApiCallsPerDay = apiRateLimits[plan] || 50;
+    const maxApiCallsPerDay = apiRateLimits[plan] || 100;
 
     const usageData: UsageData = {
       plan: userResult?.lifetime_access === 1 ? 'lifetime' : plan,

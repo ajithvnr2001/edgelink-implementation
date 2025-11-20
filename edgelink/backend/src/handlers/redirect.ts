@@ -845,7 +845,7 @@ function generateExpiredPage(reason: 'time' | 'clicks'): string {
  */
 function generateMonthlyLimitPage(plan: string, current: number, limit: number): string {
   const upgradeMessage = plan === 'free'
-    ? 'Upgrade to Pro for 20 clicks per month.'
+    ? 'Upgrade to Pro for 500,000 clicks per month.'
     : 'Your monthly click limit has been reached. It will reset next month.';
 
   return `<!DOCTYPE html>

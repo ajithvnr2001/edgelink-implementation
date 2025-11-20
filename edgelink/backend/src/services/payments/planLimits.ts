@@ -28,12 +28,12 @@ export interface PlanLimits {
 
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
   'free': {
-    maxLinks: 50,                      // 50 total active links (TESTING)
-    maxClicksPerMonth: 50,             // 50 clicks per month (TESTING)
+    maxLinks: 1000,                    // 1,000 total active links
+    maxClicksPerMonth: 10000,          // 10,000 clicks per month
     maxCustomDomains: 0,               // No custom domains
     maxGroups: 0,                      // No link groups
     analytics: false,                  // Basic click count only
-    apiAccess: true,                   // API access enabled (TESTING)
+    apiAccess: true,                   // API access enabled
     linkExpiration: true,              // Allow link expiration
     passwordProtection: true,          // Allow password protection
     customSlug: true,                  // Allow custom slug on creation
@@ -48,8 +48,8 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     groups: false                      // No link groups
   },
   'pro': {
-    maxLinks: 60,                      // 60 total active links (TESTING)
-    maxClicksPerMonth: 60,             // 60 clicks per month (TESTING)
+    maxLinks: 100000,                  // 100,000 total active links
+    maxClicksPerMonth: 500000,         // 500,000 clicks per month
     maxCustomDomains: 2,               // 2 custom domains with SSL
     maxGroups: 50,                     // 50 link groups
     analytics: true,                   // Advanced analytics with charts
