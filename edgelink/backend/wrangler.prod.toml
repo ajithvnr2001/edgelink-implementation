@@ -38,7 +38,7 @@ FRONTEND_URL = "https://shortedbro.xyz"
 ALLOW_REGISTRATION = "true"
 NODE_ENV = "production"
 EMAIL_FROM_ADDRESS = "EdgeLink <noreply@go.shortedbro.xyz>"
-DODO_BASE_URL = "https://live.dodopayments.com"
+DODO_BASE_URL = "https://test.dodopayments.com"
 
 # Production rate limiting
 [[env.production.unsafe.bindings]]
