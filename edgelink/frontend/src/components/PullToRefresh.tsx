@@ -87,12 +87,12 @@ export default function PullToRefresh({
   return (
     <div
       ref={containerRef}
-      className={`relative overflow-auto ${className}`}
+      className={`relative ${className}`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Pull indicator */}
+      {/* Pull indicator - mobile only */}
       <div
         className="absolute left-0 right-0 flex justify-center items-center transition-all duration-200 pointer-events-none md:hidden"
         style={{
@@ -118,8 +118,9 @@ export default function PullToRefresh({
         </div>
       </div>
 
-      {/* Content */}
+      {/* Content - only apply transform on mobile */}
       <div
+        className="md:transform-none"
         style={{
           transform: `translateY(${pullDistance}px)`,
           transition: isPulling ? 'none' : 'transform 0.3s ease-out',
