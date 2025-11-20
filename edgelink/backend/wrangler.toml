@@ -89,4 +89,4 @@ simple = { limit = 1000, period = 86400 }
 # - Cleaning expired tokens
 # - Cleaning up inactive links (free: 90/180 days, pro: 365 days)
 [triggers]
-crons = ["*/2 * * * *"]  # Every day at 2 AM UTC
+crons = ["0 2 * * *"]  # Every day at 2 AM UTC
