@@ -549,6 +549,84 @@ class EdgeLinkClient:
             print(f"❌ Error: {response.status_code}")
             return None
 
+    def click_link(self, slug, follow_redirect=False):
+        """
+        Click a short link (simulates visiting the link)
+
+        Args:
+            slug: The short link slug
+            follow_redirect: Whether to follow the redirect (default: False)
+
+        Returns:
+            dict with status, destination, and any error messages
+        """
+        short_url = f"{self.base_url}/{slug}"
+
+        try:
+            response = requests.get(
+                short_url,
+                allow_redirects=follow_redirect,
+                timeout=10
+            )
+
+            if response.status_code == 302 or response.status_code == 301:
+                # Successful redirect
+                destination = response.headers.get('Location', 'Unknown')
+                print(f"✅ Click registered! Redirects to: {destination}")
+                return {
+                    'success': True,
+                    'status': response.status_code,
+                    'destination': destination
+                }
+            elif response.status_code == 429:
+                # Monthly click limit reached
+                print(f"🚫 Monthly click limit reached!")
+                if 'text/html' in response.headers.get('Content-Type', ''):
+                    print(f"   The link owner has exceeded their monthly click quota")
+                return {
+                    'success': False,
+                    'status': 429,
+                    'error': 'Monthly click limit exceeded'
+                }
+            elif response.status_code == 410:
+                # Link expired or max clicks reached
+                print(f"🚫 Link expired or max clicks reached!")
+                return {
+                    'success': False,
+                    'status': 410,
+                    'error': 'Link expired'
+                }
+            elif response.status_code == 404:
+                # Link not found
+                print(f"❌ Link not found: {slug}")
+                return {
+                    'success': False,
+                    'status': 404,
+                    'error': 'Link not found'
+                }
+            elif response.status_code == 401:
+                # Password protected
+                print(f"🔒 Link is password protected")
+                return {
+                    'success': False,
+                    'status': 401,
+                    'error': 'Password required'
+                }
+            else:
+                print(f"⚠️  Unexpected status: {response.status_code}")
+                return {
+                    'success': False,
+                    'status': response.status_code,
+                    'error': f"Unexpected status: {response.status_code}"
+                }
+
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error clicking link: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
 
 # ============================
 # COMPLETE FEATURE DEMONSTRATION
@@ -920,6 +998,23 @@ def quick_create_test_links(api_key, count=5):
         time.sleep(0.5)
 
 
+def quick_click(slug, api_key=API_KEY, times=1):
+    """Quick function to click a link multiple times"""
+    client = EdgeLinkClient(api_key=api_key)
+
+    print(f"Clicking {slug} {times} time(s)...")
+    for i in range(times):
+        result = client.click_link(slug)
+        if not result.get('success'):
+            print(f"Stopped at click {i+1}")
+            break
+        time.sleep(0.2)
+
+    # Show updated stats
+    print("\nUpdated stats:")
+    client.get_stats(slug)
+
+
 def quick_test_limits(api_key):
     """Test API and link limits"""
     client = EdgeLinkClient(api_key=api_key)
@@ -948,6 +1043,124 @@ def quick_test_limits(api_key):
     print(f"\n📊 Final count: {created} links created")
 
 
+def quick_test_click_limits(api_key):
+    """Test click limits - both monthly and per-link"""
+    client = EdgeLinkClient(api_key=api_key)
+
+    print("=" * 80)
+    print("👆 CLICK LIMIT TESTING")
+    print("=" * 80)
+
+    # Get initial usage
+    print("\n📊 Initial Usage:")
+    print("-" * 80)
+    initial_usage = client.get_usage()
+    if not initial_usage:
+        print("❌ Failed to get usage data")
+        return
+
+    usage = initial_usage.get('usage', {})
+    limits = initial_usage.get('limits', {})
+    initial_clicks = usage.get('monthlyClicks', 0)
+    max_clicks = limits.get('maxClicksPerMonth', 50)
+
+    print(f"\n🎯 Current monthly clicks: {initial_clicks} / {max_clicks}")
+
+    # Test 1: Per-Link Max Clicks Limit
+    print("\n" + "=" * 80)
+    print("TEST 1: Per-Link Max Clicks Limit")
+    print("=" * 80)
+
+    short_id = str(int(time.time()))[-6:]
+    max_click_slug = f"maxc-{short_id}"
+
+    print(f"\n[1.1] Creating link with max_clicks=5")
+    print("-" * 80)
+    max_click_link = client.shorten(
+        "https://example.com/max-clicks-test",
+        custom_slug=max_click_slug,
+        max_clicks=5
+    )
+
+    if max_click_link:
+        print(f"\n[1.2] Clicking link 7 times (limit is 5)")
+        print("-" * 80)
+        for i in range(1, 8):
+            print(f"\nClick #{i}:")
+            result = client.click_link(max_click_slug)
+            if result['status'] == 410:
+                print(f"✅ Per-link max clicks limit working! Stopped at click #{i}")
+                break
+            time.sleep(0.3)
+
+        # Check stats
+        print(f"\n[1.3] Checking link stats")
+        print("-" * 80)
+        client.get_stats(max_click_slug)
+
+    # Test 2: Monthly Click Limit
+    print("\n" + "=" * 80)
+    print("TEST 2: Monthly Click Limit")
+    print("=" * 80)
+
+    monthly_slug = f"monthly-{short_id}"
+
+    print(f"\n[2.1] Creating test link for monthly limit")
+    print("-" * 80)
+    monthly_link = client.shorten(
+        "https://example.com/monthly-test",
+        custom_slug=monthly_slug
+    )
+
+    if monthly_link:
+        remaining_clicks = max_clicks - initial_clicks
+        clicks_to_test = min(remaining_clicks + 5, 60)  # Try to exceed limit
+
+        print(f"\n[2.2] Clicking link {clicks_to_test} times")
+        print(f"      (You have {remaining_clicks} clicks remaining)")
+        print("-" * 80)
+
+        successful_clicks = 0
+        for i in range(1, clicks_to_test + 1):
+            result = client.click_link(monthly_slug)
+            if result.get('status') == 429:
+                print(f"\n🎯 Monthly click limit reached at click #{i}!")
+                print(f"   Initial clicks: {initial_clicks}")
+                print(f"   Successful new clicks: {successful_clicks}")
+                print(f"   Total: {initial_clicks + successful_clicks} / {max_clicks}")
+                break
+            elif result.get('success'):
+                successful_clicks += 1
+                if i % 5 == 0:
+                    print(f"   ... {successful_clicks} clicks so far")
+            time.sleep(0.2)
+
+        # Final usage check
+        print(f"\n[2.3] Final Usage Check")
+        print("-" * 80)
+        final_usage = client.get_usage()
+
+        if final_usage:
+            final_clicks = final_usage.get('usage', {}).get('monthlyClicks', 0)
+            print(f"\n📊 Summary:")
+            print(f"   Started with: {initial_clicks} clicks")
+            print(f"   Ended with: {final_clicks} clicks")
+            print(f"   New clicks: {final_clicks - initial_clicks}")
+            print(f"   Limit: {max_clicks} clicks/month")
+
+        # Cleanup test links
+        print(f"\n[2.4] Cleaning up test links")
+        print("-" * 80)
+        if max_click_link:
+            client.delete_link(max_click_slug)
+        if monthly_link:
+            client.delete_link(monthly_slug)
+
+    print("\n" + "=" * 80)
+    print("✅ Click Limit Testing Complete!")
+    print("=" * 80)
+
+
 # ============================
 # Main Execution
 # ============================
@@ -966,10 +1179,11 @@ if __name__ == "__main__":
     print("\n🎯 Choose an option:")
     print("   1. Run complete feature test (recommended)")
     print("   2. Quick create 5 test links")
-    print("   3. Test API and link limits")
-    print("   4. Exit")
+    print("   3. Test API and link creation limits")
+    print("   4. Test click limits (monthly & per-link)")
+    print("   5. Exit")
 
-    choice = input("\nEnter your choice (1-4): ").strip()
+    choice = input("\nEnter your choice (1-5): ").strip()
 
     if choice == "1":
         run_complete_test(API_KEY)
@@ -977,5 +1191,7 @@ if __name__ == "__main__":
         quick_create_test_links(API_KEY, count=5)
     elif choice == "3":
         quick_test_limits(API_KEY)
+    elif choice == "4":
+        quick_test_click_limits(API_KEY)
     else:
         print("👋 Goodbye!")
