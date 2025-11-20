@@ -1073,7 +1073,7 @@ export default function DashboardPage() {
       )}
 
       {/* Main Content */}
-      <PullToRefresh onRefresh={loadLinks} className="min-h-screen">
+      <PullToRefresh onRefresh={loadLinks}>
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Inactive Links Warning Banner */}
